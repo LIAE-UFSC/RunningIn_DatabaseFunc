@@ -10,7 +10,7 @@ class Waveform:
     # wvf = Waveform.read_labview_waveform('path\to\file',N)
     #
     # For waveform arrays:
-    # wvf = Waveform.read_labview_waveform('path\to\file',0)
+    # wvf = Waveform.read_labview_waveform('path\to\file')
 
     def __init__(self, data:np.ndarray, time:np.ndarray, dt:float = None):
         self.data = data
@@ -27,11 +27,14 @@ class Waveform:
             num_arrays_bytes = file.read(4) # Read the number of waveforms in the array
             num_arrays = struct.unpack('>I', num_arrays_bytes)[0]
 
-            # Skip the start time
-            file.seek(file.tell()+16)
+            if num_arrays<=0:
+                raise Exception("Waveform file is empty")
+            
 
             for k1 in range(num_arrays):
-
+                # Skip the start time
+                file.seek(file.tell()+16)
+                
                 if k1 == N: # If is the Nth array
                     # Read the sampling time
                     time_scale_bytes = file.read(8)
@@ -62,10 +65,11 @@ class Waveform:
 
                     file.seek(file.tell()+8*num_points) # Skip whole array
 
-                file.seek(file.tell()+21)
+                file.seek(file.tell()+23)
 
-                for _ in range(struct.unpack('>I', num_points_bytes)[0]): # Number of waveform attributes
-                    file.seek(file.tell()+54) # Ignore all waveform attributes
+                numAttr = file.read(4)
+                for _ in range(struct.unpack('>I', numAttr)[0]): # Number of waveform attributes
+                    file.seek(file.tell()+50) # Ignore all waveform attributes
 
     @classmethod
     def read_array_labview_waveform(cls,file_path):
@@ -110,3 +114,7 @@ class Waveform:
                     file.seek(file.tell()+54) # Ignore all waveform attributes
 
         return ArrayWaveforms
+    
+a = Waveform.read_labview_waveform("D:/Dados - Thaler/Documentos/Amaciamento/Ensaios Brutos/Unidade C1/A_2022_10_10/vibracao/vib1.dat",1)
+
+print(type(a))
