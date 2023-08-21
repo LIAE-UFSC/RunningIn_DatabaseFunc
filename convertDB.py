@@ -65,8 +65,9 @@ for model in allModels:
 
             fullTestFolder = os.listdir(f"{mainFolder}/{unitName}") # Get all tests from a given unit
 
-            for testName in fullTestFolder:
+            for k,testName in enumerate(fullTestFolder):
                 testFolder = f"{mainFolder}/{unitName}/{testName}"
+                print(f"Ensaio {k+1}/{len(fullTestFolder)}")
 
                 dirList = os.listdir(testFolder)
 
@@ -99,7 +100,7 @@ for model in allModels:
                             filePath = f"{testFolder}/corrente/corr{indexMeas}.dat"
                             try:
                                 wvf = Waveform.read_labview_waveform(filePath,0)
-                                dSet = measurementGrp.create_dataset("current", data = wvf.data)
+                                dSet = measurementGrp.create_dataset("current", data = wvf.data, compression="gzip", shuffle=True)
                                 dSet.attrs["dt"] = wvf.dt
 
                                 if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
@@ -111,15 +112,15 @@ for model in allModels:
                             filePath = f"{testFolder}/vibracao/vib{indexMeas}.dat"
                             try:
                                 wvf = Waveform.read_labview_waveform(filePath,0)
-                                dSet = measurementGrp.create_dataset("vibrationLateral", data = wvf.data)
+                                dSet = measurementGrp.create_dataset("vibrationLateral", data = wvf.data, compression="gzip", shuffle=True)
                                 dSet.attrs["dt"] = wvf.dt
 
                                 wvf = Waveform.read_labview_waveform(filePath,1)
-                                dSet = measurementGrp.create_dataset("vibrationRigDummy", data = wvf.data)
+                                dSet = measurementGrp.create_dataset("vibrationRigDummy", data = wvf.data, compression="gzip", shuffle=True)
                                 dSet.attrs["dt"] = wvf.dt
 
                                 wvf = Waveform.read_labview_waveform(filePath,2)
-                                dSet = measurementGrp.create_dataset("vibrationLongitudinal", data = wvf.data)
+                                dSet = measurementGrp.create_dataset("vibrationLongitudinal", data = wvf.data, compression="gzip", shuffle=True)
                                 dSet.attrs["dt"] = wvf.dt
 
                                 if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
@@ -133,7 +134,7 @@ for model in allModels:
                             filePath = f"{testFolder}/acusticas/acu{indexMeas}.dat"
                             try:
                                 wvf = Waveform.read_labview_waveform(filePath,0)
-                                dSet = measurementGrp.create_dataset("acousticEmission", data = wvf.data)
+                                dSet = measurementGrp.create_dataset("acousticEmission", data = wvf.data, compression="gzip", shuffle=True)
                                 dSet.attrs["dt"] = wvf.dt
 
                                 if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
@@ -145,11 +146,10 @@ for model in allModels:
                             filePath = f"{testFolder}/tensao/ten{indexMeas}.dat"
                             try:
                                 wvf = Waveform.read_labview_waveform(filePath,0)
-                                dSet = measurementGrp.create_dataset("voltage", data = wvf.data)
+                                dSet = measurementGrp.create_dataset("voltage", data = wvf.data, compression="gzip", shuffle=True)
                                 dSet.attrs["dt"] = wvf.dt
 
                                 if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
                                     testGrp.attrs['startTime'] = os.path.getmtime(filePath)
                             except:
                                 warnings.warn("File not found or empty:" + filePath)
-

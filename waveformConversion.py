@@ -22,6 +22,8 @@ class Waveform:
     def read_labview_waveform(cls,file_path:str, N:int = 0):
         # Extracts the Nth waveform from file
 
+        file_path = file_path.replace("/","\\") # Fix file path for windows
+
         # Loads DLL with labview functions
         wvf_read_dll = ct.CDLL(os.path.dirname(__file__)+"/wvfRead.dll")
         path = bytes(file_path, 'utf-8')
@@ -47,6 +49,8 @@ class Waveform:
     @classmethod
     def read_array_labview_waveform(cls,file_path):
         # Extracts all waveforms from file
+
+        file_path = file_path.replace("/","\\") # Fix file path for windows
 
         # Loads DLL with labview functions
         wvf_read_dll = ct.CDLL(os.path.dirname(__file__)+"/wvfRead.dll")
@@ -87,5 +91,5 @@ class Waveform:
 
         return ArrayWaveforms
     
-# a = Waveform.read_labview_waveform("D:\Dados - Thaler\Documentos\Amaciamento\RunningIn_DatabaseFunc\corr2511.dat",0)
+a = Waveform.read_labview_waveform("D:\Dados - Thaler\Documentos\Amaciamento\RunningIn_DatabaseFunc\corr2511.dat",0)
 # a = Waveform.read_array_labview_waveform("D:\Dados - Thaler\Documentos\Amaciamento\RunningIn_DatabaseFunc\corr2511.dat")
