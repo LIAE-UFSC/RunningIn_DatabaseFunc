@@ -1,5 +1,4 @@
 import numpy as np
-import struct
 import ctypes as ct
 import os
 
@@ -23,9 +22,11 @@ class Waveform:
     def read_labview_waveform(cls,file_path:str, N:int = 0):
         # Extracts the Nth waveform from file
 
-        # Reads the length of the Nth waveform in the file
+        # Loads DLL with labview functions
         wvf_read_dll = ct.CDLL(os.path.dirname(__file__)+"/wvfRead.dll")
         path = bytes(file_path, 'utf-8')
+
+        # Reads the length of the Nth waveform in the file
         wvf_read_dll.read_waveform_length.argtypes = [ct.c_char_p, ct.c_uint32]
         wvf_read_dll.read_waveform_length.restype = ct.c_int32
         length = wvf_read_dll.read_waveform_length(ct.c_char_p(path), ct.c_uint32(N))
@@ -37,56 +38,54 @@ class Waveform:
         # Reads the waveform data
         wvf_read_dll.read_waveform_data.argtypes = [ct.c_char_p,  ct.c_uint32, ct.POINTER(ct.c_double), ct.c_int32, ct.POINTER(ct.c_double)]
         wvf_read_dll.read_waveform_data.restype = None
-        wvf_read_dll.read_waveform_data(ct.c_char_p(path), ct.c_uint32(N), data, ct.pointer(time_scale), length)
+        wvf_read_dll.read_waveform_data(ct.c_char_p(path), ct.c_uint32(N), data, length, ct.pointer(time_scale))
         time_scale = time_scale.value
         data = np.array(data[:])
-        time = np.array([ind*time_scale for ind in range(length.value)])
+        time = np.array([ind*time_scale for ind in range(length)])
         return cls(data,time,time_scale)
 
     @classmethod
     def read_array_labview_waveform(cls,file_path):
         # Extracts all waveforms from file
 
-        with open(file_path, 'rb') as file:
-            file.seek(0x23A)
+        # Loads DLL with labview functions
+        wvf_read_dll = ct.CDLL(os.path.dirname(__file__)+"/wvfRead.dll")
+        path = bytes(file_path, 'utf-8')
 
-            num_arrays_bytes = file.read(4) # Read the number of waveforms in the array
-            num_arrays = struct.unpack('>I', num_arrays_bytes)[0]
+        # Reads the number of waveforms in the file
+        wvf_read_dll.read_waveform_number.argtypes = [ct.c_char_p]
+        wvf_read_dll.read_waveform_number.restype = ct.c_int32
+        N = wvf_read_dll.read_waveform_number(ct.c_char_p(path))
 
-            # Skip the start time
-            file.seek(file.tell()+16)
+        # Reads the length of each waveform
+        length = (ct.c_int32 * N)(*range(N))
+        wvf_read_dll.read_all_waveform_length.argtypes = [ct.c_char_p, ct.c_int32, ct.POINTER(ct.c_int32)]
+        wvf_read_dll.read_all_waveform_length.restype = None
+        wvf_read_dll.read_all_waveform_length(ct.c_char_p(path), N, length)
+        length = length[:]
 
-            ArrayWaveforms = []
+        # Reads data from all waveforms in file
+        dt_all = (ct.c_double * N)(*range(N))
+        data_all = (ct.c_double * np.sum(length))(*range(np.sum(length)))
+        wvf_read_dll.read_all_waveform_data.argtypes = [ct.c_char_p, ct.c_int32, ct.POINTER(ct.c_double), ct.POINTER(ct.c_double), ct.c_int32]
+        wvf_read_dll.read_all_waveform_data.restype = None
+        wvf_read_dll.read_all_waveform_data(ct.c_char_p(path), N, dt_all, data_all, ct.c_int32(np.sum(length)))
 
-            for _ in range(num_arrays):
-                # Read the sampling time
-                time_scale_bytes = file.read(8)
-                time_scale = struct.unpack('>d', time_scale_bytes)[0]
+        ArrayWaveforms = []
 
-                # Read number of array elements in waveform
-                num_points_bytes = file.read(4)
-                num_points = struct.unpack('>I', num_points_bytes)[0]
+        iStart = 0
+        for ind in range(N):
+            iEnd = iStart + length[ind] - 1
 
-                # Initialize the data and time values of the waveform
-                data = np.zeros(num_points)
-                time = np.zeros(num_points)
+            time_scale = dt_all[ind]
+            time = np.array([lind*time_scale for lind in range(length[ind])])
+            data = np.array(data_all[iStart:iEnd])
 
-
-                for k in range(num_points):
-                    data_bytes = file.read(8) # Read data value
-                    data[k] = struct.unpack('>d', data_bytes)[0] #Unpack datapoints
-                    time[k] = k * time_scale
-                
-                wvf = cls(data,time,time_scale)
-                ArrayWaveforms.append(wvf)
-
-                file.seek(file.tell()+21)
-
-                for _ in range(struct.unpack('>I', num_points_bytes)[0]): # Number of waveform attributes
-                    file.seek(file.tell()+54) # Ignore all waveform attributes
+            wvf = cls(data,time,time_scale)
+            ArrayWaveforms.append(wvf)
+            iStart = iEnd + 1
 
         return ArrayWaveforms
     
-a = Waveform.read_labview_waveform("D:/Dados - Thaler/Documentos/Amaciamento/Ensaios Brutos/Unidade C1/A_2022_10_10/vibracao/vib1.dat",1)
-
-print(type(a))
+# a = Waveform.read_labview_waveform("D:\Dados - Thaler\Documentos\Amaciamento\RunningIn_DatabaseFunc\corr2511.dat",0)
+# a = Waveform.read_array_labview_waveform("D:\Dados - Thaler\Documentos\Amaciamento\RunningIn_DatabaseFunc\corr2511.dat")
