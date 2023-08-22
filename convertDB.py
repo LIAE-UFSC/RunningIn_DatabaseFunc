@@ -44,8 +44,10 @@ def nameVar(headerName:str) -> str:
     index = [x[1] for x in varNames].index(headerName)
     return varNames[index][0]
 
-mainFolder = "D:/Dados - Thaler/Documentos/Amaciamento/Ensaios Brutos"
-saveFolder = "D:/Dados - Thaler/Documentos/Amaciamento"
+mainFolder = input("Digite a pasta de origem:\n")
+saveFolder = input("Digite a pasta de destino:\n")
+# mainFolder = "D:/Dados - Thaler/Documentos/Amaciamento/Ensaios Brutos"
+# saveFolder = "D:/Dados - Thaler/Documentos/Amaciamento"
 
 fullUnitFolder = os.listdir(mainFolder) # Extract folders
 
@@ -103,7 +105,7 @@ for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
                             filePath = f"{testFolder}/corrente/corr{indexMeas}.dat"
                             try:
                                 wvf = Waveform.read_labview_waveform(filePath,0)
-                                dSet = measurementGrp.create_dataset("current", data = wvf.data, compression="gzip", shuffle=True)
+                                dSet = measurementGrp.create_dataset("current", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
                                 dSet.attrs["dt"] = wvf.dt
 
                                 if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
@@ -115,15 +117,15 @@ for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
                             filePath = f"{testFolder}/vibracao/vib{indexMeas}.dat"
                             try:
                                 wvf = Waveform.read_labview_waveform(filePath,0)
-                                dSet = measurementGrp.create_dataset("vibrationLateral", data = wvf.data, compression="gzip", shuffle=True)
+                                dSet = measurementGrp.create_dataset("vibrationLateral", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
                                 dSet.attrs["dt"] = wvf.dt
 
                                 wvf = Waveform.read_labview_waveform(filePath,1)
-                                dSet = measurementGrp.create_dataset("vibrationRigDummy", data = wvf.data, compression="gzip", shuffle=True)
+                                dSet = measurementGrp.create_dataset("vibrationRigDummy", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
                                 dSet.attrs["dt"] = wvf.dt
 
                                 wvf = Waveform.read_labview_waveform(filePath,2)
-                                dSet = measurementGrp.create_dataset("vibrationLongitudinal", data = wvf.data, compression="gzip", shuffle=True)
+                                dSet = measurementGrp.create_dataset("vibrationLongitudinal", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
                                 dSet.attrs["dt"] = wvf.dt
 
                                 if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
@@ -137,7 +139,7 @@ for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
                             filePath = f"{testFolder}/acusticas/acu{indexMeas}.dat"
                             try:
                                 wvf = Waveform.read_labview_waveform(filePath,0)
-                                dSet = measurementGrp.create_dataset("acousticEmission", data = wvf.data, compression="gzip", shuffle=True)
+                                dSet = measurementGrp.create_dataset("acousticEmission", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
                                 dSet.attrs["dt"] = wvf.dt
 
                                 if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
@@ -149,7 +151,7 @@ for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
                             filePath = f"{testFolder}/tensao/ten{indexMeas}.dat"
                             try:
                                 wvf = Waveform.read_labview_waveform(filePath,0)
-                                dSet = measurementGrp.create_dataset("voltage", data = wvf.data, compression="gzip", shuffle=True)
+                                dSet = measurementGrp.create_dataset("voltage", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
                                 dSet.attrs["dt"] = wvf.dt
 
                                 if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
