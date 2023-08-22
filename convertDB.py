@@ -3,6 +3,7 @@ import re
 import csv
 import h5py
 import warnings
+import tqdm
 from waveformConversion import Waveform
 
 
@@ -44,30 +45,29 @@ def nameVar(headerName:str) -> str:
     return varNames[index][0]
 
 mainFolder = "D:/Dados - Thaler/Documentos/Amaciamento/Ensaios Brutos"
+saveFolder = "D:/Dados - Thaler/Documentos/Amaciamento"
 
 fullUnitFolder = os.listdir(mainFolder) # Extract folders
 
 allModels = set([re.findall("Unidade .", unit)[0][-1] for unit in fullUnitFolder]) # Get all compressor models from folder names
-print("Modelos encontrados:"+str(len(allModels)))
 
-for model in allModels:
-    r = re.compile(f"Unidade {model}.*");
+for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
+    r = re.compile(f"Unidade {model}.*")
     unitFolders = list(filter(r.match,fullUnitFolder))
-    print("Modelo atual: "+str(model))
 
-    with h5py.File(f"datasetModel{model}.hdf5", "w") as f:
+    with h5py.File(f"{saveFolder}/datasetModel{model}.hdf5", "w") as f:
         modelGrp = f.create_group(f"Model{model}") # Create new group for each compressor model
         
-        for unitName in unitFolders:
-            print("Unidade atual: "+str(unitName))
+        for unitName in tqdm.tqdm(unitFolders, desc = "  Unidade", leave=False,  position=1):
+            # print("Unidade atual: "+str(unitName))
             unit = unitName.replace(f"Unidade ",'') # Get unit names
             unitGrp = modelGrp.create_group(unit) # Create new group for each compressor unit
 
             fullTestFolder = os.listdir(f"{mainFolder}/{unitName}") # Get all tests from a given unit
 
-            for k,testName in enumerate(fullTestFolder):
+            for k,testName in enumerate(tqdm.tqdm(fullTestFolder, desc = "   Teste", leave = False, position = 2)):
                 testFolder = f"{mainFolder}/{unitName}/{testName}"
-                print(f"Ensaio {k+1}/{len(fullTestFolder)}")
+                # print(f"Ensaio {k+1}/{len(fullTestFolder)}")
 
                 dirList = os.listdir(testFolder)
 
@@ -83,11 +83,14 @@ for model in allModels:
                 acuRead = True if "acusticas" in dirList else False
 
                 with open(f'{testFolder}/medicoesGerais.dat', encoding='ANSI') as csv_file:
+                    nLines = len(csv_file.readlines())
+
+                with open(f'{testFolder}/medicoesGerais.dat', encoding='ANSI') as csv_file:
 
                     csv_reader = csv.reader(csv_file, delimiter='\t')
                     headers = next(csv_reader) # Extract headers
                     
-                    for indexMeas, row in enumerate(csv_reader):
+                    for indexMeas, row in enumerate(tqdm.tqdm(csv_reader,desc="    Arquivo", position=3, leave = False, total = nLines-1)):
                         # Create new group for each measurement
                         measurementGrp = testGrp.create_group(str(indexMeas))
 
