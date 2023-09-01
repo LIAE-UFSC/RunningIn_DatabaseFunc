@@ -4,7 +4,7 @@ import tqdm
 def addMinMaxTOn_hdf(path:str):
     # Adds dictionary with min and max of each attribute to a database, as well as the time that each compressor is turned on
 
-    with h5py.File(path, 'r') as f:
+    with h5py.File(path, 'r+') as f:
         # Get units from model
         model = f[list(f.keys())[0]]
 
@@ -54,22 +54,22 @@ def addMinMaxTOn_hdf(path:str):
                             minValuesTest[str(dataBase)] = min(minValuesTest[attr],min(dataBase[()]))
                             maxValuesTest[str(dataBase)] = max(maxValuesTest[attr],max(dataBase[()]))
                         else:
-                            minValuesTest[str(dataBase)] = min(minValuesTest[()])
-                            maxValuesTest[str(dataBase)] = max(maxValuesTest[()])
+                            minValuesTest[str(dataBase)] = min(dataBase[()])
+                            maxValuesTest[str(dataBase)] = max(dataBase[()])
 
                         if str(dataBase) in minValuesUnit:
                             minValuesUnit[str(dataBase)] = min(minValuesUnit[attr],min(dataBase[()]))
                             maxValuesUnit[str(dataBase)] = max(maxValuesUnit[attr],max(dataBase[()]))
                         else:
-                            minValuesUnit[str(dataBase)] = min(minValuesUnit[()])
-                            maxValuesUnit[str(dataBase)] = max(maxValuesUnit[()])
+                            minValuesUnit[str(dataBase)] = min(dataBase[()])
+                            maxValuesUnit[str(dataBase)] = max(dataBase[()])
 
                         if str(dataBase) in minValuesModel:
                             minValuesModel[str(dataBase)] = min(minValuesModel[attr],min(dataBase[()]))
                             maxValuesModel[str(dataBase)] = max(maxValuesModel[attr],max(dataBase[()]))
                         else:
-                            minValuesModel[str(dataBase)] = min(minValuesModel[()])
-                            maxValuesModel[str(dataBase)] = max(maxValuesModel[()])
+                            minValuesModel[str(dataBase)] = min(dataBase[()])
+                            maxValuesModel[str(dataBase)] = max(dataBase[()])
 
                 # Add attributes to group
                 test.attrs["tOn"] = tOn
@@ -83,5 +83,3 @@ def addMinMaxTOn_hdf(path:str):
         # Add attributes to model
         model.attrs["minValues"] = minValuesModel
         model.attrs["maxValues"] = maxValuesModel
-
-
