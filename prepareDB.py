@@ -73,13 +73,17 @@ def addMinMaxTOn_hdf(path:str):
 
                 # Add attributes to group
                 test.attrs["tOn"] = tOn
-                test.attrs["minValues"] = minValuesTest
-                test.attrs["maxValues"] = maxValuesTest
+
+                for key in minValuesTest:
+                    test.attrs[f"min_{key}"] = minValuesTest[key]
+                    test.attrs[f"max_{key}"] = maxValuesTest[key]
             
             # Add attributes to unit
-            unit.attrs["minValues"] = minValuesUnit
-            unit.attrs["maxValues"] = maxValuesUnit
+            for key in minValuesUnit:
+                unit.attrs[f"min_{key}"] = minValuesUnit[key]
+                unit.attrs[f"max_{key}"] = maxValuesUnit[key]
         
         # Add attributes to model
-        model.attrs["minValues"] = minValuesModel
-        model.attrs["maxValues"] = maxValuesModel
+        for key in minValuesModel:
+            model.attrs[f"min_{key}"] = minValuesModel[key]
+            model.attrs[f"max_{key}"] = maxValuesModel[key]
