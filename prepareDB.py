@@ -6,10 +6,6 @@ def formatDB_MIMICRI(pathIn:str, pathOut:str):
         with h5py.File('pathIn','r') as f_src:
             model = f_src[list(f_src.keys())[0]]
 
-            # Initialize min and max dictionaries
-            minValuesModel = {}
-            maxValuesModel = {}
-
             for unit in tqdm.tqdm([model[un] for un in model.keys()], desc = "Unidade",  position=0):
                 minValuesUnit = {}
                 maxValuesUnit = {}
@@ -85,6 +81,8 @@ def formatDB_MIMICRI(pathIn:str, pathOut:str):
             for key in minValuesModel:
                 model.attrs[f"min_{key}"] = minValuesModel[key]
                 model.attrs[f"max_{key}"] = maxValuesModel[key]
+
+
 
 
 
