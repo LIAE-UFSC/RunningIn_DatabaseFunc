@@ -4,8 +4,26 @@ import csv
 import h5py
 import warnings
 import tqdm
+import numpy as np
 from waveformConversion import Waveform
 
+def addMinMax(dictMin, dictMax, name, value):
+    # Compare and add to min max dict
+
+    if value is np.array:
+        if name in minValuesTest:
+            dictMin[name] = min(dictMin[name],value.min())
+            dictMax[name] = max(dictMax[name],value.max())
+        else:
+            dictMin[name] = value.min()
+            dictMax[name] = value.max()
+    else:
+        if name in minValuesTest:
+            dictMin[name] = min(dictMin[name],value)
+            dictMax[name] = max(dictMax[name],value)
+        else:
+            dictMin[name] = value
+            dictMax[name] = value
 
 def nameVar(headerName:str) -> str:
     # Convert column name from "medicoesGerais.dat" file to hdf5 attribute name
@@ -57,19 +75,35 @@ for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
     r = re.compile(f"Unidade {model}.*")
     unitFolders = list(filter(r.match,fullUnitFolder))
 
-    with h5py.File(f"{saveFolder}/datasetModel{model}.hdf5", "w") as f:
-        modelGrp = f.create_group(f"Model{model}") # Create new group for each compressor model
+    # Dict for max and min values of a given unit
+    minValuesModel = {}
+    maxValuesModel = {}
+
+    with h5py.File(f"{saveFolder}/datasetModel{model}.hdf5", "w") as fModel:
+        modelGrp = fModel.create_group(f"Model{model}") # Create new group for each compressor model
         
         for unitName in tqdm.tqdm(unitFolders, desc = "  Unidade", leave=False,  position=1):
             # print("Unidade atual: "+str(unitName))
             unit = unitName.replace(f"Unidade ",'') # Get unit names
             unitGrp = modelGrp.create_group(unit) # Create new group for each compressor unit
 
+            # Dict for max and min values of a given unit
+            minValuesUnit = {}
+            maxValuesUnit = {}
+
             fullTestFolder = os.listdir(f"{mainFolder}/{unitName}") # Get all tests from a given unit
 
             for k,testName in enumerate(tqdm.tqdm(fullTestFolder, desc = "   Teste", leave = False, position = 2)):
                 testFolder = f"{mainFolder}/{unitName}/{testName}"
                 # print(f"Ensaio {k+1}/{len(fullTestFolder)}")
+
+                # Variable for the first time that the compressor is turned on
+                tOn = float('inf')
+
+                # Dict for max and min values of a given test
+
+                minValuesTest = {}
+                maxValuesTest = {}
 
                 dirList = os.listdir(testFolder)
 
@@ -97,8 +131,18 @@ for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
                         measurementGrp = testGrp.create_group(str(indexMeas))
 
                         for columnNum, element in enumerate(row): # Add attributes
-                            measurementGrp.attrs[nameVar(headers[columnNum])] = float(element.replace(",","."))
+                            attrName = nameVar(headers[columnNum])
+                            value = float(element.replace(",","."))
+                            measurementGrp.attrs[attrName] = value
+
+                            # Compare and add to min max dict
+                            addMinMax(minValuesTest, maxValuesTest, attrName, value)
+                            addMinMax(minValuesUnit, maxValuesUnit, attrName, value)
+                            addMinMax(minValuesModel, maxValuesModel, attrName, value)
                             
+                        # Get first "compressor on" time
+                        tOn = tOn if not measurementGrp.attrs["compressorOn"] else min(tOn, measurementGrp.attrs["time"])
+
                         # Add high-frequency datasets
 
                         if corrRead:
@@ -110,6 +154,14 @@ for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
 
                                 if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
                                     testGrp.attrs['startTime'] = os.path.getmtime(filePath)
+                                
+                                attrName = "currentRAW"
+
+                                # Compare and add to min max dict
+                                addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
+                                addMinMax(minValuesUnit, maxValuesUnit, attrName, wvf.data)
+                                addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
+                                
                             except:
                                 warnings.warn("File not found or empty:" + filePath)
 
@@ -120,13 +172,34 @@ for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
                                 dSet = measurementGrp.create_dataset("vibrationLateral", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
                                 dSet.attrs["dt"] = wvf.dt
 
+                                attrName = "vibrationRAWLateral"
+
+                                # Compare and add to min max dict
+                                addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
+                                addMinMax(minValuesUnit, maxValuesUnit, attrName, wvf.data)
+                                addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
+
                                 wvf = Waveform.read_labview_waveform(filePath,1)
                                 dSet = measurementGrp.create_dataset("vibrationRigDummy", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
                                 dSet.attrs["dt"] = wvf.dt
 
+                                attrName = "vibrationRAWRig"
+
+                                # Compare and add to min max dict
+                                addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
+                                addMinMax(minValuesUnit, maxValuesUnit, attrName, wvf.data)
+                                addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
+
                                 wvf = Waveform.read_labview_waveform(filePath,2)
                                 dSet = measurementGrp.create_dataset("vibrationLongitudinal", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
                                 dSet.attrs["dt"] = wvf.dt
+
+                                attrName = "vibrationRAWLongitudinal"
+
+                                # Compare and add to min max dict
+                                addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
+                                addMinMax(minValuesUnit, maxValuesUnit, attrName, wvf.data)
+                                addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
 
                                 if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
                                     testGrp.attrs['startTime'] = os.path.getmtime(filePath)
@@ -144,9 +217,18 @@ for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
 
                                 if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
                                     testGrp.attrs['startTime'] = os.path.getmtime(filePath)
+
+                                attrName = "acousticEmissionRAW"
+
+                                # Compare and add to min max dict
+                                addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
+                                addMinMax(minValuesUnit, maxValuesUnit, attrName, wvf.data)
+                                addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
+
                             except:
                                 warnings.warn("File not found or empty:" + filePath)
 
+                            
                         if voltRead:
                             filePath = f"{testFolder}/tensao/ten{indexMeas}.dat"
                             try:
@@ -156,5 +238,14 @@ for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
 
                                 if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
                                     testGrp.attrs['startTime'] = os.path.getmtime(filePath)
+
+                                attrName = "voltageRAW"
+
+                                # Compare and add to min max dict
+                                addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
+                                addMinMax(minValuesUnit, maxValuesUnit, attrName, wvf.data)
+                                addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
+
                             except:
                                 warnings.warn("File not found or empty:" + filePath)
+
