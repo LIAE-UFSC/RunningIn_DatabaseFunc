@@ -10,7 +10,7 @@ from waveformConversion import Waveform
 def addMinMax(dictMin, dictMax, name, value):
     # Compare and add to min max dict
 
-    if value is np.array:
+    if isinstance(value, np.ndarray):
         if name in dictMin:
             dictMin[name] = min(dictMin[name],value.min())
             dictMax[name] = max(dictMax[name],value.max())
@@ -62,17 +62,27 @@ def nameVar(headerName:str) -> str:
     index = [x[1] for x in varNames].index(headerName)
     return varNames[index][0]
 
-def convertFolder(UnitFolderIn, UnitFolderOut):
+def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
 
-    allModels = set([re.findall("Unidade .", unit)[0][-1] for unit in UnitFolderIn]) # Get all compressor models from folder names
+    if supressWarnings:
+        warnings.filterwarnings('ignore')
+
+    unitFolders = os.listdir(UnitFolderIn)
+
+    allModels = [re.findall("Unidade .", unit) for unit in unitFolders] # Get all folder names with "Unidade "
+    allModels = set([name[0][-1] for name in allModels if len(name)>0]) # Filter for unique models
 
     for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
         r = re.compile(f"Unidade {model}.*")
-        unitFolders = list(filter(r.match,UnitFolderIn))
+        unitFolders = list(filter(r.match,unitFolders))
 
         # Dict for max and min values of a given unit
         minValuesModel = {}
         maxValuesModel = {}
+
+        print(model)
+
+        print(unitFolders)
 
         with h5py.File(f"{UnitFolderOut}/datasetModel{model}.hdf5", "w") as fModel:
             modelGrp = fModel.create_group(f"Model{model}") # Create new group for each compressor model
@@ -86,10 +96,10 @@ def convertFolder(UnitFolderIn, UnitFolderOut):
                 minValuesUnit = {}
                 maxValuesUnit = {}
 
-                fullTestFolder = os.listdir(f"{mainFolder}/{unitName}") # Get all tests from a given unit
+                fullTestFolder = os.listdir(f"{UnitFolderIn}/{unitName}") # Get all tests from a given unit
 
                 for k,testName in enumerate(tqdm.tqdm(fullTestFolder, desc = "   Teste", leave = False, position = 2)):
-                    testFolder = f"{mainFolder}/{unitName}/{testName}"
+                    testFolder = f"{UnitFolderIn}/{unitName}/{testName}"
                     # print(f"Ensaio {k+1}/{len(fullTestFolder)}")
 
                     # Variable for the first time that the compressor is turned on
