@@ -33,22 +33,22 @@ def nameVar(headerName:str) -> str:
             ["temperatureCompressorBody","Temperatura Corpo [ºC]"],
             ["temperatureBuffer","Temperatura Reservatório [ºC]"],
             ["temperatureDischarge","Temperatura Descarga [ºC]"],
-            ["pressureSuction_Analog","Pressão Sucção [bar]"],
-            ["pressureDischarge","Pressão Descarga [bar]"],
-            ["pressureBuffer","Pressão Intermediária [bar]"],
+            ["presSuction_Analog","Pressão Sucção [bar]"],
+            ["presDischarge","Pressão Descarga [bar]"],
+            ["presBuffer","Pressão Intermediária [bar]"],
             ["valveDischargePositionSetpoint","Setpoint da Abertura da Válvula [Passos]"],
             ["valveDischargeOpening","Abertura da válvula [Passos]"],
             ["valveDischargeLimit","Limite da válvula [Passos]"],
             ["valveSuctionVoltage","Tensão da válvula de sucção [V]"],
             ["currentRMS","Corrente RMS [A]"],
             ["compressorOn","Compressor Ativado"],
-            ["vibrationRMSLateral","Aceleração RMS Inferior Corpo [g]"],
-            ["vibrationRMSRig","Aceleração RMS Bancada [g]"],
-            ["vibrationRMSLongitudinal","Aceleração RMS Superior Corpo [g]"],
+            ["vibRMSLateral","Aceleração RMS Inferior Corpo [g]"],
+            ["vibRMSRig","Aceleração RMS Bancada [g]"],
+            ["vibRMSLongitudinal","Aceleração RMS Superior Corpo [g]"],
             ["massFlow","Vazão Mássica [kg/h]"],
             ["resistorDischargeDC","Duty Cycle Descarga [%]"],
-            ["pressureSuction_GEPreValve","Pressão Sucção Válvula (DPS) [bar]"],
-            ["pressureSuction_GEPostValve","Pressão Sucção Compressor (DPS) [bar]"],
+            ["presSuction_GEPreValve","Pressão Sucção Válvula (DPS) [bar]"],
+            ["presSuction_GEPostValve","Pressão Sucção Compressor (DPS) [bar]"],
             ["resistorDischargeDC","Duty Cycle [%]"],
             ["temperatureCoil1","Temperatura Bobina 1 [ºC]"],
             ["temperatureCoil2","Temperatura Bobina 2 [ºC]"],
@@ -266,6 +266,9 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
             for key in minValuesModel:
                 modelGrp.attrs[f"min_{key}"] = minValuesModel[key]
                 modelGrp.attrs[f"max_{key}"] = maxValuesModel[key]
+
+    if supressWarnings:
+        warnings.filterwarnings('ignore')
 
 def addTest(hdf5File: str, testFolder: str, unitName: str):
     # Add test to hdf file
