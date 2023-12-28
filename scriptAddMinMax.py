@@ -1,4 +1,4 @@
-from prepareDB import addMinMaxTOn_hdf
+from formatDB_MIMICRI import addMinMaxTOn_hdf
 
 addMinMaxTOn_hdf('D:/Dados - Thaler/Documentos/Amaciamento/Ensaios Brutos/datasetModelA.hdf5')
 addMinMaxTOn_hdf('D:/Dados - Thaler/Documentos/Amaciamento/Ensaios Brutos/datasetModelB.hdf5')
