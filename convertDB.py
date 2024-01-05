@@ -67,14 +67,14 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
     if supressWarnings:
         warnings.filterwarnings('ignore')
 
-    unitFolders = os.listdir(UnitFolderIn)
+    allUnitFolders = os.listdir(UnitFolderIn)
 
-    allModels = [re.findall("Unidade .", unit) for unit in unitFolders] # Get all folder names with "Unidade "
+    allModels = [re.findall("Unidade .", unit) for unit in allUnitFolders] # Get all folder names with "Unidade "
     allModels = set([name[0][-1] for name in allModels if len(name)>0]) # Filter for unique models
 
     for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
         r = re.compile(f"Unidade {model}.*")
-        unitFolders = list(filter(r.match,unitFolders))
+        unitFolders = list(filter(r.match,allUnitFolders))
 
         # Dict for max and min values of a given unit
         minValuesModel = {}
@@ -109,7 +109,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                     dirList = os.listdir(testFolder)
 
                     # Set dataset attributes
-                    testGrp = unitGrp.create_group(testName[3:])
+                    testGrp = unitGrp.create_group(testName[2:])
                     testGrp.attrs['startTime'] = os.path.getmtime(f'{testFolder}/medicoesGerais.dat')
                     testGrp.attrs['runningIn'] = True if testName[0] == 'N' else False
 
@@ -136,10 +136,13 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                                 value = float(element.replace(",","."))
                                 measurementGrp.attrs[attrName] = value
 
-                                # Compare and add to min max dict
-                                addMinMax(minValuesTest, maxValuesTest, attrName, value)
-                                addMinMax(minValuesUnit, maxValuesUnit, attrName, value)
-                                addMinMax(minValuesModel, maxValuesModel, attrName, value)
+                            if measurementGrp.attrs["compressorOn"]:
+                                for name, value in measurementGrp.attrs.items():
+                                    if (not np.isnan(value)) and (name not in ["time", "compressorOn"]):
+                                        # Compare and add to min max dict
+                                        addMinMax(minValuesTest, maxValuesTest, name, value)
+                                        addMinMax(minValuesUnit, maxValuesUnit, name, value)
+                                        addMinMax(minValuesModel, maxValuesModel, name, value)
                                 
                             # Get first "compressor on" time
                             tOn = tOn if not measurementGrp.attrs["compressorOn"] else min(tOn, measurementGrp.attrs["time"])
@@ -152,7 +155,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                                     try:
                                         wvf = Waveform.read_labview_waveform(filePath,0)
                                         
-                                        dSet = measurementGrp.create_dataset("current", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                        dSet = measurementGrp.create_dataset("currentRAW", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
                                         dSet.attrs["dt"] = wvf.dt
 
                                         if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
@@ -174,7 +177,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                                     try:
                                         wvf = Waveform.read_labview_waveform(filePath,0)
                                         
-                                        dSet = measurementGrp.create_dataset("vibrationLateral", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                        dSet = measurementGrp.create_dataset("vibrationRAWLateral", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
                                         dSet.attrs["dt"] = wvf.dt
 
                                         attrName = "vibrationRAWLateral"
@@ -185,7 +188,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                                         addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
 
                                         wvf = Waveform.read_labview_waveform(filePath,1)
-                                        dSet = measurementGrp.create_dataset("vibrationRigDummy", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                        dSet = measurementGrp.create_dataset("vibrationRAWRig", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
                                         dSet.attrs["dt"] = wvf.dt
 
                                         attrName = "vibrationRAWRig"
@@ -196,7 +199,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                                         addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
 
                                         wvf = Waveform.read_labview_waveform(filePath,2)
-                                        dSet = measurementGrp.create_dataset("vibrationLongitudinal", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                        dSet = measurementGrp.create_dataset("vibrationRAWLongitudinal", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
                                         dSet.attrs["dt"] = wvf.dt
 
                                         attrName = "vibrationRAWLongitudinal"
@@ -218,7 +221,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                                     try:
                                         wvf = Waveform.read_labview_waveform(filePath,0)
                                         
-                                        dSet = measurementGrp.create_dataset("acousticEmission", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                        dSet = measurementGrp.create_dataset("acousticEmissionRAW", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
                                         dSet.attrs["dt"] = wvf.dt
 
                                         if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
@@ -237,23 +240,25 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                                 
                             if voltRead:
                                 filePath = f"{testFolder}/tensao/ten{indexMeas}.dat"
-                                try:
-                                    wvf = Waveform.read_labview_waveform(filePath,0)
-                                    dSet = measurementGrp.create_dataset("voltage", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
-                                    dSet.attrs["dt"] = wvf.dt
+                                if os.path.isfile(filePath):
+                                    try:
+                                        wvf = Waveform.read_labview_waveform(filePath,0)
+                                        
+                                        dSet = measurementGrp.create_dataset("voltageRAW", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                        dSet.attrs["dt"] = wvf.dt
 
-                                    if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
-                                        testGrp.attrs['startTime'] = os.path.getmtime(filePath)
+                                        if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
+                                            testGrp.attrs['startTime'] = os.path.getmtime(filePath)
 
-                                    attrName = "voltageRAW"
+                                        attrName = "voltageRAW"
 
-                                    # Compare and add to min max dict
-                                    addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
-                                    addMinMax(minValuesUnit, maxValuesUnit, attrName, wvf.data)
-                                    addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
+                                        # Compare and add to min max dict
+                                        addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
+                                        addMinMax(minValuesUnit, maxValuesUnit, attrName, wvf.data)
+                                        addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
 
-                                except:
-                                    warnings.warn("File not found or empty:" + filePath)
+                                    except:
+                                        warnings.warn("File empty:" + filePath)
                     
                     for key in minValuesTest:
                         testGrp.attrs[f"min_{key}"] = minValuesTest[key]
@@ -270,7 +275,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                 modelGrp.attrs[f"max_{key}"] = maxValuesModel[key]
 
     if supressWarnings:
-        warnings.filterwarnings('ignore')
+        warnings.resetwarnings()
 
 def addTest(hdf5File: str, testFolder: str, unitName: str):
     # Add test to hdf file
