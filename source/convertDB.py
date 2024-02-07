@@ -5,7 +5,7 @@ import h5py
 import warnings
 import tqdm
 import numpy as np
-from waveformConversion import Waveform
+from source.waveformConversion import Waveform
 
 def addMinMax(dictMin, dictMax, name, value):
     # Compare and add to min max dict

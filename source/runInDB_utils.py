@@ -140,6 +140,5 @@ class RunIn_File:
                 # List of all available variables based on the 1st measurement of the test
                 return list(self._h5ref["0"].attrs.keys())+list(self._h5ref["0"].keys())
         
-
 #if __name__ == "__main__":
 #

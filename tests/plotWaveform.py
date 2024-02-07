@@ -1,4 +1,4 @@
-from waveformConversion import Waveform
+from source.waveformConversion import Waveform
 import seaborn as sns
 import matplotlib.pyplot as plt
 
