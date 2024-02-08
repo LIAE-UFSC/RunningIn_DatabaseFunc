@@ -137,7 +137,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
 
                     # Store data and headers from csv
                     testData = np.array(testData)
-                    dMeas = testGrp.create_dataset("measurements", data = testData, compression="gzip", shuffle=True, compression_opts=9)
+                    dMeas = testGrp.create_dataset("measurements", data = testData, compression="gzip", shuffle=True)
                     dMeas.attrs['columnNames'] = headers
 
                     # Removes time and compressor state from data and headers
@@ -161,7 +161,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                                 try:
                                     wvf = Waveform.read_labview_waveform(filePath,0)
                                     
-                                    dSet = measurementGrp.create_dataset("currentRAW", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                    dSet = measurementGrp.create_dataset("currentRAW", data = wvf.data, compression="gzip", shuffle=True)
                                     dSet.attrs["dt"] = wvf.dt
 
                                     if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
@@ -181,7 +181,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                                 try:
                                     wvf = Waveform.read_labview_waveform(filePath,0)
                                     
-                                    dSet = measurementGrp.create_dataset("vibrationRAWLateral", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                    dSet = measurementGrp.create_dataset("vibrationRAWLateral", data = wvf.data, compression="gzip", shuffle=True)
                                     dSet.attrs["dt"] = wvf.dt
 
                                     attrName = "vibrationRAWLateral"
@@ -190,7 +190,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                                     addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
 
                                     wvf = Waveform.read_labview_waveform(filePath,1)
-                                    dSet = measurementGrp.create_dataset("vibrationRAWRig", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                    dSet = measurementGrp.create_dataset("vibrationRAWRig", data = wvf.data, compression="gzip", shuffle=True)
                                     dSet.attrs["dt"] = wvf.dt
 
                                     attrName = "vibrationRAWRig"
@@ -199,7 +199,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                                     addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
 
                                     wvf = Waveform.read_labview_waveform(filePath,2)
-                                    dSet = measurementGrp.create_dataset("vibrationRAWLongitudinal", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                    dSet = measurementGrp.create_dataset("vibrationRAWLongitudinal", data = wvf.data, compression="gzip", shuffle=True)
                                     dSet.attrs["dt"] = wvf.dt
 
                                     attrName = "vibrationRAWLongitudinal"
@@ -219,7 +219,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                                 try:
                                     wvf = Waveform.read_labview_waveform(filePath,0)
                                     
-                                    dSet = measurementGrp.create_dataset("acousticEmissionRAW", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                    dSet = measurementGrp.create_dataset("acousticEmissionRAW", data = wvf.data, compression="gzip", shuffle=True)
                                     dSet.attrs["dt"] = wvf.dt
 
                                     if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
@@ -240,7 +240,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                                 try:
                                     wvf = Waveform.read_labview_waveform(filePath,0)
                                     
-                                    dSet = measurementGrp.create_dataset("voltageRAW", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                    dSet = measurementGrp.create_dataset("voltageRAW", data = wvf.data, compression="gzip", shuffle=True)
                                     dSet.attrs["dt"] = wvf.dt
 
                                     if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
@@ -254,24 +254,34 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                                 except:
                                     warnings.warn("File empty:" + filePath)
 
-                    testGrp.attrs["minValues"] = minValuesTest
-                    testGrp.attrs["maxValues"] = maxValuesTest
-                
+                    # Adds datasets for max and min values to test
+                    minDset = testGrp.create_dataset("minValues", data = list(minValuesTest.values()), compression="gzip", shuffle=True)
+                    minDset.attrs["columnNames"] = list(minValuesTest.keys())
+
+                    maxDset = testGrp.create_dataset("maxValues", data = list(maxValuesTest.values()), compression="gzip", shuffle=True)
+                    maxDset.attrs["columnNames"] = list(maxValuesTest.keys())
+
                 # Merge test and unit dicts
                 joinMinMaxDict(minValuesUnit, minValuesTest, 'min')
                 joinMinMaxDict(maxValuesUnit, maxValuesTest, 'max')
 
-                # Add attributes to unit
-                unitGrp.attrs["minValues"] = minValuesUnit
-                unitGrp.attrs["maxValues"] = maxValuesUnit
+                # Adds datasets for max and min values to test
+                minDset = unitGrp.create_dataset("minValues", data = list(minValuesUnit.values()), compression="gzip", shuffle=True)
+                minDset.attrs["columnNames"] = list(minValuesUnit.keys())
+
+                maxDset = unitGrp.create_dataset("maxValues", data = list(maxValuesUnit.values()), compression="gzip", shuffle=True)
+                maxDset.attrs["columnNames"] = list(maxValuesUnit.keys())
 
             # Merge unit and model dicts
             joinMinMaxDict(minValuesModel, minValuesUnit, 'min')
             joinMinMaxDict(maxValuesModel, maxValuesUnit, 'max')
 
-            # Add attributes to model
-            modelGrp.attrs["minValues"] = minValuesModel
-            modelGrp.attrs["maxValues"] = maxValuesModel
+            # Adds datasets for max and min values to test
+            minDset = modelGrp.create_dataset("minValues", data = list(minValuesModel.values()), compression="gzip", shuffle=True)
+            minDset.attrs["columnNames"] = list(minValuesModel.keys())
+
+            maxDset = modelGrp.create_dataset("maxValues", data = list(maxValuesModel.values()), compression="gzip", shuffle=True)
+            maxDset.attrs["columnNames"] = list(maxValuesModel.keys())
 
     if supressWarnings:
         warnings.resetwarnings()
@@ -346,7 +356,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                     filePath = f"{testFolder}/corrente/corr{indexMeas}.dat"
                     try:
                         wvf = Waveform.read_labview_waveform(filePath,0)
-                        dSet = measurementGrp.create_dataset("current", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                        dSet = measurementGrp.create_dataset("current", data = wvf.data, compression="gzip", shuffle=True)
                         dSet.attrs["dt"] = wvf.dt
 
                         if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
@@ -364,7 +374,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                     filePath = f"{testFolder}/vibracao/vib{indexMeas}.dat"
                     try:
                         wvf = Waveform.read_labview_waveform(filePath,0)
-                        dSet = measurementGrp.create_dataset("vibrationLateral", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                        dSet = measurementGrp.create_dataset("vibrationLateral", data = wvf.data, compression="gzip", shuffle=True)
                         dSet.attrs["dt"] = wvf.dt
 
                         attrName = "vibrationRAWLateral"
@@ -373,7 +383,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                         addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
 
                         wvf = Waveform.read_labview_waveform(filePath,1)
-                        dSet = measurementGrp.create_dataset("vibrationRigDummy", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                        dSet = measurementGrp.create_dataset("vibrationRigDummy", data = wvf.data, compression="gzip", shuffle=True)
                         dSet.attrs["dt"] = wvf.dt
 
                         attrName = "vibrationRAWRig"
@@ -382,7 +392,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                         addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
 
                         wvf = Waveform.read_labview_waveform(filePath,2)
-                        dSet = measurementGrp.create_dataset("vibrationLongitudinal", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                        dSet = measurementGrp.create_dataset("vibrationLongitudinal", data = wvf.data, compression="gzip", shuffle=True)
                         dSet.attrs["dt"] = wvf.dt
 
                         attrName = "vibrationRAWLongitudinal"
@@ -400,7 +410,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                     filePath = f"{testFolder}/acusticas/acu{indexMeas}.dat"
                     try:
                         wvf = Waveform.read_labview_waveform(filePath,0)
-                        dSet = measurementGrp.create_dataset("acousticEmission", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                        dSet = measurementGrp.create_dataset("acousticEmission", data = wvf.data, compression="gzip", shuffle=True)
                         dSet.attrs["dt"] = wvf.dt
 
                         if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
@@ -419,7 +429,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                     filePath = f"{testFolder}/tensao/ten{indexMeas}.dat"
                     try:
                         wvf = Waveform.read_labview_waveform(filePath,0)
-                        dSet = measurementGrp.create_dataset("voltage", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                        dSet = measurementGrp.create_dataset("voltage", data = wvf.data, compression="gzip", shuffle=True)
                         dSet.attrs["dt"] = wvf.dt
 
                         if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
