@@ -5,9 +5,10 @@ import h5py
 import warnings
 import tqdm
 import numpy as np
+import pandas as pd
 from source.waveformConversion import Waveform
 
-def addMinMax(dictMin, dictMax, name, value):
+def addMinOrMax(dictMin, dictMax, name, value):
     # Compare and add to min max dict
 
     if isinstance(value, np.ndarray):
@@ -24,6 +25,19 @@ def addMinMax(dictMin, dictMax, name, value):
         else:
             dictMin[name] = value
             dictMax[name] = value
+
+def joinMinMaxDict(dictMain: dict, dictAdd:dict, mode = 'min'):
+    # Merge 2 min or max dict into one (dictMain)
+    for key in dictAdd:
+        if key in dictMain:
+            if mode == 'max':
+                dictMain[key] = max(dictMain[key],dictAdd[key])
+            if mode == 'min':
+                dictMain[key] = min(dictMain[key],dictAdd[key])
+        else:
+            dictMain[key] = dictAdd[key]
+
+    
 
 def nameVar(headerName:str) -> str:
     # Convert column name from "medicoesGerais.dat" file to hdf5 attribute name
@@ -96,15 +110,6 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
 
                 for k,testName in enumerate(tqdm.tqdm(fullTestFolder, desc = "   Teste", leave = False, position = 2)):
                     testFolder = f"{UnitFolderIn}/{unitName}/{testName}"
-                    # print(f"Ensaio {k+1}/{len(fullTestFolder)}")
-
-                    # Variable for the first time that the compressor is turned on
-                    tOn = float('inf')
-
-                    # Dict for max and min values of a given test
-
-                    minValuesTest = {}
-                    maxValuesTest = {}
 
                     dirList = os.listdir(testFolder)
 
@@ -119,160 +124,154 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                     voltRead = True if "tensao" in dirList else False
                     acuRead = True if "acusticas" in dirList else False
 
-                    with open(f'{testFolder}/medicoesGerais.dat', encoding='ANSI') as csv_file:
-                        nLines = len(csv_file.readlines())
+                    # Read csv data
+                    testData = pd.read_table('D:\\Dados - Thaler\\Documentos\\Amaciamento\\Ensaios Brutos\\Unidade C1\\A_2022_10_10\\medicoesGerais.dat', delimiter = '\t', decimal = ',', encoding='ANSI')
+                    headers = [nameVar(variable) for variable in testData.columns.values]
 
-                    with open(f'{testFolder}/medicoesGerais.dat', encoding='ANSI') as csv_file:
+                    # Get index of test data with compressor turned on
+                    compressorOn = testData.iloc[:,headers.index('compressorOn')].values
+                    tStart = testData.iloc[np.nonzero(compressorOn)[0][0] , headers.index("time")]
 
-                        csv_reader = csv.reader(csv_file, delimiter='\t')
-                        headers = next(csv_reader) # Extract headers
-                        
-                        for indexMeas, row in enumerate(tqdm.tqdm(csv_reader,desc="    Arquivo", position=3, leave = False, total = nLines-1)):
-                            # Create new group for each measurement
-                            measurementGrp = testGrp.create_group(str(indexMeas))
+                    # Subtract starting time so that time 0 is the first measurement with compressor turned on
+                    testData.iloc[:,headers.index('time')] = testData.iloc[:,headers.index('time')] - tStart
 
-                            for columnNum, element in enumerate(row): # Add attributes
-                                attrName = nameVar(headers[columnNum])
-                                value = float(element.replace(",","."))
-                                measurementGrp.attrs[attrName] = value
+                    # Store data and headers from csv
+                    testData = np.array(testData)
+                    dMeas = testGrp.create_dataset("measurements", data = testData, compression="gzip", shuffle=True, compression_opts=9)
+                    dMeas.attrs['columnNames'] = headers
 
-                            if measurementGrp.attrs["compressorOn"]:
-                                for name, value in measurementGrp.attrs.items():
-                                    if (not np.isnan(value)) and (name not in ["time", "compressorOn"]):
-                                        # Compare and add to min max dict
-                                        addMinMax(minValuesTest, maxValuesTest, name, value)
-                                        addMinMax(minValuesUnit, maxValuesUnit, name, value)
-                                        addMinMax(minValuesModel, maxValuesModel, name, value)
+                    # Removes time and compressor state from data and headers
+                    testData = np.delete(testData, [headers.index("time"),headers.index("compressorOn")] , axis = 1)
+                    headers.remove("compressorOn")
+                    headers.remove("time")
+
+                    # Initializes min and max arrays
+                    minValuesTest = dict(zip(headers,testData[compressorOn].min(axis = 0)))
+                    maxValuesTest = dict(zip(headers,testData[compressorOn].max(axis = 0)))
+
+                    for indexMeas, row in enumerate(tqdm.tqdm(testData,desc="    Arquivo", position=3, leave = False)):
+                        # Create new group for each measurement
+                        measurementGrp = testGrp.create_group(str(indexMeas))
+
+                        # Add high-frequency datasets
+
+                        if corrRead:
+                            filePath = f"{testFolder}/corrente/corr{indexMeas}.dat"
+                            if os.path.isfile(filePath):
+                                try:
+                                    wvf = Waveform.read_labview_waveform(filePath,0)
+                                    
+                                    dSet = measurementGrp.create_dataset("currentRAW", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                    dSet.attrs["dt"] = wvf.dt
+
+                                    if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
+                                        testGrp.attrs['startTime'] = os.path.getmtime(filePath)
+                                    
+                                    attrName = "currentRAW"
+
+                                    # Compare and add to min max dict
+                                    addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
                                 
-                            # Get first "compressor on" time
-                            tOn = tOn if not measurementGrp.attrs["compressorOn"] else min(tOn, measurementGrp.attrs["time"])
+                                except:
+                                    warnings.warn("File empty:" + filePath)
 
-                            # Add high-frequency datasets
-
-                            if corrRead:
-                                filePath = f"{testFolder}/corrente/corr{indexMeas}.dat"
-                                if os.path.isfile(filePath):
-                                    try:
-                                        wvf = Waveform.read_labview_waveform(filePath,0)
-                                        
-                                        dSet = measurementGrp.create_dataset("currentRAW", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
-                                        dSet.attrs["dt"] = wvf.dt
-
-                                        if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
-                                            testGrp.attrs['startTime'] = os.path.getmtime(filePath)
-                                        
-                                        attrName = "currentRAW"
-
-                                        # Compare and add to min max dict
-                                        addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
-                                        addMinMax(minValuesUnit, maxValuesUnit, attrName, wvf.data)
-                                        addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
+                        if vibRead:
+                            filePath = f"{testFolder}/vibracao/vib{indexMeas}.dat"
+                            if os.path.isfile(filePath):
+                                try:
+                                    wvf = Waveform.read_labview_waveform(filePath,0)
                                     
-                                    except:
-                                        warnings.warn("File empty:" + filePath)
+                                    dSet = measurementGrp.create_dataset("vibrationRAWLateral", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                    dSet.attrs["dt"] = wvf.dt
 
-                            if vibRead:
-                                filePath = f"{testFolder}/vibracao/vib{indexMeas}.dat"
-                                if os.path.isfile(filePath):
-                                    try:
-                                        wvf = Waveform.read_labview_waveform(filePath,0)
-                                        
-                                        dSet = measurementGrp.create_dataset("vibrationRAWLateral", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
-                                        dSet.attrs["dt"] = wvf.dt
+                                    attrName = "vibrationRAWLateral"
 
-                                        attrName = "vibrationRAWLateral"
+                                    # Compare and add to min max dict
+                                    addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
 
-                                        # Compare and add to min max dict
-                                        addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
-                                        addMinMax(minValuesUnit, maxValuesUnit, attrName, wvf.data)
-                                        addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
+                                    wvf = Waveform.read_labview_waveform(filePath,1)
+                                    dSet = measurementGrp.create_dataset("vibrationRAWRig", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                    dSet.attrs["dt"] = wvf.dt
 
-                                        wvf = Waveform.read_labview_waveform(filePath,1)
-                                        dSet = measurementGrp.create_dataset("vibrationRAWRig", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
-                                        dSet.attrs["dt"] = wvf.dt
+                                    attrName = "vibrationRAWRig"
 
-                                        attrName = "vibrationRAWRig"
+                                    # Compare and add to min max dict
+                                    addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
 
-                                        # Compare and add to min max dict
-                                        addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
-                                        addMinMax(minValuesUnit, maxValuesUnit, attrName, wvf.data)
-                                        addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
+                                    wvf = Waveform.read_labview_waveform(filePath,2)
+                                    dSet = measurementGrp.create_dataset("vibrationRAWLongitudinal", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                    dSet.attrs["dt"] = wvf.dt
 
-                                        wvf = Waveform.read_labview_waveform(filePath,2)
-                                        dSet = measurementGrp.create_dataset("vibrationRAWLongitudinal", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
-                                        dSet.attrs["dt"] = wvf.dt
+                                    attrName = "vibrationRAWLongitudinal"
 
-                                        attrName = "vibrationRAWLongitudinal"
+                                    # Compare and add to min max dict
+                                    addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
 
-                                        # Compare and add to min max dict
-                                        addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
-                                        addMinMax(minValuesUnit, maxValuesUnit, attrName, wvf.data)
-                                        addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
-
-                                        if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
-                                            testGrp.attrs['startTime'] = os.path.getmtime(filePath)
-                                    except:
-                                        warnings.warn("File empty:" + filePath)
-
-                                    
-                            if acuRead :
-                                filePath = f"{testFolder}/acusticas/acu{indexMeas}.dat"
-                                if os.path.isfile(filePath):
-                                    try:
-                                        wvf = Waveform.read_labview_waveform(filePath,0)
-                                        
-                                        dSet = measurementGrp.create_dataset("acousticEmissionRAW", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
-                                        dSet.attrs["dt"] = wvf.dt
-
-                                        if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
-                                            testGrp.attrs['startTime'] = os.path.getmtime(filePath)
-
-                                        attrName = "acousticEmissionRAW"
-
-                                        # Compare and add to min max dict
-                                        addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
-                                        addMinMax(minValuesUnit, maxValuesUnit, attrName, wvf.data)
-                                        addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
-
-                                    except:
-                                        warnings.warn("File empty:" + filePath)
+                                    if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
+                                        testGrp.attrs['startTime'] = os.path.getmtime(filePath)
+                                except:
+                                    warnings.warn("File empty:" + filePath)
 
                                 
-                            if voltRead:
-                                filePath = f"{testFolder}/tensao/ten{indexMeas}.dat"
-                                if os.path.isfile(filePath):
-                                    try:
-                                        wvf = Waveform.read_labview_waveform(filePath,0)
-                                        
-                                        dSet = measurementGrp.create_dataset("voltageRAW", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
-                                        dSet.attrs["dt"] = wvf.dt
+                        if acuRead :
+                            filePath = f"{testFolder}/acusticas/acu{indexMeas}.dat"
+                            if os.path.isfile(filePath):
+                                try:
+                                    wvf = Waveform.read_labview_waveform(filePath,0)
+                                    
+                                    dSet = measurementGrp.create_dataset("acousticEmissionRAW", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                    dSet.attrs["dt"] = wvf.dt
 
-                                        if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
-                                            testGrp.attrs['startTime'] = os.path.getmtime(filePath)
+                                    if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
+                                        testGrp.attrs['startTime'] = os.path.getmtime(filePath)
 
-                                        attrName = "voltageRAW"
+                                    attrName = "acousticEmissionRAW"
 
-                                        # Compare and add to min max dict
-                                        addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
-                                        addMinMax(minValuesUnit, maxValuesUnit, attrName, wvf.data)
-                                        addMinMax(minValuesModel, maxValuesModel, attrName, wvf.data)
+                                    # Compare and add to min max dict
+                                    addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
 
-                                    except:
-                                        warnings.warn("File empty:" + filePath)
-                    
-                    for key in minValuesTest:
-                        testGrp.attrs[f"min_{key}"] = minValuesTest[key]
-                        testGrp.attrs[f"max_{key}"] = maxValuesTest[key]
+                                except:
+                                    warnings.warn("File empty:" + filePath)
+
+                            
+                        if voltRead:
+                            filePath = f"{testFolder}/tensao/ten{indexMeas}.dat"
+                            if os.path.isfile(filePath):
+                                try:
+                                    wvf = Waveform.read_labview_waveform(filePath,0)
+                                    
+                                    dSet = measurementGrp.create_dataset("voltageRAW", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
+                                    dSet.attrs["dt"] = wvf.dt
+
+                                    if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
+                                        testGrp.attrs['startTime'] = os.path.getmtime(filePath)
+
+                                    attrName = "voltageRAW"
+
+                                    # Compare and add to min max dict
+                                    addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
+
+                                except:
+                                    warnings.warn("File empty:" + filePath)
+
+                    testGrp.attrs["minValues"] = minValuesTest
+                    testGrp.attrs["maxValues"] = maxValuesTest
                 
+                # Merge test and unit dicts
+                joinMinMaxDict(minValuesUnit, minValuesTest, 'min')
+                joinMinMaxDict(maxValuesUnit, maxValuesTest, 'max')
+
                 # Add attributes to unit
-                for key in minValuesUnit:
-                    unitGrp.attrs[f"min_{key}"] = minValuesUnit[key]
-                    unitGrp.attrs[f"max_{key}"] = maxValuesUnit[key]
-            
+                unitGrp.attrs["minValues"] = minValuesUnit
+                unitGrp.attrs["maxValues"] = maxValuesUnit
+
+            # Merge unit and model dicts
+            joinMinMaxDict(minValuesModel, minValuesUnit, 'min')
+            joinMinMaxDict(maxValuesModel, maxValuesUnit, 'max')
+
             # Add attributes to model
-            for key in minValuesModel:
-                modelGrp.attrs[f"min_{key}"] = minValuesModel[key]
-                modelGrp.attrs[f"max_{key}"] = maxValuesModel[key]
+            modelGrp.attrs["minValues"] = minValuesModel
+            modelGrp.attrs["maxValues"] = maxValuesModel
 
     if supressWarnings:
         warnings.resetwarnings()
@@ -336,7 +335,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                     measurementGrp.attrs[attrName] = value
 
                     # Compare and add to min max dict
-                    addMinMax(minValuesTest, maxValuesTest, attrName, value)
+                    addMinOrMax(minValuesTest, maxValuesTest, attrName, value)
 
                 # Get first "compressor on" time
                 tOn = tOn if not measurementGrp.attrs["compressorOn"] else min(tOn, measurementGrp.attrs["time"])
@@ -356,7 +355,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                         attrName = "currentRAW"
 
                         # Compare and add to min max dict
-                        addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
+                        addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
                         
                     except:
                         warnings.warn("File not found or empty:" + filePath)
@@ -371,7 +370,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                         attrName = "vibrationRAWLateral"
 
                         # Compare and add to min max dict
-                        addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
+                        addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
 
                         wvf = Waveform.read_labview_waveform(filePath,1)
                         dSet = measurementGrp.create_dataset("vibrationRigDummy", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
@@ -380,7 +379,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                         attrName = "vibrationRAWRig"
 
                         # Compare and add to min max dict
-                        addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
+                        addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
 
                         wvf = Waveform.read_labview_waveform(filePath,2)
                         dSet = measurementGrp.create_dataset("vibrationLongitudinal", data = wvf.data, compression="gzip", shuffle=True, compression_opts=9)
@@ -389,7 +388,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                         attrName = "vibrationRAWLongitudinal"
 
                         # Compare and add to min max dict
-                        addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
+                        addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
 
                         if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
                             testGrp.attrs['startTime'] = os.path.getmtime(filePath)
@@ -410,7 +409,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                         attrName = "acousticEmissionRAW"
 
                         # Compare and add to min max dict
-                        addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
+                        addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
 
                     except:
                         warnings.warn("File not found or empty:" + filePath)
@@ -429,7 +428,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                         attrName = "voltageRAW"
 
                         # Compare and add to min max dict
-                        addMinMax(minValuesTest, maxValuesTest, attrName, wvf.data)
+                        addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
 
                     except:
                         warnings.warn("File not found or empty:" + filePath)
