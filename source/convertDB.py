@@ -125,7 +125,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                     acuRead = True if "acusticas" in dirList else False
 
                     # Read csv data
-                    testData = pd.read_table('D:\\Dados - Thaler\\Documentos\\Amaciamento\\Ensaios Brutos\\Unidade C1\\A_2022_10_10\\medicoesGerais.dat', delimiter = '\t', decimal = ',', encoding='ANSI')
+                    testData = pd.read_table(f'{testFolder}/medicoesGerais.dat', delimiter = '\t', decimal = ',', encoding='ANSI')
                     headers = [nameVar(variable) for variable in testData.columns.values]
 
                     # Get index of test data with compressor turned on
