@@ -37,7 +37,12 @@ def joinMinMaxDict(dictMain: dict, dictAdd:dict, mode = 'min'):
         else:
             dictMain[key] = dictAdd[key]
 
-    
+def textfile2dict(path: str):
+    d = {}
+    with open(path) as f:
+        for line in f:
+            (key, val) = line.split(sep = ":")
+            d[key] = val
 
 def nameVar(headerName:str) -> str:
     # Convert column name from "medicoesGerais.dat" file to hdf5 attribute name
@@ -99,8 +104,15 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
             
             for unitName in tqdm.tqdm(unitFolders, desc = "  Unidade", leave=False,  position=1):
                 # print("Unidade atual: "+str(unitName))
-                unit = unitName.replace(f"Unidade ",'') # Get unit names
+                unitAttributes = textfile2dict(f"{UnitFolderIn}/{unitName}")
+                unit = unitAttributes["unit"]
                 unitGrp = modelGrp.create_group(unit) # Create new group for each compressor unit
+                
+                for key in unitAttributes:
+                    if key in ["model", "fluid"]: # Add attribute to model group
+                        modelGrp.attrs[key] = unitAttributes[key]
+                    elif key != "unit": # Add attribute to unit group
+                        unitGrp.attrs[key] = unitAttributes[key]
 
                 # Dict for max and min values of a given unit
                 minValuesUnit = {}
@@ -108,15 +120,19 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
 
                 fullTestFolder = os.listdir(f"{UnitFolderIn}/{unitName}") # Get all tests from a given unit
 
-                for k,testName in enumerate(tqdm.tqdm(fullTestFolder, desc = "   Teste", leave = False, position = 2)):
-                    testFolder = f"{UnitFolderIn}/{unitName}/{testName}"
+                for k,testFolderName in enumerate(tqdm.tqdm(fullTestFolder, desc = "   Teste", leave = False, position = 2)):
+                    testFolder = f"{UnitFolderIn}/{unitName}/{testFolderName}"
 
                     dirList = os.listdir(testFolder)
-
+                    if not testFolderName[0].isnumeric(): # Remove N or A to test name
+                        testName = testFolderName[2:]
+                    else:
+                        testName = testFolderName
+                        
                     # Set dataset attributes
-                    testGrp = unitGrp.create_group(testName[2:])
+                    testGrp = unitGrp.create_group(testName)
                     testGrp.attrs['startTime'] = os.path.getmtime(f'{testFolder}/medicoesGerais.dat')
-                    testGrp.attrs['runningIn'] = True if testName[0] == 'N' else False
+                    testGrp.attrs['runningIn'] = True if testFolderName[0] == 'N' else False
 
                     # Check available high frequency readings 
                     corrRead = True if "corrente" in dirList else False
