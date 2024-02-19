@@ -42,7 +42,8 @@ def textfile2dict(path: str):
     with open(path) as f:
         for line in f:
             (key, val) = line.split(sep = ":")
-            d[key] = val
+            d[key] = val.strip()
+        return d
 
 def nameVar(headerName:str) -> str:
     # Convert column name from "medicoesGerais.dat" file to hdf5 attribute name
@@ -104,7 +105,7 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
             
             for unitName in tqdm.tqdm(unitFolders, desc = "  Unidade", leave=False,  position=1):
                 # print("Unidade atual: "+str(unitName))
-                unitAttributes = textfile2dict(f"{UnitFolderIn}/{unitName}")
+                unitAttributes = textfile2dict(f"{UnitFolderIn}/{unitName}/modelInfo.txt")
                 unit = unitAttributes["unit"]
                 unitGrp = modelGrp.create_group(unit) # Create new group for each compressor unit
                 
