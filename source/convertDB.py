@@ -100,9 +100,13 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
         minValuesModel = {}
         maxValuesModel = {}
 
-        with h5py.File(f"{UnitFolderOut}/datasetModel{model}.hdf5", "w") as fModel:
-            modelGrp = fModel.create_group(f"Model{model}") # Create new group for each compressor model
-            
+        with h5py.File(f"{UnitFolderOut}/datasetModel{model}.hdf5", "a") as fModel:
+
+            if not f"Model{model}" in fModel:
+                modelGrp = fModel.create_group(f"Model{model}") # Create new group for each compressor model
+            else:
+                modelGrp = fModel[f"Model{model}"]
+
             for unitName in tqdm.tqdm(unitFolders, desc = "  Unidade", leave=False,  position=1):
                 # print("Unidade atual: "+str(unitName))
                 unitAttributes = textfile2dict(f"{UnitFolderIn}/{unitName}/modelInfo.txt")
@@ -119,10 +123,15 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                 minValuesUnit = {}
                 maxValuesUnit = {}
 
-                fullTestFolder = os.listdir(f"{UnitFolderIn}/{unitName}") # Get all tests from a given unit
-
+                # Get all tests from a given unit
+                fullTestFolder = os.listdir(f"{UnitFolderIn}/{unitName}")
                 for k,testFolderName in enumerate(tqdm.tqdm(fullTestFolder, desc = "   Teste", leave = False, position = 2)):
+                    
+                    
                     testFolder = f"{UnitFolderIn}/{unitName}/{testFolderName}"
+                    
+                    if not os.path.isdir(testFolder):
+                        continue
 
                     dirList = os.listdir(testFolder)
                     if not testFolderName[0].isnumeric(): # Remove N or A to test name
@@ -141,8 +150,10 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                     voltRead = True if "tensao" in dirList else False
                     acuRead = True if "acusticas" in dirList else False
 
-                    # Read csv data
+                    # Read csv data and drop nan columns
                     testData = pd.read_table(f'{testFolder}/medicoesGerais.dat', delimiter = '\t', decimal = ',', encoding='ANSI')
+                    testData = testData.apply(pd.to_numeric, errors='coerce')
+                    testData = testData.dropna(axis=1, how='all')
                     headers = [nameVar(variable) for variable in testData.columns.values]
 
                     # Get index of test data with compressor turned on
@@ -150,6 +161,8 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                     tStart = testData.iloc[np.nonzero(compressorOn)[0][0] , headers.index("time")]
 
                     # Subtract starting time so that time 0 is the first measurement with compressor turned on
+                    tqdm.tqdm.write(f"{unitName}/{testFolderName}")
+                    tqdm.tqdm.write(f"{str(tStart)}-{type(tStart)}")
                     testData.iloc[:,headers.index('time')] = testData.iloc[:,headers.index('time')] - tStart
 
                     # Store data and headers from csv
