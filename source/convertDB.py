@@ -82,7 +82,7 @@ def nameVar(headerName:str) -> str:
     index = [x[1] for x in varNames].index(headerName)
     return varNames[index][0]
 
-def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
+def convertFolders(UnitFolderIn, UnitFolderOut, supressWarnings = False):
 
     if supressWarnings:
         warnings.filterwarnings('ignore')
@@ -111,7 +111,11 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                 # print("Unidade atual: "+str(unitName))
                 unitAttributes = textfile2dict(f"{UnitFolderIn}/{unitName}/modelInfo.txt")
                 unit = unitAttributes["unit"]
-                unitGrp = modelGrp.create_group(unit) # Create new group for each compressor unit
+
+                if not unitName in modelGrp:
+                    unitGrp = modelGrp.create_group(unit) # Create new group for each compressor unit
+                else:
+                    unitGrp = modelGrp[unit]
                 
                 for key in unitAttributes:
                     if key in ["model", "fluid"]: # Add attribute to model group
@@ -127,7 +131,6 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                 fullTestFolder = os.listdir(f"{UnitFolderIn}/{unitName}")
                 for k,testFolderName in enumerate(tqdm.tqdm(fullTestFolder, desc = "   Teste", leave = False, position = 2)):
                     
-                    
                     testFolder = f"{UnitFolderIn}/{unitName}/{testFolderName}"
                     
                     if not os.path.isdir(testFolder):
@@ -138,6 +141,9 @@ def convertFolder(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                         testName = testFolderName[2:]
                     else:
                         testName = testFolderName
+
+                    if testName in unitGrp:
+                        continue
                         
                     # Set dataset attributes
                     testGrp = unitGrp.create_group(testName)
