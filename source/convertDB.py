@@ -297,22 +297,22 @@ def convertFolders(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                     maxDset = testGrp.create_dataset("maxValues", data = list(maxValuesTest.values()), compression="gzip", shuffle=True)
                     maxDset.attrs["columnNames"] = list(maxValuesTest.keys())
 
-                # Merge test and unit dicts
-                joinMinMaxDict(minValuesUnit, minValuesTest, 'min')
-                joinMinMaxDict(maxValuesUnit, maxValuesTest, 'max')
+                    # Merge test and unit dicts
+                    joinMinMaxDict(minValuesUnit, minValuesTest, 'min')
+                    joinMinMaxDict(maxValuesUnit, maxValuesTest, 'max')
 
-                # Adds datasets for max and min values to test
+                # Adds datasets for max and min values to unit
                 minDset = unitGrp.create_dataset("minValues", data = list(minValuesUnit.values()), compression="gzip", shuffle=True)
                 minDset.attrs["columnNames"] = list(minValuesUnit.keys())
 
                 maxDset = unitGrp.create_dataset("maxValues", data = list(maxValuesUnit.values()), compression="gzip", shuffle=True)
                 maxDset.attrs["columnNames"] = list(maxValuesUnit.keys())
 
-            # Merge unit and model dicts
-            joinMinMaxDict(minValuesModel, minValuesUnit, 'min')
-            joinMinMaxDict(maxValuesModel, maxValuesUnit, 'max')
+                # Merge unit and model dicts
+                joinMinMaxDict(minValuesModel, minValuesUnit, 'min')
+                joinMinMaxDict(maxValuesModel, maxValuesUnit, 'max')
 
-            # Adds datasets for max and min values to test
+            # Adds datasets for max and min values to model
             minDset = modelGrp.create_dataset("minValues", data = list(minValuesModel.values()), compression="gzip", shuffle=True)
             minDset.attrs["columnNames"] = list(minValuesModel.keys())
 
