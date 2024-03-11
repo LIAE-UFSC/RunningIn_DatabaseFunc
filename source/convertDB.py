@@ -112,7 +112,7 @@ def convertFolders(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                 unitAttributes = textfile2dict(f"{UnitFolderIn}/{unitName}/modelInfo.txt")
                 unit = unitAttributes["unit"]
 
-                if not unitName in modelGrp:
+                if not unit in modelGrp:
                     unitGrp = modelGrp.create_group(unit) # Create new group for each compressor unit
                 else:
                     unitGrp = modelGrp[unit]
