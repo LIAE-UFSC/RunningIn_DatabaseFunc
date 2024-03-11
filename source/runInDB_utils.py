@@ -85,7 +85,10 @@ class RunIn_File(h5py.File):
 
         for (unit,tests) in testDict.items():
             # Add unit name to each dict list
-            rows = [dict(item, unit=unit) for item in self[unit].getMeasurements(tests,varName, tStart, tEnd, indexes)]
+
+            rows = [dict(item, unit=unit) for item in self[unit].getMeasurements(testName = tests, varName=varName, 
+                                                                                 tStart = tStart, tEnd = tEnd, 
+                                                                                 indexes = indexes)]
             data.extend(rows)
 
         return data
@@ -145,7 +148,7 @@ class RunIn_File(h5py.File):
 
             for test in selTests:
                 # Add test name to each dict of list
-                rows = [dict(item, test=test.name) for item in self.getMeasurements(varName, tStart, tEnd, indexes)]
+                rows = [dict(item, test=test.name) for item in test.getMeasurements(varName, tStart, tEnd, indexes)]
                 data.extend(rows)
 
             return data
