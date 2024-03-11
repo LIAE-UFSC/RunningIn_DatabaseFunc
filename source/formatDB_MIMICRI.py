@@ -9,14 +9,29 @@ def formatDB_MIMICRI(pathIn:str, pathOut:str, mode:str = 'w'):
     desiredDatabase = ["vibrationRAWLateral", "vibrationRAWLongitudinal","acousticEmissionRAW", "voltageRAW", "currentRAW"]
 
 
-    with h5py.File('pathOut','a') as f_dest:
-        with h5py.File('pathIn','r') as f_src:
+    with h5py.File(pathOut,'a') as f_dest:
+        with h5py.File(pathIn,'r') as f_src:
             modelGrpIn = list(f_src.values())[0] # Returns model subgroup
-            maxminHeader = modelGrpIn["maxValues"].attrs["columnNames"]
+            maxminHeader = list(modelGrpIn["maxValues"].attrs["columnNames"])
             maxValues = modelGrpIn["maxValues"][:]
             minValues = modelGrpIn["minValues"][:]
-            for unitGrpIn in tqdm.tqdm(list(modelGrpIn.values()), desc = "Unidade",  position=0):
-                for testGrpIn in tqdm.tqdm(list(unitGrpIn.values()), desc = " Ensaio", leave=False,  position=1):
+
+            # Tira valores max e min da análise
+            unitAllNames = list(modelGrpIn.keys())
+            unitAllNames.remove("maxValues")
+            unitAllNames.remove("minValues")
+
+            for unitName in tqdm.tqdm(unitAllNames, desc = "Unidade",  position=0):
+                tqdm.tqdm.write(unitName)
+                unitGrpIn = modelGrpIn[unitName]
+
+                testAllNames = list(unitGrpIn.keys())
+                testAllNames.remove("maxValues")
+                testAllNames.remove("minValues")
+
+                for testName in tqdm.tqdm(testAllNames, desc = " Ensaio", leave=False,  position=1):
+                    tqdm.tqdm.write(testName)
+                    testGrpIn = unitGrpIn[testName]
 
                     if testGrpIn.name in f_dest: 
                         if mode == "w": # Overwrites dataset if it already exists in target file
@@ -29,11 +44,9 @@ def formatDB_MIMICRI(pathIn:str, pathOut:str, mode:str = 'w'):
                     if 'runningIn' in testGrpIn.attrs: # Get running-in state
                         testGrpOut.attrs["runningIn"] = testGrpIn.attrs["runningIn"]
 
-                    headersIn = testGrpIn["measurements"].attrs['columnNames'] # Get header for timeseries measurements
-                    
+                    headersIn = list(testGrpIn["measurements"].attrs['columnNames']) # Get header for timeseries measurements
                     headersOut = ["time"] # Initialize target header with time
-                    measurementOut = testGrpIn["measurements"][:,headersIn.index("time")]
-
+                    measurementOut = np.atleast_2d(testGrpIn["measurements"][:,headersIn.index("time")]).T
                     for var in desiredVars:
                         if var in headersIn:
                             # Get column data
@@ -50,7 +63,7 @@ def formatDB_MIMICRI(pathIn:str, pathOut:str, mode:str = 'w'):
                             headersOut.append(var)
 
                     # Create timeseries measurement dataset in target file
-                    dMeas = testGrpOut.create_dataset("measurements", data = dataFit, compression="gzip", shuffle=True)
+                    dMeas = testGrpOut.create_dataset("measurements", data = measurementOut, compression="gzip", shuffle=True)
                     dMeas.attrs['columnNames'] = headersOut
                             
                     for measurementIn in tqdm.tqdm(list(testGrpIn.values()), desc = "    Medicao", leave=False,  position=2):
