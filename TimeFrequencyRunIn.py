@@ -1,4 +1,4 @@
-from runInDB_utils import RunIn_File
+from source.runInDB_utils import RunIn_File
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -56,9 +56,9 @@ def STFT_ensaio(file:RunIn_File, unidade:str, teste:str, index:list[int]):
 
 def bandpower(x, fs, fmin, fmax): #essa função estou com dificuldade de execurtar com os dados do dataset, mesmo para apenas um intervalo
     f, Pxx = scipy.signal.periodogram(x, fs=fs)
-    ind_min = scipy.argmax(f > fmin) - 1
-    ind_max = scipy.argmax(f > fmax) - 1
-    return scipy.trapz(Pxx[ind_min: ind_max], f[ind_min: ind_max])
+    ind_min = np.argmax(f > fmin) - 1
+    ind_max = np.argmax(f > fmax) - 1
+    return np.trapz(Pxx[ind_min: ind_max], f[ind_min: ind_max])
 
 
 

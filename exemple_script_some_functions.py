@@ -1,5 +1,5 @@
 from TimeFrequencyRunIn import FFT_ensaio, STFT_ensaio, bandpower
-from runInDB_utils import RunIn_File
+from source.runInDB_utils import RunIn_File
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,5 +20,6 @@ with RunIn_File(path) as file:
     fft = FFT_ensaio(file,unit,test,0) #ta dando problema no último parâmetro quando usa o arquivo
     stft = STFT_ensaio(file,unit,test,index)
     test = file["A1"][0]
-    print(bandpower(test,25600,1000,1100))
+    dados = test.getMeasurements(varName=["vibrationRAWLateral"], indexes = [0])[0]["vibrationRAWLateral"]
+    print(bandpower(dados,25600,1000,1100))
 
