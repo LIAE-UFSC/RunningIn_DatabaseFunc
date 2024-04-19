@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import random
 import scipy
 
+
 def FFT_ensaio(file:RunIn_File, unidade:str, teste:str, index:int):
 
     # Retorna FFT da vibração lateral no index desejado
