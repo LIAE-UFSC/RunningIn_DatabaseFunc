@@ -61,5 +61,19 @@ def bandpower(x, fs, fmin, fmax): #essa função estou com dificuldade de execur
     ind_max = np.argmax(f > fmax) - 1
     return np.trapz(Pxx[ind_min: ind_max], f[ind_min: ind_max])
 
+def dividir_em_bandas(k, n, data):
+
+        tamanho_intervalo = k // n
+        extremos = []
+        bandpowerlist = []
+        for i in range(n):
+            inicio = i * tamanho_intervalo
+            fim = (i + 1) * tamanho_intervalo if i < n - 1 else k
+            power = bandpower(data,25600,inicio,fim)
+            bandpowerlist.append(power)
+            extremos.append([inicio, fim])
+        return (extremos,bandpowerlist)
+
+
 
 
