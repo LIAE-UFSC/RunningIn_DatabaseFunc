@@ -15,11 +15,8 @@ def FFT_ensaio(file:RunIn_File, unidade:str, teste:str, index:int):
     dados = hm.getMeasurements(varName=["vibrationRAWLateral"], indexes = [index])[0]["vibrationRAWLateral"]
     
 
-    N = len(dados)
-    fs = N
-    T = 1/fs
-    t = np.arange(0,N/fs,T)
-
+    N = len(dados); fs = N; T = 1/fs; t = np.arange(0,N/fs,T)
+    
     # fft
 
     f = np.fft.fftfreq(N,T)
