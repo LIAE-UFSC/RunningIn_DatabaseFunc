@@ -48,7 +48,7 @@ def STFT_ensaio(file:RunIn_File, unidade:str, teste:str, index:list[int]):
     return (f,stft,stft_transposta)
 
 def bandpower(data, frequencia_base, freq_min, freq_max): #função que extrai a potência por banda
-    f, Pxx = scipy.signal.periodogram(data, frequencia_base=frequencia_base)
+    f, Pxx = scipy.signal.periodogram(data, frequencia_base)
     ind_min = np.argmax(f > freq_min) - 1
     ind_max = np.argmax(f > freq_max) - 1
     return np.trapz(Pxx[ind_min: ind_max], f[ind_min: ind_max])

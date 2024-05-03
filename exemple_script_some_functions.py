@@ -43,3 +43,5 @@ with RunIn_File(path) as file:
 #   n_bandas: número de bandas da análise
 #   f_max: frequência máxima da análise
 #   janela: número de medições por figura
+# Biblioteca sugerida: Pillow (PIL)
+#   Tentar gerar figuras grayscale em png.
