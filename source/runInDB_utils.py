@@ -176,6 +176,8 @@ class RunIn_File(h5py.File):
 
                 if (indexes is not None) and ((tEnd is not None) or (tStart is not None)):
                     raise Exception("Both index and time range provided. Only one allowed.")
+                else:
+                    pass
                 
                 allVars = self.getVarNames()
 
