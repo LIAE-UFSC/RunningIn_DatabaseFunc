@@ -498,4 +498,4 @@ if __name__ == "__main__":
 
     fullUnitFolder = os.listdir(mainFolder) # Extract folders
 
-    convertFolder(fullUnitFolder, saveFolder)
+    convertFolders(fullUnitFolder, saveFolder)

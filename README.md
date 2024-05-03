@@ -13,9 +13,9 @@ To use the scripts in this repository, you'll need to install the required depen
 pip install -r requirements.txt
 ```
 
-Using the LabVIEW waveform conversion functionalities also requires LabVIEW Runtime 2019. Visit [the official NI website](https://www.ni.com/en/support/downloads/software-products/download.labview-runtime.html#301740) for download options. The bit architecture should be the same as the python interpreter.
+Using the LabVIEW waveform conversion functionalities also requires LabVIEW Runtime 2022. Visit [the official NI website](https://www.ni.com/en/support/downloads/software-products/download.labview-runtime.html#301740) for download options. The bit architecture should be the same as the python interpreter.
 
-If a different LabVIEW version is required, the LabVIEW project in the `dll` folder should be rebuild. [This guide](https://forums.ni.com/t5/Community-Documents/Creating-a-DLL-from-LabVIEW-code/ta-p/3514929) provides a tutorial on building DLLs in LabVIEW. The resulting dll should be saved as either `source\WvfRead.dll` or `source\WvfRead64.dll` depending on the LabVIEW bit architecture.
+If a different LabVIEW version is required, the LabVIEW project in the `build_dll` folder should be rebuild. [This guide](https://forums.ni.com/t5/Community-Documents/Creating-a-DLL-from-LabVIEW-code/ta-p/3514929) provides a tutorial on building DLLs in LabVIEW. The resulting dll should be saved as either `source\WvfRead.dll` or `source\WvfRead64.dll` depending on the LabVIEW and python bit architecture.
 
 ## Usage
 
