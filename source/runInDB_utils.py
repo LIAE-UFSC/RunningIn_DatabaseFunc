@@ -171,7 +171,7 @@ class RunIn_File(h5py.File):
             def __str__(self):
                 return self.name
 
-            def getMeasurements(self, varName: list[str] = None, tStart:float = None, tEnd:float = None, indexes: list[int] = None):
+            def getMeasurements(self, varName: list[str] = None, tStart:float = None, tEnd:float = None, indexes: list[int] = None, unknownIsNan = False):
                 # Returns a dataframe containing the measurements of the desired indexes or time range
 
                 if (indexes is not None) and ((tEnd is not None) or (tStart is not None)):
@@ -187,9 +187,10 @@ class RunIn_File(h5py.File):
                 measurementHeader = list(self._h5ref["measurements"].attrs["columnNames"])
 
                 # Check vars
-                for var in varName:
-                    if var not in allVars:
-                        raise Exception("One or more variables are not available for the selected test. Run getVarNames() to list all available variables.")  
+                if not unknownIsNan:
+                    for var in varName:
+                        if var not in allVars:
+                            raise Exception("One or more variables are not available for the selected test. Run getVarNames() to list all available variables.")  
 
                 data = []
 
@@ -199,7 +200,7 @@ class RunIn_File(h5py.File):
                         row = {}
                         for var in varName:
                             if var in ["voltageRAW","acousticEmissionRAW", "currentRAW",
-                                    "vibrationRAWLongitudinal", "vibrationRAWRig", "vibrationRAWLateral"]:
+                                    "vibrationLongitudinalRAW", "vibrationRigRAW", "vibrationLateralRAW"]:
                                 # Get values from high frequency dataset
                                 if var in list(self._h5ref[str(ind)].keys()):
                                     row[var] = self._h5ref[str(ind)][var][()]
@@ -230,7 +231,7 @@ class RunIn_File(h5py.File):
                             row = {}
                             for var in varName:
                                 if var in ["voltageRAW","acousticEmissionRAW", "currentRAW",
-                                        "vibrationRAWLongitudinal", "vibrationRAWRig", "vibrationRAWLateral"]:
+                                        "vibrationLongitudinalRAW", "vibrationRigRAW", "vibrationLateralRAW"]:
                                     if var in list(self._h5ref[str(count)].keys()):
                                         # Get values from high frequency dataset
                                         row[var] = self._h5ref[str(count)][var][()]

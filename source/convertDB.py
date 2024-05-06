@@ -217,28 +217,28 @@ def convertFolders(UnitFolderIn, UnitFolderOut, supressWarnings = False):
                                 try:
                                     wvf = Waveform.read_labview_waveform(filePath,0)
                                     
-                                    dSet = measurementGrp.create_dataset("vibrationRAWLateral", data = wvf.data, compression="gzip", shuffle=True)
+                                    dSet = measurementGrp.create_dataset("vibrationLateralRAW", data = wvf.data, compression="gzip", shuffle=True)
                                     dSet.attrs["dt"] = wvf.dt
 
-                                    attrName = "vibrationRAWLateral"
+                                    attrName = "vibrationLateralRAW"
 
                                     # Compare and add to min max dict
                                     addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
 
                                     wvf = Waveform.read_labview_waveform(filePath,1)
-                                    dSet = measurementGrp.create_dataset("vibrationRAWRig", data = wvf.data, compression="gzip", shuffle=True)
+                                    dSet = measurementGrp.create_dataset("vibrationRigRAW", data = wvf.data, compression="gzip", shuffle=True)
                                     dSet.attrs["dt"] = wvf.dt
 
-                                    attrName = "vibrationRAWRig"
+                                    attrName = "vibrationRigRAW"
 
                                     # Compare and add to min max dict
                                     addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
 
                                     wvf = Waveform.read_labview_waveform(filePath,2)
-                                    dSet = measurementGrp.create_dataset("vibrationRAWLongitudinal", data = wvf.data, compression="gzip", shuffle=True)
+                                    dSet = measurementGrp.create_dataset("vibrationLongitudinalRAW", data = wvf.data, compression="gzip", shuffle=True)
                                     dSet.attrs["dt"] = wvf.dt
 
-                                    attrName = "vibrationRAWLongitudinal"
+                                    attrName = "vibrationLongitudinalRAW"
 
                                     # Compare and add to min max dict
                                     addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
@@ -413,7 +413,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                         dSet = measurementGrp.create_dataset("vibrationLateral", data = wvf.data, compression="gzip", shuffle=True)
                         dSet.attrs["dt"] = wvf.dt
 
-                        attrName = "vibrationRAWLateral"
+                        attrName = "vibrationLateralRAW"
 
                         # Compare and add to min max dict
                         addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
@@ -422,7 +422,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                         dSet = measurementGrp.create_dataset("vibrationRigDummy", data = wvf.data, compression="gzip", shuffle=True)
                         dSet.attrs["dt"] = wvf.dt
 
-                        attrName = "vibrationRAWRig"
+                        attrName = "vibrationRigRAW"
 
                         # Compare and add to min max dict
                         addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
@@ -431,7 +431,7 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
                         dSet = measurementGrp.create_dataset("vibrationLongitudinal", data = wvf.data, compression="gzip", shuffle=True)
                         dSet.attrs["dt"] = wvf.dt
 
-                        attrName = "vibrationRAWLongitudinal"
+                        attrName = "vibrationLongitudinalRAW"
 
                         # Compare and add to min max dict
                         addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
