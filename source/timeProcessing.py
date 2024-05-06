@@ -1,101 +1,140 @@
 from runInDB_utils import RunIn_File
+import pandas as pd
+import numpy as np
+from scipy.stats import skew, kurtosis
 import warnings
 
 # Variables that just need to be loaded [databaseName,outName]
-_LOAD_VARS = [["time","Tempo"],
-            ["temperatureSuction","TempSuc"],
-            ["temperatureCompressorBody","TempCorpo"],
-            ["temperatureBuffer","TempReservatorio"],
-            ["temperatureDischarge","TemperDesc"],
-            ["presSuction_Analog","PressaoSuccaoAnalog"],
-            ["presDischarge","PressaoDescarga"],
-            ["presBuffer","PressIntermediaria"],
-            ["valveDischargePositionSetpoint","DescargaAberturaSP"],
-            ["valveDischargeOpening","DescargaAbertura"],
-            ["valveDischargeLimit","DescargaLimite"],
-            ["valveSuctionVoltage","SuccaoAbertura"],
-            ["compressorOn","CompressorLigado"],
-            ["massFlow","Vazao"],
-            ["resistorDischargeDC","ResistorDescargaDC"],
-            ["presSuction_GEPreValve","PressaoSuccaoPreValv"],
-            ["presSuction_GEPostValve","PressaoSuccaoPosValv"],
-            ["resistorSuctionDC","ResistorSuccaoDC"],
-            ["temperatureCoil1","TempBobina1"],
-            ["temperatureCoil2","TempBobina2"],
-            ["currentRMS_WT130","CorrenteRMSYokogawa"],
-            ["voltageRMS_WT130","TensaoRMSYokogawa"],
-            ["PowerRMS_WT130","PotenciaRMSYokogawa"],
-            ["currentRMS_TMCS","CorrenteRMSTMCS"],
-            ["voltageRMS_NI_DAQ","TensaoRMSDAQ"],
-            ["temperatureRoom","TempAmbiente"],
-            ["runningIn","Amaciado"],
+_LOAD_VARS = ["time",
+            "temperatureSuction",
+            "temperatureCompressorBody",
+            "temperatureBuffer",
+            "temperatureDischarge",
+            "presSuction_Analog",
+            "presDischarge",
+            "presBuffer",
+            "valveDischargePositionSetpoint",
+            "valveDischargeOpening",
+            "valveDischargeLimit",
+            "valveSuctionVoltage",
+            "compressorOn",
+            "massFlow",
+            "resistorDischargeDC",
+            "presSuction_GEPreValve",
+            "presSuction_GEPostValve",
+            "resistorSuctionDC",
+            "temperatureCoil1",
+            "temperatureCoil2",
+            "currentRMS_WT130",
+            "voltageRMS_WT130",
+            "PowerRMS_WT130",
+            "currentRMS_TMCS",
+            "voltageRMS_NI_DAQ",
+            "temperatureRoom",
+            "runningIn",
             ]
 
 # Variables that need to be processed [databaseName,outName]
 _PROCESSED_VARS = [
             # Extract features from high frequency measurements
-            ["currentRMS","CorrenteRMS"],
-            ["currentKur","CorrenteCurtose"],
-            ["currentSkew","CorrenteAssimetria"],
-            ["currentShape","CorrenteForma"],
-            ["currentTHD","CorrenteTHD"],
-            ["currentCrest","CorrentePico"],
-            ["currentPeak","CorrenteCrista"],
-            ["currentVar","CorrenteVariancia"],
-            ["currentStd","CorrenteDesvio"],
-            ["vibRigRMS","VibracaoBancadaInferiorRMS"],
-            ["vibLongitudinalRMS","VibracaoCalotaSuperiorRMS"],
-            ["vibLongitudinalKur","VibracaoCalotaSuperiorCurtose"],
-            ["vibLongitudinalSkew","VibracaoCalotaSuperiorAssimetria"],
-            ["vibLongitudinalShape","VibracaoCalotaSuperiorForma"],
-            ["vibLongitudinalTHD","VibracaoCalotaSuperiorTHD"],
-            ["vibLongitudinalCrest","VibracaoCalotaSuperiorPico"],
-            ["vibLongitudinalPeak","VibracaoCalotaSuperiorCrista"],
-            ["vibLongitudinalVar","VibracaoCalotaSuperiorVariancia"],
-            ["vibLongitudinalStd","VibracaoCalotaSuperiorDesvio,"],
-            ["vibLateralRMS","VibracaoCalotaInferiorRMS"],
-            ["vibLateralKur","VibracaoCalotaInferiorCurtose"],
-            ["vibLateralSkew","VibracaoCalotaInferiorAssimetria"],
-            ["vibLateralShape","VibracaoCalotaInferiorForma"],
-            ["vibLateralTHD","VibracaoCalotaInferiorTHD"],
-            ["vibLateralCrest","VibracaoCalotaInferiorPico"],
-            ["vibLateralPeak","VibracaoCalotaInferiorCrista"],
-            ["vibLateralVar","VibracaoCalotaInferiorVariancia"],
-            ["vibLateralStd","VibracaoCalotaInferiorDesvio,"],
-            ["acousticEmissionsRMS","AcusticasRMS"],
-            ["acousticEmissionsKur","AcusticasCurtose"],
-            ["acousticEmissionsSkew","AcusticasAssimetria"],
-            ["acousticEmissionsShape","AcusticasForma"],
-            ["acousticEmissionsTHD","AcusticasTHD"],
-            ["acousticEmissionsCrest","AcusticasPico"],
-            ["acousticEmissionsPeak","AcusticasCrista"],
-            ["acousticEmissionsVar","AcusticasVariancia"],
-            ["acousticEmissionsStd","AcusticasDesvio"],
+            "currentRMS",
+            "currentKur",
+            "currentSkew",
+            "currentShape",
+            "currentCrest",
+            "currentPeak",
+            "currentVar",
+            "currentStd",
+            "vibRigRMS",
+            "vibLongitudinalRMS",
+            "vibLongitudinalKur",
+            "vibLongitudinalSkew",
+            "vibLongitudinalShape",
+            "vibLongitudinalCrest",
+            "vibLongitudinalPeak",
+            "vibLongitudinalVar",
+            "vibLongitudinalStd",
+            "vibLateralRMS",
+            "vibLateralKur",
+            "vibLateralSkew",
+            "vibLateralShape",
+            "vibLateralCrest",
+            "vibLateralPeak",
+            "vibLateralVar",
+            "vibLateralStd",
+            "acousticEmissionsRMS",
+            "acousticEmissionsKur",
+            "acousticEmissionsSkew",
+            "acousticEmissionsShape",
+            "acousticEmissionsCrest",
+            "acousticEmissionsPeak",
+            "acousticEmissionsVar",
+            "acousticEmissionsStd",
 
-            ["power","Potencia"] # Multiply voltage and current
+            "power", # Multiply voltage and current
 
-            ["presSuction","PressaoSuccao"], # Select based on available readings
+            "presSuction", # Select based on available readings
             ]
 
-_ALL_PROCESS = ["RMS", "Kur", "Skew", "Shape", "THD","Crest","Peak","Var","Std"]
+def processVar(dF:pd.DataFrame,varName):
+    data = []
+    if varName[-3:] == "RMS":
+        # RMS value
+        for _, row in dF.iterrows():
+            data.append(np.sqrt(np.mean(row[0]**2)))
 
-def possibleVars(test):
-    # Checks all available vars for a given test
-    pass
+    elif varName[-3:] == "Kur":
+        # Kurtosis value
+        for _, row in dF.iterrows():
+            data.append(kurtosis(row[0],fisher = False))
+                        
+    elif varName[-3:] == "THD":
+        pass # Not implemented
 
-def hdf2csv(pathHDF, target:dict = None, tStart = None, tEnd = None, vars = None, discardEnd = True):
+    elif varName[-3:] == "Var":
+        # Signal variance
+        for _, row in dF.iterrows():
+            data.append(np.var(row[0]))
+
+    elif varName[-3:] == "Std":
+        # Signal standard deviation
+        for _, row in dF.iterrows():
+            data.append(np.sqrt(np.var(row[0])))
+
+    elif varName[-4:] == "Skew":
+        # Skewness — Asymmetry of a signal distribution
+        for _, row in dF.iterrows():
+            data.append(skew(row[0]))
+
+    elif varName[-4:] == "Peak":
+        # Peak value
+        for _, row in dF.iterrows():
+            data.append(np.max(row[0]))
+            
+    elif varName[-5:] == "Shape":
+        # Shape factor — RMS divided by the mean of the absolute value
+        for _, row in dF.iterrows():
+            rms = np.sqrt(np.mean(row[0]**2))
+            data.append(rms/np.mean(abs(row[0])))
+
+    elif varName[-5:] == "Crest":
+        # Crest Factor — Peak value divided by the RMS
+        for _, row in dF.iterrows():
+            rms = np.sqrt(np.mean(row[0]**2))
+            data.append(np.max(row[0])/np.mean(abs(row[0])))
+
+    else:
+        raise Exception("Unknown processing mode")
+
+def hdf2csv(pathHDF, target:dict = None, tStart = 0, tEnd = float("inf"), vars = None, discardEnd = True, onlyAvailableVars = False):
     
     # Check time conditions:
-    if tStart is None:
-        tStart = 0
-    if tEnd is None:
-        tEnd = float("inf")
     if tStart > tEnd:
         raise Exception("Starting time should be smaller than end time.")
     
     if vars is None:
         # Selects all possible variables if None is given
-        vars = [varName[0] for varName in _ALL_VARS]
+        vars = [varName[0] for varName in (_LOAD_VARS+_PROCESSED_VARS)]
 
     with RunIn_File(pathHDF) as file:
         if target is None:
@@ -105,8 +144,27 @@ def hdf2csv(pathHDF, target:dict = None, tStart = None, tEnd = None, vars = None
 
         for unit,tests in target.items():
             for test in tests:
-                testVars = possibleVars(test)
-                pass
+
+                testRef = file[unit][test]
+
+                if onlyAvailableVars:
+                    # Selects only vars available in test
+                    testVars = [varName for varName in vars if (varName in testRef.getVarNames())]
+                else:
+                    # selects all vars
+                    testVars = vars
+                
+                loadVars = [varName for varName in vars if (varName in _LOAD_VARS)]
+                processVars = [varName for varName in vars if (varName not in _LOAD_VARS)]
+                varsDF = testRef.getMeasurements(varName=loadVars, tEnd=tEnd, tStart=tStart, unknownIsNan=True)
+                
+                for var in processVars:
+                    
+
+
+                
+
+                
 
 if __name__ == "__main__":
     path = r"\\LIAE-SANTINHO\Backups\Amaciamento_DatabaseFull\datasetModelA.hdf5"
