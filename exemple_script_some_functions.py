@@ -45,3 +45,4 @@ with RunIn_File(path) as file:
 #   janela: número de medições por figura
 # Biblioteca sugerida: Pillow (PIL)
 #   Tentar gerar figuras grayscale em png.
+
