@@ -205,7 +205,11 @@ class RunIn_File(h5py.File):
                                 if var in list(self._h5ref[str(ind)].keys()):
                                     row[var] = self._h5ref[str(ind)][var][()]
                             else:
-                                row[var] = self._h5ref["measurements"][ind,measurementHeader.index(var)]
+                                if (var not in allVars) and unknownIsNan:
+                                    row[var] = float('NaN')
+                                else:
+                                    row[var] = self._h5ref["measurements"][ind,measurementHeader.index(var)]
+
                         data.append(row)
                     
                 
@@ -236,7 +240,10 @@ class RunIn_File(h5py.File):
                                         # Get values from high frequency dataset
                                         row[var] = self._h5ref[str(count)][var][()]
                                 else:
-                                    row[var] = self._h5ref["measurements"][count,measurementHeader.index(var)]
+                                    if (var not in allVars) and unknownIsNan:
+                                        row[var] = float('NaN')
+                                    else:
+                                        row[var] = self._h5ref["measurements"][count,measurementHeader.index(var)]
                             data.append(row)
                         count = count + 1
 
