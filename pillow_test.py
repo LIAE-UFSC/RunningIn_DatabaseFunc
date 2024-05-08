@@ -18,17 +18,24 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Dados fornecidos
-eixo_y = np.array([0, 250, 500, 750])
+eixo_y = np.array([[0, 250], [250, 500], [500, 750], [750, 1000]])
 valores = np.array([20, 12, 45, 30])
 
-# Criando o DataFrame do Seaborn
-data = {'Intervalo': eixo_y, 'Valor': valores}
+# Convertendo os intervalos para o formato adequado para o heatmap
+
+valoor = []
+for intervalo in eixo_y:
+    valoor.append('{} - {}'.format(intervalo[0], intervalo[1]))
+
+# Criando o DataFrame do Seaborn com os pontos médios
+data = {'Ponto Médio do Intervalo': valoor[::-1], 'Valor': valores[::-1]}
 df = pd.DataFrame(data)
 
 # Criando o heatmap usando Seaborn
 plt.figure(figsize=(8, 4))
-sns.heatmap(df.set_index('Intervalo'), annot=True, fmt='d', cmap='hot', cbar=True)
-plt.title('Valores dos Intervalos')
-plt.xlabel('Intervalos')
-plt.ylabel('Valores')
+sns.heatmap(df.set_index('Ponto Médio do Intervalo'), annot=True, fmt='d', cmap='hot', cbar=True)
+plt.title('Potência por banda')
+plt.xlabel('Index')
+plt.ylabel('intervalos de frequência')
 plt.show()
+
