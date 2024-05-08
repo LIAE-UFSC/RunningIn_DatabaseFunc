@@ -78,7 +78,7 @@ def dividir_em_bandas(freq_max, numero_bandas, data):
 # Biblioteca sugerida: Pillow (PIL)
 #   Tentar gerar figuras grayscale em png.
 
-def power_image(freq_max, numero_bandas, data):
+def power_images(freq_max, numero_bandas, data):
     matriz_bandas = []
     for measurement in data:
         dados_array = measurement['vibrationRAWLateral'] # Corrigir depois para pegar a array de uma chave genérica
@@ -95,19 +95,18 @@ def gera_dataset(path_in,path_out,n_bandas,f_max,window, var = "vibrationRAWLate
                 while i_final<= ind_max:
                     dados = test.getMeasurements(varName=[var], indexes = range(i_init,i_final))
 
-                    dados_bandas = power_image(freq_max=f_max, numero_bandas=n_bandas, data = dados)
-                    dividir_em_bandas(1000,4,dados)
+                    dados_bandas = power_images(freq_max=f_max, numero_bandas=n_bandas, data = dados)
 
-                    # AQUI CRIA E SALVA AS IMAGENS
+                    #AQUI CRIA E SALVA AS IMAGENS
                     #EIXO X =  TEMPO, TAMANHO JANELA
-                    #EIXO Y =  FREQUENCIA, HEAT MAP COM O BANDPOWER (LISTA DE LISTAS)
+                    #EIXO Y = FREQUENCIA, HEAT MAP COM O BANDPOWER (LISTA DE LISTAS)
 
                     i_init = i_final
-                    i_final = i_final+window
+                    i_final = i_final + window
     
 path = r"\\LIAE-SANTINHO\Backups\Amaciamento_DatabaseMIMICRI\ModelA.hdf5"
             
 
             
 
-power_images(path, "asd", f_max = 1000, n_bandas= 20, window = 10)
+#power_images(path, "asd", f_max = 1000, n_bandas= 20, window = 10)

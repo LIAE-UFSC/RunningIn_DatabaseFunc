@@ -11,10 +11,10 @@ path = r"\\LIAE-SANTINHO\Backups\Amaciamento_DatabaseMIMICRI\ModelA.hdf5"
 #transformadas
 with RunIn_File(path) as file:
 
-    for unit in file:
-        for test in unit:
+    #for unit in file:
+        #for test in unit:
             # Imprime o nome de todos os testes e unidades do database
-            print(f"Unidade: {unit} |Teste: {test}")
+            #print(f"Unidade: {unit} |Teste: {test}")
 
     unit = "A1"
     test = "2019_07_01"
@@ -34,6 +34,8 @@ with RunIn_File(path) as file:
 
     print(bandpower(dados,25600,1000,1100))
     print(dividir_em_bandas(1000,4,dados))
+
+
 
 # NOVA FUNÇÃO
 
