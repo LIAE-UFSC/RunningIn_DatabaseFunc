@@ -5,9 +5,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-eixo_y = np.array([[0, 250], [250, 500], [500, 750], [750, 1000]])
-valores = np.array([20, 12, 45, 30])
-new_data = [[5,2,3,4],[20, 12, 45, 30],[20, 12, 45, 30],[20, 12, 45, 90]]
+eixo_y = np.array([[0, 250], [250, 500], [500, 750], [750, 1000]]) #intervalos de frequência
+new_data = [[5,2,3,4],[20, 12, 45, 30],[20, 12, 45, 30],[20, 12, 45, 95]] # Lista de valores bandpower
 
 valoor = []
 for intervalo in eixo_y:
