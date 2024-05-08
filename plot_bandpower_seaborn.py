@@ -5,17 +5,17 @@ import pandas as pd
 
 #função que faz heatmap de bandpower baseado nas listas
 
-def plot_seaborn_bandpower(intervalos,banpowerlists):
+def plot_seaborn_bandpower(intervalos,bandpowerlists):
 
-    indexes_intervalos_y = []
-    for intervalo in eixo_y:
-        indexes_intervalos_y.append('{} - {}'.format(intervalo[0], intervalo[1]))
+    intervalos_str = []
+    for intervalo in intervalos:
+        intervalos_str.append('{} - {}'.format(intervalo[0], intervalo[1]))
 
-    data = {'intervalos': indexes_intervalos_y[::-1]}
+    data = {'intervalos': intervalos_str[::-1]}
     df = pd.DataFrame(data)
 
-    for k in range ((len(new_data))):
-        valor = new_data[k]
+    for k in range ((len(bandpowerlists))):
+        valor = bandpowerlists[k]
         df[str(k)] = valor[::-1]
 
     plt.figure(figsize=(8, 4))
