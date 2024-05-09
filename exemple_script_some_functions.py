@@ -33,7 +33,7 @@ with RunIn_File(path) as file:
     dados = test.getMeasurements(varName=["vibrationRAWLateral"], indexes = [0])[0]["vibrationRAWLateral"]
 
     print(bandpower(dados,25600,1000,1100))
-    print(dividir_em_bandas(1000,4,dados))
+    print(dividir_em_bandas(25600,4,dados))
 
 
 
