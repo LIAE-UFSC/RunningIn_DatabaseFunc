@@ -1,6 +1,7 @@
 import numpy as np
 import ctypes as ct
 import os
+import struct
 
 class Waveform:
     # Class for extracting data from binary LabVIEW waveform files
@@ -26,7 +27,11 @@ class Waveform:
 
         if os.path.isfile(file_path):
             # Loads DLL with labview functions
-            wvf_read_dll = ct.CDLL(os.path.dirname(__file__)+"/wvfRead.dll")
+            if (struct.calcsize("P")*8)==64:
+                wvf_read_dll = ct.CDLL(os.path.dirname(__file__)+"/wvfRead64.dll")
+            else:
+                wvf_read_dll = ct.CDLL(os.path.dirname(__file__)+"/wvfRead.dll")
+
             path = bytes(file_path, 'utf-8')
 
             # Reads the length of the Nth waveform in the file
@@ -57,7 +62,11 @@ class Waveform:
 
         if os.path.isfile(file_path):
             # Loads DLL with labview functions
-            wvf_read_dll = ct.CDLL(os.path.dirname(__file__)+"/wvfRead.dll")
+            if (struct.calcsize("P")*8)==64:
+                wvf_read_dll = ct.CDLL(os.path.dirname(__file__)+"/wvfRead64.dll")
+            else:
+                wvf_read_dll = ct.CDLL(os.path.dirname(__file__)+"/wvfRead.dll")
+                
             path = bytes(file_path, 'utf-8')
 
             # Reads the number of waveforms in the file

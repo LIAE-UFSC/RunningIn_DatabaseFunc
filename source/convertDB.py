@@ -62,9 +62,9 @@ def nameVar(headerName:str) -> str:
             ["valveSuctionVoltage","Tensão da válvula de sucção [V]"],
             ["currentRMS","Corrente RMS [A]"],
             ["compressorOn","Compressor Ativado"],
-            ["vibRMSLateral","Aceleração RMS Inferior Corpo [g]"],
-            ["vibRMSRig","Aceleração RMS Bancada [g]"],
-            ["vibRMSLongitudinal","Aceleração RMS Superior Corpo [g]"],
+            ["vibLateralRMS","Aceleração RMS Inferior Corpo [g]"],
+            ["vibRigRMS","Aceleração RMS Bancada [g]"],
+            ["vibLongitudinalRMS","Aceleração RMS Superior Corpo [g]"],
             ["massFlow","Vazão Mássica [kg/h]"],
             ["resistorDischargeDC","Duty Cycle Descarga [%]"],
             ["presSuction_GEPreValve","Pressão Sucção Válvula (DPS) [bar]"],
@@ -498,4 +498,4 @@ if __name__ == "__main__":
 
     fullUnitFolder = os.listdir(mainFolder) # Extract folders
 
-    convertFolder(fullUnitFolder, saveFolder)
+    convertFolders(fullUnitFolder, saveFolder)

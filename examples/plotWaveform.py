@@ -1,3 +1,7 @@
+# Call functions from root folder
+import sys, os
+sys.path.append(os.path.abspath('.'))
+
 from source.waveformConversion import Waveform
 import seaborn as sns
 import matplotlib.pyplot as plt
