@@ -31,20 +31,20 @@ def STFT_ensaio(file:RunIn_File, unidade:str, teste:str, index:list[int]):
     # Retorna Short-Time fourir Transform da vibração lateral no index desejado
     stft = np.empty((0,12800)) # Inicia uma matriz p/ o resultado da STFT
 
-    for ind in index: #realiza a fft por index e insere no nparray
+    for ind in range(10):#for ind in index: #realiza a fft por index e insere no nparray
         (f,fft) = FFT_ensaio(file, unidade, teste, ind)
         stft = np.append(stft,[fft],axis = 0) # Roda a FFT, salva os resultados em uma coluna
     global stft_transposta
     stft_transposta = stft.T # deixa no formato desejado
 
     #plot comentado
-    #plt.xlabel('Index')
-    #plt.ylabel('Frequência')
-    #plt.title('Espectro de Frequência')
-    #plt.grid(True)
-    #plt.pcolormesh(stft_transposta)
-    #plt.colorbar()  # Adiciona uma barra de cores para referência
-    #plt.show()
+    plt.xlabel('Index')
+    plt.ylabel('Frequência')
+    plt.title('Espectro de Frequência')
+    plt.grid(True)
+    plt.pcolormesh(stft_transposta)
+    plt.colorbar()  # Adiciona uma barra de cores para referência
+    plt.show()
     return (f,stft,stft_transposta)
 
 def bandpower(data, frequencia_base, freq_min, freq_max): #função que extrai a potência por banda
