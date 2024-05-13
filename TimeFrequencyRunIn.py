@@ -5,13 +5,12 @@ import matplotlib.pyplot as plt
 import random
 import scipy
 
-
 def FFT_ensaio(file:RunIn_File, unidade:str, teste:str, index:int):
 
     # Retorna FFT da vibração lateral no index desejado
 
     hm = file[unidade][teste]# path ->  unidade -> ensaio -> index
-    dados = hm.getMeasurements(varName=["vibrationRAWLateral"], indexes = [index])[0]["vibrationRAWLateral"]#obtenção dos dados
+    dados = hm.getMeasurements(varName=["vibrationRAWLateral","time"], indexes = [index])[0]["vibrationRAWLateral"]#obtenção dos dados
     N = len(dados); fs = N; T = 1/fs; t = np.arange(0,N/fs,T) #manipulação das entradas
     f = np.fft.fftfreq(N,T) #cria fft
     transf = np.fft.fft(dados) #transformada
@@ -68,7 +67,6 @@ def dividir_em_bandas(freq_max, numero_bandas, data):
         return (extremos,bandpowerlist) #retorna array com a potência por banda e com os valores extremos
 
 
-
 # Entra:
 #   path_in: caminho para o database
 #   path_out: caminho para o database
@@ -78,10 +76,10 @@ def dividir_em_bandas(freq_max, numero_bandas, data):
 # Biblioteca sugerida: Pillow (PIL)
 #   Tentar gerar figuras grayscale em png.
 
-def power_images(freq_max, numero_bandas, data):
+def power_images(freq_max, numero_bandas, data, var = "vibrationRAWLateral"):
     matriz_bandas = []
     for measurement in data:
-        dados_array = measurement['vibrationRAWLateral'] # Corrigir depois para pegar a array de uma chave genérica
+        dados_array = measurement[var]
         matriz_bandas.append(dividir_em_bandas(freq_max,numero_bandas,dados_array))
 
 def gera_dataset(path_in,path_out,n_bandas,f_max,window, var = "vibrationRAWLateral"):
@@ -89,9 +87,12 @@ def gera_dataset(path_in,path_out,n_bandas,f_max,window, var = "vibrationRAWLate
     with RunIn_File(path_in) as file:
         for unit in file:
              for test in unit:
-                ind_max = max([int(str(val)) for val in test._h5ref.keys() if str(val) != "measurements"])
-                i_init = 0
-                i_final = window
+                ind_max = max([int(str(val)) for val in test._h5ref.keys() if str(val) != "measurements"]) # SUBSTITUIR POR EXTRAÇÃO DO TEMPO
+                # EX: tempo = test.getMeasurements(varName=["time"], tStart = -float("inf"))
+                # tempo = [var["time"] for var in tempo]
+
+                i_init = 0 # Substituir por primeiro indice que o compressor está ligado (tempo > 0)
+                i_final = i_init + window
                 while i_final<= ind_max:
                     dados = test.getMeasurements(varName=[var], indexes = range(i_init,i_final))
 
@@ -106,7 +107,10 @@ def gera_dataset(path_in,path_out,n_bandas,f_max,window, var = "vibrationRAWLate
     
 path = r"\\LIAE-SANTINHO\Backups\Amaciamento_DatabaseMIMICRI\ModelA.hdf5"
             
+with RunIn_File(path) as file:
+    test = file["A1"][0]
 
+    pass
             
 
 #power_images(path, "asd", f_max = 1000, n_bandas= 20, window = 10)

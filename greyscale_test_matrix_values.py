@@ -40,11 +40,11 @@ imagem_greyscale_resized_transposta = cv2.resize(imagem_greyscale_transposta, di
 
 #cv2.imshow('Imagem Greyscale', imagem_greyscale)
 #cv2.imshow('Imagem Greyscale', imagem_greyscale_resized) #maior para ver
-cv2.imshow('Imagem Greyscale', imagem_greyscale_transposta)
-#cv2.imshow('Imagem Greyscale', imagem_greyscale_resized_transposta) #maior para ver
-
+#cv2.imshow('Imagem Greyscale', imagem_greyscale_transposta)
+cv2.imshow('Imagem Greyscale', imagem_greyscale_resized_transposta) #maior para ver
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+
 
 ################################## teste com dados reais #########################################
 

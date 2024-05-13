@@ -14,14 +14,14 @@ with RunIn_File(path) as file:
     test = file["A1"][0]
     bandpowerlista = []
 
-    #for k in range(10):
-    for k in range(5):
+    for k in range(10):
+    #for k in range(5):
         dados = test.getMeasurements(varName=["vibrationRAWLateral"], indexes = [k])[0]["vibrationRAWLateral"]
-        #bandpowerlista.append(dividir_em_bandas(1000,100,dados)[1])
-        bandpowerlista.append(dividir_em_bandas(1000,5,dados)[1])
+        bandpowerlista.append(dividir_em_bandas(1000,100,dados)[1])
+        #bandpowerlista.append(dividir_em_bandas(1000,5,dados)[1])
     
-    #escala = (dividir_em_bandas(1000,100,dados)[0])
-    escala = (dividir_em_bandas(1000,5,dados)[0])
+    escala = (dividir_em_bandas(1000,100,dados)[0])
+    #escala = (dividir_em_bandas(1000,5,dados)[0])
 
     #print(bandpowerlista)
     #print(valor)
@@ -30,8 +30,6 @@ print(np.min(bandpowerlista))
 print(np.max(bandpowerlista))
 
 plot_seaborn_bandpower(escala,bandpowerlista,np.max(bandpowerlista))
-
-
 
 #transformadas
 with RunIn_File(path) as file:
