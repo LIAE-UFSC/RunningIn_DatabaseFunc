@@ -1,5 +1,6 @@
 from TimeFrequencyRunIn import  dividir_em_bandas
 from source.runInDB_utils import RunIn_File
+import pandas as pd
 
 
 def gera_data(path_in,n_bandas,f_max,var = "vibrationRAWLateral"):
@@ -23,4 +24,16 @@ def gera_data(path_in,n_bandas,f_max,var = "vibrationRAWLateral"):
 
     return(dataset_list)
 
+if __name__ == "__main__":
+    path = r"\\LIAE-SANTINHO\Backups\Amaciamento_DatabaseMIMICRI\ModelA.hdf5"
+    with RunIn_File(path) as file:
+        data = file.getMeasurements(varName = ["time","massFlow"])
+    data = pd.DataFrame(data)
+    print(data)
 
+    caminho_arquivo = 'C:/Users/pedro/OneDrive/Área de Trabalho/trt/meu_arquivo_x.xlsx'
+
+
+    data.to_excel(caminho_arquivo, index=False)
+
+    

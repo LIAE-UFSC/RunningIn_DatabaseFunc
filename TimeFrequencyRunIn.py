@@ -105,12 +105,14 @@ def gera_dataset(path_in,path_out,n_bandas,f_max,window, var = "vibrationRAWLate
                     i_init = i_final
                     i_final = i_final + window
     
-path = r"\\LIAE-SANTINHO\Backups\Amaciamento_DatabaseMIMICRI\ModelA.hdf5"
-            
-with RunIn_File(path) as file:
-    test = file["A1"][0]
 
-    pass
-            
+if __name__ == "__main__":
+    path = r"\\LIAE-SANTINHO\Backups\Amaciamento_DatabaseMIMICRI\ModelA.hdf5"
+                
+    with RunIn_File(path) as file:
+        test = file["A1"][0]
 
-#power_images(path, "asd", f_max = 1000, n_bandas= 20, window = 10)
+        pass
+                
+
+    #power_images(path, "asd", f_max = 1000, n_bandas= 20, window = 10)
