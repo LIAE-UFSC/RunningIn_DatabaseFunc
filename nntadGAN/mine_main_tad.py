@@ -234,10 +234,10 @@ if __name__ == "__main__":
     critic_x_path = 'models/critic_x.pt'
     critic_z_path = 'models/critic_z.pt'
     
-    encoder = model.Encoder(encoder_path, signal_shape)
-    decoder = model.Decoder(decoder_path, signal_shape)
-    critic_x = model.CriticX(critic_x_path, signal_shape)
-    critic_z = model.CriticZ(critic_z_path)
+    encoder = mine_model.Encoder(encoder_path, signal_shape)
+    decoder = mine_model.Decoder(decoder_path, signal_shape)
+    critic_x =mine_model.CriticX(critic_x_path, signal_shape)
+    critic_z = mine_model.CriticZ(critic_z_path)
 
     mse_loss = torch.nn.MSELoss()
 
@@ -248,4 +248,4 @@ if __name__ == "__main__":
 
     train(n_epochs=1)
 
-    anomaly_detection.test(test_loader, encoder, decoder, critic_x)
+    mine_anomaly_detection.test(test_loader, encoder, decoder, critic_x)
