@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
+
 import os
 import logging
 import pandas as pd
@@ -186,6 +187,7 @@ def train(n_epochs=2000):
             cz_nc_loss.append(torch.mean(torch.tensor(cz_loss)))
 
         logging.debug('Critic training done in epoch {}'.format(epoch))
+        
         encoder_loss = list()
         decoder_loss = list()
 
