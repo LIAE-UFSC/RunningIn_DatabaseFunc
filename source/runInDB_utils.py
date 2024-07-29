@@ -1,5 +1,6 @@
 import h5py
 import pandas as pd
+import numpy as np
 
 class RunIn_File(h5py.File):
     # Class for running-in database in an hdf5 file
@@ -186,6 +187,8 @@ class RunIn_File(h5py.File):
 
                 # Check vars
                 for var in varName:
+                    if var in ["currentRMS_","vibRMSLateral_","vibRMSLongitudinal_"]:
+                        continue
                     if var not in allVars:
                         raise Exception("One or more variables are not available for the selected test. Run getVarNames() to list all available variables.")  
 
@@ -196,11 +199,24 @@ class RunIn_File(h5py.File):
                     for ind in indexes:
                         row = {}
                         for var in varName:
+                            RMS_flag = True
+                            if var == "currentRMS_":
+                                var = "currentRAW"
+                            elif var == "vibRMSLateral_":
+                                var = "vibrationRAWLateral"
+                            elif var == "vibRMSLongitudinal_":
+                                var = "vibrationRAWLongitudinal"
+                            else:
+                                RMS_flag = False
+                                
+                                
                             if var in ["voltageRAW","acousticEmissionRAW", "currentRAW",
                                     "vibrationRAWLongitudinal", "vibrationRAWRig", "vibrationRAWLateral"]:
                                 # Get values from high frequency dataset
                                 if var in list(self._h5ref[str(ind)].keys()):
                                     row[var] = self._h5ref[str(ind)][var][()]
+                                    if RMS_flag:
+                                        row[var] = np.sqrt(np.mean(np.square(row[var])))
                             else:
                                 row[var] = self._h5ref["measurements"][ind,measurementHeader.index(var)]
                         data.append(row)
@@ -227,11 +243,23 @@ class RunIn_File(h5py.File):
                         if t_act > tStart:
                             row = {}
                             for var in varName:
+                                RMS_flag = True
+                                if var == "currentRMS_":
+                                    var = "currentRAW"
+                                elif var == "vibRMSLateral_":
+                                    var = "vibrationRAWLateral"
+                                elif var == "vibRMSLongitudinal_":
+                                    var = "vibrationRAWLongitudinal"
+                                else:
+                                    RMS_flag = False
+
                                 if var in ["voltageRAW","acousticEmissionRAW", "currentRAW",
                                         "vibrationRAWLongitudinal", "vibrationRAWRig", "vibrationRAWLateral"]:
                                     if var in list(self._h5ref[str(count)].keys()):
                                         # Get values from high frequency dataset
                                         row[var] = self._h5ref[str(count)][var][()]
+                                        if RMS_flag:
+                                            row[var] = np.sqrt(np.mean(np.square(row[var])))
                                 else:
                                     row[var] = self._h5ref["measurements"][count,measurementHeader.index(var)]
                             data.append(row)

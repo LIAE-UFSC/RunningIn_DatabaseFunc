@@ -24,15 +24,19 @@ def gera_data(path_in,n_bandas,f_max,var = "vibrationRAWLateral"):
 
     return(dataset_list)
 
+
+
+print('alo')
+
 if __name__ == "__main__":
+    
     path = r"\\LIAE-SANTINHO\Backups\Amaciamento_DatabaseMIMICRI\ModelA.hdf5"
     with RunIn_File(path) as file:
-        data = file.getMeasurements(varName = ["time","massFlow"])
+        data = file.getMeasurements(varName = ["time","vibRMSLateral_"])
     data = pd.DataFrame(data)
     print(data)
 
-    caminho_arquivo = 'C:/Users/pedro/OneDrive/Área de Trabalho/trt/meu_arquivo_x.xlsx'
-
+    caminho_arquivo = 'C:/Users/pedro/OneDrive/Área de Trabalho/trt/meu_arquivo_vibRMSLateral_.xlsx'
 
     data.to_excel(caminho_arquivo, index=False)
 
