@@ -211,7 +211,7 @@ def train(n_epochs=2000):
             torch.save(critic_z.state_dict(), critic_z.critic_z_path)
 
 if __name__ == "__main__":
-    dataset = pd.read_csv('exchange-2_cpc_results.csv')
+    dataset = pd.read_csv('meu_arquivo_massflow_A1_csv.csv')
     #Splitting intro train and test
     #TODO could be done in a more pythonic way
     train_len = int(0.7 * dataset.shape[0])

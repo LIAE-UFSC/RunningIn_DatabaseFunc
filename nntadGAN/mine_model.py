@@ -4,12 +4,14 @@
 import os
 import logging
 import numpy as np
+import pandas as pd
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
+from dtaidistance import dtw
 
 class Encoder(nn.Module):
 
@@ -67,34 +69,66 @@ def unroll_signal(self, x):
     x = np.array(x).reshape(100)
     return np.median(x)
 
-def test(self):
+def dtw_reconstruction_error(x, x_hat):
+    """
+    Calculate the DTW reconstruction error between original and reconstructed signals.
     
+    Parameters:
+    x (np.array): Original signal
+    x_hat (np.array): Reconstructed signal
+    
+    Returns:
+    float: DTW reconstruction error
+    """
+    return dtw.distance(x, x_hat)
+
+def test(encoder, decoder, critic_x, df):
     """
     Returns a dataframe with original value, reconstructed value, reconstruction error, critic score
     """
-    df = self.test_dataset.copy()
     X_ = list()
-
-    RE = list()  #Reconstruction error
-    CS = list()  #Critic score
+    RE = list()  # Reconstruction error
+    CS = list()  # Critic score
 
     for i in range(0, df.shape[0]):
         x = df.rolled_signal[i]
-        x = tf.reshape(x, (1, 100, 1))
+        x = torch.tensor(x, dtype=torch.float32).view(1, 64, 100)
         z = encoder(x)
-        z = tf.expand_dims(z, axis=2)
         x_ = decoder(z)
 
-        re = dtw_reconstruction_error(tf.squeeze(x_).numpy(), tf.squeeze(x).numpy()) #reconstruction error
+        re = dtw_reconstruction_error(x_.detach().numpy().flatten(), x.detach().numpy().flatten())  # reconstruction error
         cs = critic_x(x)
-        cs = tf.squeeze(cs).numpy()
+        cs = cs.detach().numpy().flatten()[0]
         RE.append(re)
         CS.append(cs)
 
-        x_ = unroll_signal(x_)
+        x_ = unroll_signal(x_.detach().numpy().flatten())
 
         X_.append(x_)
 
     df['generated_signals'] = X_
+    df['reconstruction_error'] = RE
+    df['critic_score'] = CS
 
     return df
+
+# Carregar seu dataset
+df = pd.read_csv('seu_dataset.csv')
+# Pre-processar seu dataset conforme necessário
+# ...
+
+# Instanciar os modelos
+encoder = Encoder()
+decoder = Decoder()
+critic_x = CriticX()
+critic_z = CriticZ()
+
+# Carregar pesos pré-treinados
+encoder.load_state_dict(torch.load('encoder.pth'))
+decoder.load_state_dict(torch.load('decoder.pth'))
+critic_x.load_state_dict(torch.load('critic_x.pth'))
+critic_z.load_state_dict(torch.load('critic_z.pth'))
+
+# Fazer o teste
+resultado = test(encoder, decoder, critic_x, df)
+print(resultado.head())
