@@ -17,6 +17,13 @@ from torch.utils.data import Dataset, DataLoader
 import mine_model
 import mine_anomaly_detection
 
+if torch.cuda.is_available():
+    device = torch.device("cuda")  # Usa a GPU
+    print(f"Usando GPU: {torch.cuda.get_device_name(device)}")
+else:
+    device = torch.device("cpu")  # Usa a CPU
+    print("Usando CPU")
+
 logging.basicConfig(filename='train.log', level=logging.DEBUG)
 
 class SignalDataset(Dataset):
@@ -209,9 +216,11 @@ def train(n_epochs=2000):
             torch.save(decoder.state_dict(), decoder.decoder_path)
             torch.save(critic_x.state_dict(), critic_x.critic_x_path)
             torch.save(critic_z.state_dict(), critic_z.critic_z_path)
-
+    
 if __name__ == "__main__":
-    dataset = pd.read_csv('meu_arquivo_massflow_A1_csv.csv')
+
+    dataset = pd.read_csv(r"C:\Users\pedro\OneDrive\Documents\GitHub\RunningIn_DatabaseFunc\nntadGAN\exchange-2_cpc_results.csv")
+    #dataset = pd.read_csv(r'C:\Users\pedro\OneDrive\Documents\GitHub\RunningIn_DatabaseFunc\meu_arquivo_massflow_A1_csv.csv')
     #Splitting intro train and test
     #TODO could be done in a more pythonic way
     train_len = int(0.7 * dataset.shape[0])
@@ -231,10 +240,10 @@ if __name__ == "__main__":
 
     signal_shape = 100
     latent_space_dim = 20
-    encoder_path = 'models/encoder.pt'
-    decoder_path = 'models/decoder.pt'
-    critic_x_path = 'models/critic_x.pt'
-    critic_z_path = 'models/critic_z.pt'
+    encoder_path = 'encoder1.pt'
+    decoder_path = 'decoder1.pt'
+    critic_x_path = 'critic_x1.pt'
+    critic_z_path = 'critic_z1.pt'
     
     encoder = mine_model.Encoder(encoder_path, signal_shape)
     decoder = mine_model.Decoder(decoder_path, signal_shape)
