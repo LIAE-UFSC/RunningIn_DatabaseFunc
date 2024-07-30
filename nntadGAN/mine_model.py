@@ -113,22 +113,28 @@ def test(encoder, decoder, critic_x, df):
     return df
 
 # Carregar seu dataset
-df = pd.read_csv('seu_dataset.csv')
+df = pd.read_csv('meu_arquivo_massflow_A1_csv.csv')
 # Pre-processar seu dataset conforme necessário
 # ...
 
-# Instanciar os modelos
-encoder = Encoder()
-decoder = Decoder()
-critic_x = CriticX()
-critic_z = CriticZ()
+# Ajuste os caminhos dos modelos
+encoder_path = 'encoder1.pt'
+decoder_path = 'decoder1.pt'
+critic_x_path = 'critic_x1.pt'
+critic_z_path = 'critic_z1.pt'
+
+# Instanciar os modelos com os caminhos
+#encoder = Encoder(encoder_path)
+#decoder = Decoder(decoder_path)
+#critic_x = CriticX(critic_x_path)
+#critic_z = CriticZ(critic_z_path)
 
 # Carregar pesos pré-treinados
-encoder.load_state_dict(torch.load('encoder.pth'))
-decoder.load_state_dict(torch.load('decoder.pth'))
-critic_x.load_state_dict(torch.load('critic_x.pth'))
-critic_z.load_state_dict(torch.load('critic_z.pth'))
+# encoder.load_state_dict(torch.load(encoder_path))
+# decoder.load_state_dict(torch.load(decoder_path))
+# critic_x.load_state_dict(torch.load(critic_x_path))
+# critic_z.load_state_dict(torch.load(critic_z_path))
 
 # Fazer o teste
-resultado = test(encoder, decoder, critic_x, df)
-print(resultado.head())
+# resultado = test(encoder, decoder, critic_x, df)
+# print(resultado.head())

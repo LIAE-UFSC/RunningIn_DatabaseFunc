@@ -111,6 +111,7 @@ def detect_anomaly(anomaly_score):
 
     return is_anomaly
 
+'''
 def find_scores(y_true, y_predict):
     tp = tn = fp = fn = 0
 
@@ -123,10 +124,28 @@ def find_scores(y_true, y_predict):
             tn += 1
         elif y_true[i] == 0 and y_predict[i] == 1:
             fp += 1
+'''
+
+def find_scores(y_true, y_predict):
+
+    # Cálculo dos verdadeiros positivos, falsos positivos, verdadeiros negativos e falsos negativos
+    
+    tp = np.sum((y_true == 1) & (y_predict == 1))
+    fp = np.sum((y_true == 0) & (y_predict == 1))
+    tn = np.sum((y_true == 0) & (y_predict == 0))
+    fn = np.sum((y_true == 1) & (y_predict == 0))
+
+    # Cálculo do recall com verificação para evitar divisão por zero
+    if (tp + fn) > 0:
+        recall = tp / (tp + fn)
+    else:
+        recall = 0  # ou algum outro valor padrão ou tratamento de erro
 
     print ('Accuracy {:.2f}'.format((tp + tn)/(len(y_true))))
     precision = tp / (tp + fp)
     recall = tp / (tp + fn)
+    print(precision)
+    print(recall)
     print ('Precision {:.2f}'.format(precision))
     print ('Recall {:.2f}'.format(recall))
     print ('F1 Score {:.2f}'.format(2 * precision * recall / (precision + recall)))
