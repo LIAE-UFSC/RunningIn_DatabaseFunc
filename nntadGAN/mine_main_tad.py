@@ -219,8 +219,8 @@ def train(n_epochs=2000):
     
 if __name__ == "__main__":
 
-    dataset = pd.read_csv(r"C:\Users\pedro\OneDrive\Documents\GitHub\RunningIn_DatabaseFunc\nntadGAN\exchange-2_cpc_results.csv")
-    #dataset = pd.read_csv(r'C:\Users\pedro\OneDrive\Documents\GitHub\RunningIn_DatabaseFunc\meu_arquivo_massflow_A1_csv.csv')
+    #dataset = pd.read_csv(r"C:\Users\pedro\OneDrive\Documents\GitHub\RunningIn_DatabaseFunc\nntadGAN\exchange-2_cpc_results.csv")
+    dataset = pd.read_csv(r'C:\Users\pedro\OneDrive\Documents\GitHub\RunningIn_DatabaseFunc\meu_arquivo_massflow_A1_csv.csv')
     #Splitting intro train and test
     #TODO could be done in a more pythonic way
     train_len = int(0.7 * dataset.shape[0])
