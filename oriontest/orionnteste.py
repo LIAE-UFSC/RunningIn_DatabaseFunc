@@ -7,13 +7,8 @@ if torch.cuda.is_available():
 else:
     print("Rodando no CPU")
 
-
-
-# Carregar os dados de séries temporais
-input_file = "meu_arquivo_massflow_A1_csv.csv"
+input_file = "oriontest.csv"
 df = pd.read_csv(input_file)
-
-# Configuração do modelo TadGAN no Orion
 
 hyperparameters = {
     'orion.primitives.aer.AER#1': {
@@ -21,10 +16,10 @@ hyperparameters = {
         'verbose': True
     }
 }
-
 orion = Orion(
     pipeline='aer',
     hyperparameters=hyperparameters
 )
 
 orion.fit(df)
+
