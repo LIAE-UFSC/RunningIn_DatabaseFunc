@@ -25,7 +25,7 @@ def getStats_2d(data):
     """
 
     # Check for NaN values
-    if np.isnan(data).any():
+    if [np.isnan(row).any() for row in data].count(True) > 0:
         return (np.nan, np.nan, np.nan, np.nan, np.nan, np.nan)
     
     rms = []
@@ -97,9 +97,9 @@ def procTest(test: RunIn_File.RunIn_Unit_Reference.RunIn_Test_Reference):
     """
 
     data = pd.DataFrame.from_dict(test.getMeasurements(varName=["time","vibrationRAWLateral","vibrationRAWLongitudinal","currentRAW","massFlow"], tStart=0,tEnd=float('inf')))
-    vibLateralStats = getStats_2d(data["vibrationRAWLateral"])
-    vibLongitudinalStats = getStats_2d(data["vibrationRAWLongitudinal"])
-    currentStats = getStats_2d(data["currentRAW"])
+    vibLateralStats = getStats_2d(data["vibrationRAWLateral"].to_numpy())
+    vibLongitudinalStats = getStats_2d(data["vibrationRAWLongitudinal"].to_numpy())
+    currentStats = getStats_2d(data["currentRAW"].to_numpy())
     time = data["time"].to_numpy().round()
 
     if test.isRunIn:
@@ -128,7 +128,7 @@ if __name__ == '__main__':
                 df = pd.concat([df, pd.DataFrame.from_dict(test_res)], ignore_index=True)
 
     df.to_csv("allDataA.csv", index=False)
-    df.to_feather("allDataA.feather", index=False)
+    df.to_feather("allDataA.feather")
 
             
             
