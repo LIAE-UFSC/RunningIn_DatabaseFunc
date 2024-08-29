@@ -1,0 +1,6 @@
+pipeline:
+  - name: TadGAN
+    hyperparameters:
+      epochs: 50
+      batch_size: 64
+      z_dim: 20
