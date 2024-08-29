@@ -17,6 +17,9 @@ from torch.utils.data import Dataset, DataLoader
 import mine_model
 import mine_anomaly_detection
 
+from sklearn.model_selection import train_test_split
+from tqdm import tqdm
+
 if torch.cuda.is_available():
     device = torch.device("cuda")  # Usa a GPU
     print(f"Usando GPU: {torch.cuda.get_device_name(device)}")
@@ -172,7 +175,7 @@ def train(n_epochs=2000):
     encoder_epoch_loss = list()
     decoder_epoch_loss = list()
 
-    for epoch in range(n_epochs):
+    for epoch in tqdm(range(n_epochs),total=n_epochs):
         logging.debug('Epoch {}'.format(epoch))
         n_critics = 5
 
@@ -219,44 +222,58 @@ def train(n_epochs=2000):
     
 if __name__ == "__main__":
 
+    TRAIN = True
+
     #dataset = pd.read_csv(r"C:\Users\pedro\OneDrive\Documents\GitHub\RunningIn_DatabaseFunc\nntadGAN\exchange-2_cpc_results.csv")
-    dataset = pd.read_csv(r'C:\Users\pedro\OneDrive\Documents\GitHub\RunningIn_DatabaseFunc\meu_arquivo_massflow_A1_csv.csv')
+    dataset = pd.read_csv(r'nntadGAN\meu_arquivo_massflow_A1_csv.csv')
     #Splitting intro train and test
     #TODO could be done in a more pythonic way
     train_len = int(0.7 * dataset.shape[0])
-    dataset[0:train_len].to_csv('train_dataset.csv', index=False)
-    dataset[train_len:].to_csv('test_dataset.csv', index=False)
 
-    train_dataset = SignalDataset(path='train_dataset.csv')
-    test_dataset = SignalDataset(path='test_dataset.csv')
-    batch_size = 64
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, drop_last=True)
+    (train_dataset,test_dataset) = train_test_split(dataset, test_size=0.3, stratify=dataset["anomaly"])
+    train_dataset.to_csv('train_dataset.csv', index=False)
+    test_dataset.to_csv('test_dataset.csv', index=False)
 
-    logging.info('Number of train datapoints is {}'.format(len(train_dataset)))
-    logging.info('Number of samples in train dataset {}'.format(len(train_dataset)))
+    encoder_path = 'encoder1.pt'
+    decoder_path = 'decoder1.pt'
+    critic_x_path = 'critic_x1.pt'
+    critic_z_path = 'critic_z1.pt'
 
     lr = 1e-6
 
     signal_shape = 100
     latent_space_dim = 20
-    encoder_path = 'encoder1.pt'
-    decoder_path = 'decoder1.pt'
-    critic_x_path = 'critic_x1.pt'
-    critic_z_path = 'critic_z1.pt'
+    batch_size = 64
+
+    if TRAIN:
+
+        train_dataset = SignalDataset(path='train_dataset.csv')
+        test_dataset = SignalDataset(path='test_dataset.csv')
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, drop_last=True)
+
+        logging.info('Number of train datapoints is {}'.format(len(train_dataset)))
+        logging.info('Number of samples in train dataset {}'.format(len(train_dataset)))
     
-    encoder = mine_model.Encoder(encoder_path, signal_shape)
-    decoder = mine_model.Decoder(decoder_path, signal_shape)
-    critic_x =mine_model.CriticX(critic_x_path, signal_shape)
-    critic_z = mine_model.CriticZ(critic_z_path)
+        encoder = mine_model.Encoder(encoder_path, signal_shape)
+        decoder = mine_model.Decoder(decoder_path, signal_shape)
+        critic_x =mine_model.CriticX(critic_x_path, signal_shape)
+        critic_z = mine_model.CriticZ(critic_z_path)
 
-    mse_loss = torch.nn.MSELoss()
+        mse_loss = torch.nn.MSELoss()
 
-    optim_enc = optim.Adam(encoder.parameters(), lr=lr, betas=(0.5, 0.999))
-    optim_dec = optim.Adam(decoder.parameters(), lr=lr, betas=(0.5, 0.999))
-    optim_cx = optim.Adam(critic_x.parameters(), lr=lr, betas=(0.5, 0.999))
-    optim_cz = optim.Adam(critic_z.parameters(), lr=lr, betas=(0.5, 0.999))
+        optim_enc = optim.Adam(encoder.parameters(), lr=lr, betas=(0.5, 0.999))
+        optim_dec = optim.Adam(decoder.parameters(), lr=lr, betas=(0.5, 0.999))
+        optim_cx = optim.Adam(critic_x.parameters(), lr=lr, betas=(0.5, 0.999))
+        optim_cz = optim.Adam(critic_z.parameters(), lr=lr, betas=(0.5, 0.999))
 
-    train(n_epochs=1)
+        train(n_epochs=40)
+
+    else:
+        encoder = mine_model.Encoder(encoder_path, signal_shape)
+        decoder = mine_model.Decoder(decoder_path, signal_shape)
+        critic_x =mine_model.CriticX(critic_x_path, signal_shape)
+        critic_z = mine_model.CriticZ(critic_z_path)
+
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, drop_last=True)
 
     mine_anomaly_detection.test(test_loader, encoder, decoder, critic_x)
