@@ -113,15 +113,15 @@ def test(encoder, decoder, critic_x, df):
     return df
 
 # Carregar seu dataset
-df = pd.read_csv('meu_arquivo_massflow_A1_csv.csv')
+# df = pd.read_csv('meu_arquivo_massflow_A1_csv.csv')
 # Pre-processar seu dataset conforme necessário
 # ...
 
 # Ajuste os caminhos dos modelos
-encoder_path = 'encoder1.pt'
-decoder_path = 'decoder1.pt'
-critic_x_path = 'critic_x1.pt'
-critic_z_path = 'critic_z1.pt'
+# encoder_path = 'encoder1.pt'
+# decoder_path = 'decoder1.pt'
+# critic_x_path = 'critic_x1.pt'
+# critic_z_path = 'critic_z1.pt'
 
 # Instanciar os modelos com os caminhos
 #encoder = Encoder(encoder_path)
