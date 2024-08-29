@@ -219,6 +219,18 @@ def train(n_epochs=2000):
             torch.save(decoder.state_dict(), decoder.decoder_path)
             torch.save(critic_x.state_dict(), critic_x.critic_x_path)
             torch.save(critic_z.state_dict(), critic_z.critic_z_path)
+
+    # Plotting the loss for each epoch
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(len(cx_epoch_loss)), cx_epoch_loss, label='Critic X Loss')
+    plt.plot(range(len(cz_epoch_loss)), cz_epoch_loss, label='Critic Z Loss')
+    plt.plot(range(len(encoder_epoch_loss)), encoder_epoch_loss, label='Encoder Loss')
+    plt.plot(range(len(decoder_epoch_loss)), decoder_epoch_loss, label='Decoder Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Loss for each Epoch')
+    plt.legend()
+    plt.show()
     
 if __name__ == "__main__":
 
@@ -266,7 +278,7 @@ if __name__ == "__main__":
         optim_cx = optim.Adam(critic_x.parameters(), lr=lr, betas=(0.5, 0.999))
         optim_cz = optim.Adam(critic_z.parameters(), lr=lr, betas=(0.5, 0.999))
 
-        train(n_epochs=40)
+        train(n_epochs=2)
 
     else:
         encoder = mine_model.Encoder(encoder_path, signal_shape)
