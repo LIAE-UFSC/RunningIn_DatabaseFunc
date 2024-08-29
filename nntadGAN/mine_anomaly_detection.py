@@ -134,10 +134,10 @@ def find_scores(y_true, y_predict):
         recall = 0  # ou algum outro valor padrão ou tratamento de erro
 
     print ('Accuracy {:.2f}'.format((tp + tn)/(len(y_true))))
-    #precision = tp / (tp + fp)
-    #recall = tp / (tp + fn)
+    precision = tp / (tp + fp)
+    recall = tp / (tp + fn)
     #print(precision)
     print(recall)
-    #print ('Precision {:.2f}'.format(precision))
+    print ('Precision {:.2f}'.format(precision))
     print ('Recall {:.2f}'.format(recall))
-    #print ('F1 Score {:.2f}'.format(2 * precision * recall / (precision + recall)))
+    print ('F1 Score {:.2f}'.format(2 * precision * recall / (precision + recall)))   
