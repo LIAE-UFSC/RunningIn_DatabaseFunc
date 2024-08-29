@@ -1,6 +1,7 @@
 import h5py
 import pandas as pd
 import numpy as np
+import warnings
 
 class RunIn_File(h5py.File):
     # Class for running-in database in an hdf5 file
@@ -166,6 +167,9 @@ class RunIn_File(h5py.File):
                 self.unit = parent.name
                 self.name = self.date
 
+            def isRunIn(self):
+                return self._h5ref.attrs["runIn"]
+
             def __repr__(self):
                 return str(self)
     
@@ -190,7 +194,7 @@ class RunIn_File(h5py.File):
                     if var in ["currentRMS_","vibRMSLateral_","vibRMSLongitudinal_"]:
                         continue
                     if var not in allVars:
-                        raise Exception("One or more variables are not available for the selected test. Run getVarNames() to list all available variables.")  
+                        warnings.warn("One or more variables are not available for the selected test. Run getVarNames() to list all available variables.")
 
                 data = []
 
@@ -217,8 +221,12 @@ class RunIn_File(h5py.File):
                                     row[var] = self._h5ref[str(ind)][var][()]
                                     if RMS_flag:
                                         row[var] = np.sqrt(np.mean(np.square(row[var])))
-                            else:
+                                else:
+                                    row[var] = [np.nan]
+                            elif var in measurementHeader:
                                 row[var] = self._h5ref["measurements"][ind,measurementHeader.index(var)]
+                            else:
+                                row[var] = np.nan
                         data.append(row)
                     
                 
@@ -260,8 +268,12 @@ class RunIn_File(h5py.File):
                                         row[var] = self._h5ref[str(count)][var][()]
                                         if RMS_flag:
                                             row[var] = np.sqrt(np.mean(np.square(row[var])))
-                                else:
+                                    else:
+                                        row[var] = [np.nan]
+                                elif var in measurementHeader:
                                     row[var] = self._h5ref["measurements"][count,measurementHeader.index(var)]
+                                else:
+                                    row[var] = np.nan
                             data.append(row)
                         count = count + 1
 
