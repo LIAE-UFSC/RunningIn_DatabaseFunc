@@ -35,9 +35,17 @@ def getStats_2d(data):
     peak = []
     crest = []
     for i in data:
+        if len(i) == 0:
+            rms.append(np.nan)
+            kur.append(np.nan)
+            var.append(np.nan)
+            skew.append(np.nan)
+            peak.append(np.nan)
+            crest.append(np.nan)
+            continue
         rms.append(np.sqrt(np.mean(i**2)))
         kur.append(scipy.stats.kurtosis(i))
-        var.append(np.var(i))
+        var.append(np.var(i)) 
         skew.append(scipy.stats.skew(i))
         peak.append(np.max(i))
         crest.append(np.max(i)/np.sqrt(np.mean(i**2)))
