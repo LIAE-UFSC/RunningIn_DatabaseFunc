@@ -237,7 +237,11 @@ if __name__ == "__main__":
     TRAIN = True
 
     #dataset = pd.read_csv(r"C:\Users\pedro\OneDrive\Documents\GitHub\RunningIn_DatabaseFunc\nntadGAN\exchange-2_cpc_results.csv")
-    dataset = pd.read_csv(r'nntadGAN\meu_arquivo_massflow_A1_csv.csv')
+    #dataset = pd.read_csv(r'nntadGAN\meu_arquivo_massflow_A1_csv.csv')
+
+    dataset = pd.read_csv(r'nntadGAN\anomalias_visiveis.csv')
+    
+
     #Splitting intro train and test
     #TODO could be done in a more pythonic way
     train_len = int(0.7 * dataset.shape[0])
@@ -252,7 +256,6 @@ if __name__ == "__main__":
     critic_z_path = 'critic_z1.pt'
 
     lr = 1e-6
-
     signal_shape = 100
     latent_space_dim = 20
     batch_size = 64
@@ -278,7 +281,7 @@ if __name__ == "__main__":
         optim_cx = optim.Adam(critic_x.parameters(), lr=lr, betas=(0.5, 0.999))
         optim_cz = optim.Adam(critic_z.parameters(), lr=lr, betas=(0.5, 0.999))
 
-        train(n_epochs=2)
+        train(n_epochs=5)
 
     else:
         encoder = mine_model.Encoder(encoder_path, signal_shape)
