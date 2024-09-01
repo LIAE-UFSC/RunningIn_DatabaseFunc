@@ -127,17 +127,16 @@ def find_scores(y_true, y_predict):
             fp += 1
 
 
-    # Cálculo do recall com verificação para evitar divisão por zero
+    
     if (tp + fn) > 0:
         recall = tp / (tp + fn)
     else:
-        recall = 0  # ou algum outro valor padrão ou tratamento de erro
-
-    print ('Accuracy {:.2f}'.format((tp + tn)/(len(y_true))))
+        recall = 0  
+    
     precision = tp / (tp + fp)
     recall = tp / (tp + fn)
-    #print(precision)
-    print(recall)
+
+    print ('Accuracy {:.2f}'.format((tp + tn)/(len(y_true))))
     print ('Precision {:.2f}'.format(precision))
     print ('Recall {:.2f}'.format(recall))
     print ('F1 Score {:.2f}'.format(2 * precision * recall / (precision + recall)))   
