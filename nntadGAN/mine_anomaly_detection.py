@@ -126,8 +126,6 @@ def find_scores(y_true, y_predict):
         elif y_true[i] == 0 and y_predict[i] == 1:
             fp += 1
 
-
-    
     if (tp + fn) > 0:
         recall = tp / (tp + fn)
     else:
