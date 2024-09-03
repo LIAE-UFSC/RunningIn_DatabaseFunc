@@ -70,6 +70,7 @@ def unroll_signal(self, x):
     return np.median(x)
 
 def dtw_reconstruction_error(x, x_hat):
+    
     """
     Calculate the DTW reconstruction error between original and reconstructed signals.
     
@@ -83,9 +84,11 @@ def dtw_reconstruction_error(x, x_hat):
     return dtw.distance(x, x_hat)
 
 def test(encoder, decoder, critic_x, df):
+
     """
     Returns a dataframe with original value, reconstructed value, reconstruction error, critic score
     """
+
     X_ = list()
     RE = list()  # Reconstruction error
     CS = list()  # Critic score

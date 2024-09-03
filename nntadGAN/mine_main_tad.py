@@ -237,14 +237,15 @@ if __name__ == "__main__":
     TRAIN = True
 
     #dataset = pd.read_csv(r"C:\Users\pedro\OneDrive\Documents\GitHub\RunningIn_DatabaseFunc\nntadGAN\exchange-2_cpc_results.csv")
-    #dataset = pd.read_csv(r'nntadGAN\meu_arquivo_massflow_A1_csv.csv')
+    dataset = pd.read_csv(r'nntadGAN\meu_arquivo_massflow_A1_csv.csv')
 
-    dataset = pd.read_csv(r'nntadGAN\anomalias_visiveis.csv')
+    #dataset = pd.read_csv(r'nntadGAN\anomalias_visiveis.csv')
     
 
     #Splitting intro train and test
     #TODO could be done in a more pythonic way
     train_len = int(0.7 * dataset.shape[0])
+
 
     (train_dataset,test_dataset) = train_test_split(dataset, test_size=0.3, stratify=dataset["anomaly"])
     train_dataset.to_csv('train_dataset.csv', index=False)
