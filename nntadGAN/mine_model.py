@@ -141,3 +141,5 @@ def test(encoder, decoder, critic_x, df):
 # Fazer o teste
 # resultado = test(encoder, decoder, critic_x, df)
 # print(resultado.head())
+
+

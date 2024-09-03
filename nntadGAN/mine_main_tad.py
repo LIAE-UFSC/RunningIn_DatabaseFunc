@@ -6,19 +6,18 @@ import logging
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import stats
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
+from scipy import stats
+from sklearn.model_selection import train_test_split
+from tqdm import tqdm
 
 import mine_model
 import mine_anomaly_detection
 
-from sklearn.model_selection import train_test_split
-from tqdm import tqdm
 
 if torch.cuda.is_available():
     device = torch.device("cuda")  # Usa a GPU
@@ -167,8 +166,8 @@ def decoder_iteration(sample):
 
     return loss_dec
 
+def train(n_epochs=-1): #não está influenciando no processamento
 
-def train(n_epochs=2000):
     logging.debug('Starting training')
     cx_epoch_loss = list()
     cz_epoch_loss = list()
@@ -236,10 +235,8 @@ if __name__ == "__main__":
 
     TRAIN = True
 
-    #dataset = pd.read_csv(r"C:\Users\pedro\OneDrive\Documents\GitHub\RunningIn_DatabaseFunc\nntadGAN\exchange-2_cpc_results.csv")
-    dataset = pd.read_csv(r'nntadGAN\meu_arquivo_massflow_A1_csv.csv')
-
-    #dataset = pd.read_csv(r'nntadGAN\anomalias_visiveis.csv')
+    #dataset = pd.read_csv(r'nntadGAN\meu_arquivo_massflow_A1_csv.csv')
+    dataset = pd.read_csv(r'nntadGAN\anomalias_visiveis.csv')
     
 
     #Splitting intro train and test
@@ -256,7 +253,7 @@ if __name__ == "__main__":
     critic_x_path = 'critic_x1.pt'
     critic_z_path = 'critic_z1.pt'
 
-    lr = 1e-6
+    lr = 0.000001
     signal_shape = 100
     latent_space_dim = 20
     batch_size = 64
@@ -291,5 +288,4 @@ if __name__ == "__main__":
         critic_z = mine_model.CriticZ(critic_z_path)
 
     test_loader = DataLoader(test_dataset, batch_size=batch_size, drop_last=True)
-
     mine_anomaly_detection.test(test_loader, encoder, decoder, critic_x)
