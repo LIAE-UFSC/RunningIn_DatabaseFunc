@@ -6,7 +6,7 @@ import warnings
 import tqdm
 import numpy as np
 import pandas as pd
-from source.waveformConversion import Waveform
+from pyRInDB.utils.waveformConversion import Waveform
 
 def addMinOrMax(dictMin, dictMax, name, value):
     # Compare and add to min max dict
@@ -488,7 +488,6 @@ def addTest(hdf5File: str, testFolder: str, unitName: str):
             if f"min_{key}" in modelGrp.attrs:
                 modelGrp.attrs[f"min_{key}"] = min(modelGrp.attrs[f"min_{key}"],minValuesTest[key])
                 modelGrp.attrs[f"max_{key}"] = max(modelGrp.attrs[f"max_{key}"],maxValuesTest[key])
-
 
 if __name__ == "__main__":
     mainFolder = input("Digite a pasta de origem:\n")

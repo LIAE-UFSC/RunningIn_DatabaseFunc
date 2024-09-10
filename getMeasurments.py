@@ -2,7 +2,7 @@
 import sys, os
 sys.path.append(os.path.abspath('.'))
 
-from source.runInDB_utils import *
+from pyRInDB import RunIn_File
 import pandas as pd
 
 pathIn = r"\\LIAE-SANTINHO\Backups\Amaciamento_DatabaseFull\datasetModelA.hdf5"
