@@ -1,45 +1,9 @@
 import h5py
-import pandas as pd
+import numpy as np
+import warnings
 
 class RunIn_File(h5py.File):
-    """
-    Class for running-in database in an hdf5 file.
-
-    Args:
-        filePath (str): The path to the hdf5 file.
-        driver (str, optional): The name of the HDF5 driver to use. Defaults to None.
-        libver (str, optional): The HDF5 library version to use. Defaults to None.
-        userblock_size (int, optional): The size of the user block in bytes. Defaults to None.
-        swmr (bool, optional): Enable Single-Writer-Multiple-Reader (SWMR) access. Defaults to False.
-        rdcc_nslots (int, optional): The number of cache slots. Defaults to None.
-        rdcc_nbytes (int, optional): The total size of the raw data chunk cache in bytes. Defaults to None.
-        rdcc_w0 (float, optional): The chunk preemption policy. Defaults to None.
-        track_order (bool, optional): Track the order of object creation. Defaults to None.
-        fs_strategy (str, optional): The file space management strategy. Defaults to None.
-        fs_persist (bool, optional): Persist free-space information. Defaults to False.
-        fs_threshold (int, optional): Threshold for file space allocation. Defaults to 1.
-        fs_page_size (int, optional): The file space page size. Defaults to None.
-        page_buf_size (int, optional): The page buffer size. Defaults to None.
-        min_meta_keep (int, optional): Minimum number of metadata objects to keep. Defaults to 0.
-        min_raw_keep (int, optional): Minimum number of raw data objects to keep. Defaults to 0.
-        locking (bool, optional): Enable file locking. Defaults to None.
-        **kwds: Additional keyword arguments to pass to h5py.File.
-
-    Attributes:
-        path (str): The path to the hdf5 file.
-        _fileh5ref (h5py.File): The h5py File object representing the hdf5 file.
-        _modelh5ref (h5py.Group): The h5py Group object representing the model group in the hdf5 file.
-        model (str): The name of the model.
-
-    Methods:
-        open(): Returns the RunIn_File object.
-        close(): Closes the RunIn_File object.
-        getTestDict(): Returns a dictionary of unit names and their corresponding test names.
-        getUnits(): Returns a dictionary of unit names and their corresponding RunIn_Unit_Reference objects.
-        getMeasurements(testDict=None, varName=None, tStart=None, tEnd=None, indexes=None): Returns a dataframe containing the measurements of the desired indexes or time range.
-
-    """
-
+    # Class for running-in database in an hdf5 file
     def __init__(self, filePath, driver=None, libver=None, userblock_size=None, swmr=False,
                  rdcc_nslots=None, rdcc_nbytes=None, rdcc_w0=None, track_order=None,
                  fs_strategy=None, fs_persist=False, fs_threshold=1, fs_page_size=None,
@@ -131,26 +95,7 @@ class RunIn_File(h5py.File):
         return data
 
     class RunIn_Unit_Reference:
-        """
-        Class for a unit group inside an hdf5 file.
-
-        Args:
-            parent (RunIn_File): The parent RunIn_File object.
-            unitGroupId (h5py.Group): The h5py Group object representing the unit group.
-
-        Attributes:
-            _h5ref (h5py.Group): The h5py Group object representing the unit group.
-            _h5file (RunIn_File): The parent RunIn_File object.
-            name (str): The name of the unit.
-            model (str): The name of the model.
-            tests (list[RunIn_Test_Reference]): A list of RunIn_Test_Reference objects representing the tests.
-
-        Methods:
-            getTestNames(): Returns a list of test names for the unit.
-            getMeasurements(testName=None, varName=None, tStart=None, tEnd=None, indexes=None): Returns a dataframe containing the measurements of the desired indexes or time range.
-
-        """
-
+        # Class for a unit group inside a hdf5 file
         def __init__(self, parent, unitGroupId:h5py.Group):
             self._h5ref = unitGroupId
             self._h5file = parent
@@ -209,29 +154,8 @@ class RunIn_File(h5py.File):
 
             return data
 
-
         class RunIn_Test_Reference:
-            """
-            Class for a test group inside an hdf5 file.
-
-            Args:
-                parent (RunIn_Unit_Reference): The parent RunIn_Unit_Reference object.
-                testGroupId (h5py.Group): The h5py Group object representing the test group.
-
-            Attributes:
-                _h5ref (h5py.Group): The h5py Group object representing the test group.
-                _h5file (RunIn_File): The parent RunIn_File object.
-                h5unit (RunIn_Unit_Reference): The parent RunIn_Unit_Reference object.
-                date (str): The date of the test.
-                model (str): The name of the model.
-                unit (str): The name of the unit.
-                name (str): The name of the test.
-
-            Methods:
-                getMeasurements(varName=None, tStart=None, tEnd=None, indexes=None, unknownIsNan=False): Returns a dataframe containing the measurements of the desired indexes or time range.
-
-            """
-            
+            # Class for a test group inside a hdf5 file
             def __init__(self, parent, testGroupId:h5py.Group):
                 self._h5ref = testGroupId
                 self._h5file = parent._h5file
@@ -241,19 +165,20 @@ class RunIn_File(h5py.File):
                 self.unit = parent.name
                 self.name = self.date
 
+            def isRunIn(self):
+                return self._h5ref.attrs["runIn"]
+
             def __repr__(self):
                 return str(self)
     
             def __str__(self):
                 return self.name
 
-            def getMeasurements(self, varName: list[str] = None, tStart:float = None, tEnd:float = None, indexes: list[int] = None, unknownIsNan = False):
+            def getMeasurements(self, varName: list[str] = None, tStart:float = None, tEnd:float = None, indexes: list[int] = None):
                 # Returns a dataframe containing the measurements of the desired indexes or time range
 
                 if (indexes is not None) and ((tEnd is not None) or (tStart is not None)):
                     raise Exception("Both index and time range provided. Only one allowed.")
-                else:
-                    pass
                 
                 allVars = self.getVarNames()
 
@@ -263,10 +188,11 @@ class RunIn_File(h5py.File):
                 measurementHeader = list(self._h5ref["measurements"].attrs["columnNames"])
 
                 # Check vars
-                if not unknownIsNan:
-                    for var in varName:
-                        if var not in allVars:
-                            raise Exception("One or more variables are not available for the selected test. Run getVarNames() to list all available variables.")  
+                for var in varName:
+                    if var in ["currentRMS_","vibRMSLateral_","vibRMSLongitudinal_"]:
+                        continue
+                    if var not in allVars:
+                        warnings.warn("One or more variables are not available for the selected test. Run getVarNames() to list all available variables.")
 
                 data = []
 
@@ -275,17 +201,30 @@ class RunIn_File(h5py.File):
                     for ind in indexes:
                         row = {}
                         for var in varName:
+                            RMS_flag = True
+                            if var == "currentRMS_":
+                                var = "currentRAW"
+                            elif var == "vibRMSLateral_":
+                                var = "vibrationRAWLateral"
+                            elif var == "vibRMSLongitudinal_":
+                                var = "vibrationRAWLongitudinal"
+                            else:
+                                RMS_flag = False
+                                
+                                
                             if var in ["voltageRAW","acousticEmissionRAW", "currentRAW",
-                                    "vibrationLongitudinalRAW", "vibrationRigRAW", "vibrationLateralRAW"]:
+                                    "vibrationRAWLongitudinal", "vibrationRAWRig", "vibrationRAWLateral"]:
                                 # Get values from high frequency dataset
                                 if var in list(self._h5ref[str(ind)].keys()):
                                     row[var] = self._h5ref[str(ind)][var][()]
-                            else:
-                                if (var not in allVars) and unknownIsNan:
-                                    row[var] = float('NaN')
+                                    if RMS_flag:
+                                        row[var] = np.sqrt(np.mean(np.square(row[var])))
                                 else:
-                                    row[var] = self._h5ref["measurements"][ind,measurementHeader.index(var)]
-
+                                    row[var] = [np.nan]
+                            elif var in measurementHeader:
+                                row[var] = self._h5ref["measurements"][ind,measurementHeader.index(var)]
+                            else:
+                                row[var] = np.nan
                         data.append(row)
                     
                 
@@ -310,16 +249,29 @@ class RunIn_File(h5py.File):
                         if t_act > tStart:
                             row = {}
                             for var in varName:
+                                RMS_flag = True
+                                if var == "currentRMS_":
+                                    var = "currentRAW"
+                                elif var == "vibRMSLateral_":
+                                    var = "vibrationRAWLateral"
+                                elif var == "vibRMSLongitudinal_":
+                                    var = "vibrationRAWLongitudinal"
+                                else:
+                                    RMS_flag = False
+
                                 if var in ["voltageRAW","acousticEmissionRAW", "currentRAW",
-                                        "vibrationLongitudinalRAW", "vibrationRigRAW", "vibrationLateralRAW"]:
+                                        "vibrationRAWLongitudinal", "vibrationRAWRig", "vibrationRAWLateral"]:
                                     if var in list(self._h5ref[str(count)].keys()):
                                         # Get values from high frequency dataset
                                         row[var] = self._h5ref[str(count)][var][()]
-                                else:
-                                    if (var not in allVars) and unknownIsNan:
-                                        row[var] = float('NaN')
+                                        if RMS_flag:
+                                            row[var] = np.sqrt(np.mean(np.square(row[var])))
                                     else:
-                                        row[var] = self._h5ref["measurements"][count,measurementHeader.index(var)]
+                                        row[var] = [np.nan]
+                                elif var in measurementHeader:
+                                    row[var] = self._h5ref["measurements"][count,measurementHeader.index(var)]
+                                else:
+                                    row[var] = np.nan
                             data.append(row)
                         count = count + 1
 
@@ -336,6 +288,3 @@ class RunIn_File(h5py.File):
 
                 # List of all available variables based on columnNames attribute and dataset names
                 return list(self._h5ref["measurements"].attrs["columnNames"])+list(self._h5ref["0"].keys())
-        
-#if __name__ == "__main__":
-#

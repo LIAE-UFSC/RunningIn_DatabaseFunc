@@ -2,7 +2,7 @@
 import sys, os
 sys.path.append(os.path.abspath('.'))
 
-from source.formatDB_MIMICRI import *
+from .formatDB_MIMICRI import *
 
 folderIn = r"\\LIAE-SANTINHO\Backups\Amaciamento_DatabaseFull\datasetModelA.hdf5"
 folderOut = r"\\LIAE-SANTINHO\Backups\Amaciamento_DatabaseMIMICRI\ModelA.hdf5"
