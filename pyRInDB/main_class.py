@@ -1,6 +1,8 @@
 import h5py
 import numpy as np
 import warnings
+import scipy.stats
+import pandas as pd
 
 class RunIn_File(h5py.File):
     # Class for running-in database in an hdf5 file
@@ -173,115 +175,105 @@ class RunIn_File(h5py.File):
     
             def __str__(self):
                 return self.name
+            
+            def _applyProcess(self, data: np.array, process: str):
+                if [np.isnan(row).any() for row in data].count(True) > 0:
+                    return np.nan
+                if process == "RMS":
+                    return np.sqrt(np.mean(np.square(data)))
+                elif process == "Kurtosis":
+                    return scipy.stats.kurtosis(data)
+                elif process == "Variance":
+                    return np.var(data)
+                elif process == "Skewness":
+                    return scipy.stats.skew(data)
+                elif process == "Peak":
+                    return np.max(data)
+                elif process == "Crest":
+                    return np.max(data)/np.sqrt(np.mean(np.square(data)))
+                else:
+                    raise Exception("Invalid process. Choose from 'RMS', 'Kurtosis', 'Variance', 'Skewness', 'Peak' or 'Crest'.")
+            
+            def _procVars(self, processesdVars: list[dict], index: int):
+                varStr = {"voltage": "voltageRAW",
+                          "acousticEmission": "acousticEmissionRAW",
+                          "current": "currentRAW",
+                          "vibrationLongitudinal": "vibrationRAWLongitudinal",
+                          "vibrationRig": "vibrationRAWRig",
+                          "vibrationLateral": "vibrationRAWLateral"}
 
-            def getMeasurements(self, varName: list[str] = None, tStart:float = None, tEnd:float = None, indexes: list[int] = None):
-                # Returns a dataframe containing the measurements of the desired indexes or time range
+                data_processed = {}
+                for select in processesdVars:
+                    varName = select["var"]
+                    var = varStr[varName] if varName in varStr.keys() else varName
 
+                    processes = select["process"]
+                    
+                    for process in processes:
+                        data_processed[varName+process] = np.nan
+                        if var in list(self._h5ref["0"].keys()):
+                            data_processed[varName+process] = self._applyProcess(self._h5ref[str(index)][var], process)
+                
+                return data_processed
+
+            def to_dict(self, vars: list[str] = None, processesdVars: list[dict] = None, tStart:float = None, tEnd:float = None, indexes: list[int] = None):
+                
                 if (indexes is not None) and ((tEnd is not None) or (tStart is not None)):
                     raise Exception("Both index and time range provided. Only one allowed.")
                 
                 allVars = self.getVarNames()
 
-                if varName is None:
-                    varName = allVars
+                if vars is None:
+                    vars = allVars
 
                 measurementHeader = list(self._h5ref["measurements"].attrs["columnNames"])
 
                 # Check vars
-                for var in varName:
-                    if var in ["currentRMS_","vibRMSLateral_","vibRMSLongitudinal_"]:
-                        continue
+                for var in vars:
                     if var not in allVars:
                         warnings.warn("One or more variables are not available for the selected test. Run getVarNames() to list all available variables.")
 
-                data = []
+                data = {}
 
-                if indexes is not None: # Get by index
-
-                    for ind in indexes:
-                        row = {}
-                        for var in varName:
-                            RMS_flag = True
-                            if var == "currentRMS_":
-                                var = "currentRAW"
-                            elif var == "vibRMSLateral_":
-                                var = "vibrationRAWLateral"
-                            elif var == "vibRMSLongitudinal_":
-                                var = "vibrationRAWLongitudinal"
-                            else:
-                                RMS_flag = False
-                                
-                                
-                            if var in ["voltageRAW","acousticEmissionRAW", "currentRAW",
-                                    "vibrationRAWLongitudinal", "vibrationRAWRig", "vibrationRAWLateral"]:
-                                # Get values from high frequency dataset
-                                if var in list(self._h5ref[str(ind)].keys()):
-                                    row[var] = self._h5ref[str(ind)][var][()]
-                                    if RMS_flag:
-                                        row[var] = np.sqrt(np.mean(np.square(row[var])))
-                                else:
-                                    row[var] = [np.nan]
-                            elif var in measurementHeader:
-                                row[var] = self._h5ref["measurements"][ind,measurementHeader.index(var)]
-                            else:
-                                row[var] = np.nan
-                        data.append(row)
-                    
-                
-                else: # Get by time
+                if indexes is None:
                     if tStart is None:
                         tStart = 0
                     if tEnd is None:
                         tEnd = float("inf")
 
-                    if tStart > tEnd:
-                        raise Exception("Starting time should be smaller than end time.")
+                    time = self._h5ref["measurements"][:,measurementHeader.index("time")]
 
-                    allTests = list(self._h5ref.keys())
-                    allTests.remove("measurements")
+                    indexes = np.where((time >= tStart) & (time <= tEnd))[0]
+                    
+                for ind in indexes:
 
-                    count = 0
+                    # Create a dictionary with the processed variables
+                    row = self._procVars(processesdVars, ind)
 
-                    t_act = self._h5ref["measurements"][count,measurementHeader.index("time")]
-
-                    while t_act <= tEnd:
-
-                        if t_act > tStart:
-                            row = {}
-                            for var in varName:
-                                RMS_flag = True
-                                if var == "currentRMS_":
-                                    var = "currentRAW"
-                                elif var == "vibRMSLateral_":
-                                    var = "vibrationRAWLateral"
-                                elif var == "vibRMSLongitudinal_":
-                                    var = "vibrationRAWLongitudinal"
-                                else:
-                                    RMS_flag = False
-
-                                if var in ["voltageRAW","acousticEmissionRAW", "currentRAW",
-                                        "vibrationRAWLongitudinal", "vibrationRAWRig", "vibrationRAWLateral"]:
-                                    if var in list(self._h5ref[str(count)].keys()):
-                                        # Get values from high frequency dataset
-                                        row[var] = self._h5ref[str(count)][var][()]
-                                        if RMS_flag:
-                                            row[var] = np.sqrt(np.mean(np.square(row[var])))
-                                    else:
-                                        row[var] = [np.nan]
-                                elif var in measurementHeader:
-                                    row[var] = self._h5ref["measurements"][count,measurementHeader.index(var)]
-                                else:
-                                    row[var] = np.nan
-                            data.append(row)
-                        count = count + 1
-
-                        if str(count) not in allTests: # All measurements have been checked
-                            break
+                    for var in vars:                            
+                            
+                        if var in ["voltageRAW","acousticEmissionRAW", "currentRAW",
+                                "vibrationRAWLongitudinal", "vibrationRAWRig", "vibrationRAWLateral"]:
+                            # Get values from high frequency dataset
+                            if var in list(self._h5ref[str(ind)].keys()):
+                                row[var] = self._h5ref[str(ind)][var][()]
+                            else:
+                                row[var] = [np.nan]
+                        elif var in measurementHeader:
+                            row[var] = self._h5ref["measurements"][ind,measurementHeader.index(var)]
                         else:
-                            t_act = self._h5ref["measurements"][count,measurementHeader.index("time")]
+                            row[var] = np.nan                 
+
+                    for key in row.keys():
+                        if key in data.keys():
+                            data[key].append(row[key])
+                        else:
+                            data[key] = [row[key]]
                     
                 return data
 
+            def to_dataframe(self, vars: list[str] = None, processesdVars: list[dict] = None, tStart:float = None, tEnd:float = None, indexes: list[int] = None):
+                return pd.DataFrame(self.to_dict(vars, processesdVars, tStart, tEnd, indexes))
 
             def getVarNames(self):
                 # Return the name of all measurement variables of a given test
