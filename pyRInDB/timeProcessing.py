@@ -2,7 +2,7 @@
 This module contains functions for processing time-based variables from a database file in HDF5 format.
 """
 
-from source.runInDB_utils import RunIn_File
+from pyRInDB import RunIn_File
 import pandas as pd
 import numpy as np
 from scipy.stats import skew, kurtosis

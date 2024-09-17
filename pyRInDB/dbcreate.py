@@ -6,7 +6,7 @@ import warnings
 import tqdm
 import numpy as np
 import pandas as pd
-from pyRInDB.utils.waveformConversion import Waveform
+from pyRInDB.utils import Waveform
 
 def addMinOrMax(dictMin, dictMax, name, value):
     # Compare and add to min max dict

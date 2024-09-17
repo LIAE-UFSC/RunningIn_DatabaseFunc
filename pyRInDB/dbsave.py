@@ -2,10 +2,8 @@ import pandas as pd
 import numpy as np
 from main_class import RunIn_File
 from multiprocessing import Pool
-import functools
 from tqdm import tqdm
 import scipy
-import os
 
 path = r"X:\Amaciamento_DatabaseMIMICRI\ModelA.hdf5"
 

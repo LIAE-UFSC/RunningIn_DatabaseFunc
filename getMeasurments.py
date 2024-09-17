@@ -2,12 +2,12 @@
 import sys, os
 sys.path.append(os.path.abspath('.'))
 
-from pyRInDB import RunIn_File
+import pyRInDB as ridb
 import pandas as pd
 
 pathIn = r"\\LIAE-SANTINHO\Backups\Amaciamento_DatabaseFull\datasetModelA.hdf5"
 
-file =  RunIn_File(pathIn)
+file =  ridb.RunIn_File(pathIn)
 
 dictt = file.getMeasurements(indexes=range(5))
 
