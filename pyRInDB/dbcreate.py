@@ -109,12 +109,8 @@ def create_HF_dataset(testGrp:h5py.Group, folderIn: str, var:str):
     
     if len(indexes) == 0:
         return
-    
-    else:
-        testGrp.create_dataset(f"{var}Indexes", data = indexes, compression="gzip", shuffle=True)
 
     if var == "vibration":
-        testGrp.create_dataset(f"{var}Indexes", data = indexes, compression="gzip", shuffle=True)
         dSetLong = testGrp.create_dataset("vibrationLongitudinal", (len(indexes),25600),compression="gzip", shuffle=True)
         dSetLat = testGrp.create_dataset("vibrationLateral", (len(indexes),25600), compression="gzip", shuffle=True)
         dSetRig = testGrp.create_dataset("vibrationRig", (len(indexes),25600), compression="gzip", shuffle=True)
