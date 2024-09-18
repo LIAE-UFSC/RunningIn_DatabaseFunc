@@ -120,7 +120,7 @@ def create_HF_dataset(testGrp:h5py.Group, folderIn: str, var:str):
         dSetRig.attrs["index"] = indexes
 
         for indexMeas, file in enumerate(tqdm.tqdm(matching_files, desc = f"    {var}", position = 3, leave = False)):
-            filePath = f"{folder}\{file}"
+            filePath = f"{folder}\\{file}"
 
             wvf = Waveform.read_array_labview_waveform(filePath)
 
@@ -158,7 +158,7 @@ def create_HF_dataset(testGrp:h5py.Group, folderIn: str, var:str):
         dSet.attrs["index"] = indexes
 
         for indexMeas, file in enumerate(tqdm.tqdm(matching_files, desc = f"    {var}", position = 3, leave = False)):
-            filePath = f"{folder}\{file}"
+            filePath = f"{folder}\\{file}"
 
             wvf = Waveform.read_labview_waveform(filePath,0)
 
@@ -226,7 +226,7 @@ def convertModel(UnitFoldersIn:list[str], fileOut:str, modelName:str, supressWar
             fullTestFolder = os.listdir(f"{unitFolder}")
             for k,testFolderName in enumerate(tqdm.tqdm(fullTestFolder, desc = "   Teste", leave = False, position = 2)):
                 
-                testFolder = f"{unitFolder}\\{testFolderName}"
+                testFolder = f"{unitFolder}\\\{testFolderName}"
                 
                 if not os.path.isdir(testFolder):
                     continue
