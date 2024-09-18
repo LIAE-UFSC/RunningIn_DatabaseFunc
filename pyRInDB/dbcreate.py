@@ -226,7 +226,7 @@ def convertModel(UnitFoldersIn:list[str], fileOut:str, modelName:str, supressWar
             fullTestFolder = os.listdir(f"{unitFolder}")
             for k,testFolderName in enumerate(tqdm.tqdm(fullTestFolder, desc = "   Teste", leave = False, position = 2)):
                 
-                testFolder = f"{unitFolder}\\\{testFolderName}"
+                testFolder = f"{unitFolder}\\{testFolderName}"
                 
                 if not os.path.isdir(testFolder):
                     continue
