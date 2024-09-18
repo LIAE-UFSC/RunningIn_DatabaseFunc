@@ -120,7 +120,7 @@ def create_HF_dataset(testGrp:h5py.Group, folderIn: str, var:str):
         dSetRig.attrs["index"] = indexes
 
         for indexMeas, file in enumerate(tqdm.tqdm(matching_files, desc = f"    {var}", position = 3, leave = False)):
-            filePath = f"{folder}/{file}"
+            filePath = f"{folder}\{file}"
             try:
                 wvf = Waveform.read_array_labview_waveform(filePath)
 
@@ -149,7 +149,7 @@ def create_HF_dataset(testGrp:h5py.Group, folderIn: str, var:str):
         dSet.attrs["index"] = indexes
 
         for indexMeas, file in enumerate(tqdm.tqdm(matching_files, desc = f"    {var}", position = 3, leave = False)):
-            filePath = f"{folder}/{file}"
+            filePath = f"{folder}\{file}"
             try:
                 wvf = Waveform.read_labview_waveform(filePath,0)
 
@@ -183,7 +183,7 @@ def convertModel(UnitFoldersIn:list[str], fileOut:str, modelName:str, supressWar
 
         for unitFolder in tqdm.tqdm(unitFolders, desc = "  Unidade", leave=False,  position=1):
             # print("Unidade atual: "+str(unitName))
-            unitAttributes = textfile2dict(f"{unitFolder}/modelInfo.txt")
+            unitAttributes = textfile2dict(f"{unitFolder}\\modelInfo.txt")
             unit = unitAttributes["unit"]
 
             if not unit in modelGrp:
@@ -205,7 +205,7 @@ def convertModel(UnitFoldersIn:list[str], fileOut:str, modelName:str, supressWar
             fullTestFolder = os.listdir(f"{unitFolder}")
             for k,testFolderName in enumerate(tqdm.tqdm(fullTestFolder, desc = "   Teste", leave = False, position = 2)):
                 
-                testFolder = f"{unitFolder}/{testFolderName}"
+                testFolder = f"{unitFolder}\\{testFolderName}"
                 
                 if not os.path.isdir(testFolder):
                     continue
@@ -221,7 +221,7 @@ def convertModel(UnitFoldersIn:list[str], fileOut:str, modelName:str, supressWar
                     
                 # Set dataset attributes
                 testGrp = unitGrp.create_group(testName)
-                testGrp.attrs['startTime'] = os.path.getmtime(f'{testFolder}/medicoesGerais.dat')
+                testGrp.attrs['startTime'] = os.path.getmtime(f'{testFolder}\\medicoesGerais.dat')
                 testGrp.attrs['runningIn'] = True if testFolderName[0] == 'N' else False
 
                 # Check available high frequency readings 
@@ -231,7 +231,7 @@ def convertModel(UnitFoldersIn:list[str], fileOut:str, modelName:str, supressWar
                 acuRead = True if "acusticas" in dirList else False
 
                 # Read csv data and drop nan columns
-                testData = pd.read_table(f'{testFolder}/medicoesGerais.dat', delimiter = '\t', decimal = ',', encoding='ANSI')
+                testData = pd.read_table(f'{testFolder}\\medicoesGerais.dat', delimiter = '\t', decimal = ',', encoding='ANSI')
                 testData = testData.apply(pd.to_numeric, errors='coerce')
                 testData = testData.dropna(axis=1, how='all')
                 headers = [nameVar(variable) for variable in testData.columns.values]
@@ -319,185 +319,16 @@ def convertFolders(folderIn: list[str], folderOut: str):
     for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
         r = re.compile(f"Unidade {model}.*")
         unitFolders = list(filter(r.match,allUnitFolders))
-        convertModel(unitFolders, f"{folderOut}/Model{model}.hdf5", model)
-        listOut.append(f"{folderOut}/Model{model}.hdf5")
+        convertModel(unitFolders, f"{folderOut}\\Model{model}.hdf5", model)
+        listOut.append(f"{folderOut}\\Model{model}.hdf5")
 
     return listOut
-
-def addTest(hdf5File: str, testFolder: str, unitName: str):
-    # Add test to hdf file
-    with h5py.File(hdf5File, "a") as fModel:
-        model = unitName[0].upper()
-        unit = unitName[1:]
-
-        if model in fModel:
-            modelGrp = fModel[f"Model{model}"]
-        else:
-            fModel.create_group(f"Model{model}")
-
-        if unit in modelGrp:
-            unitGrp = modelGrp[unit]
-        else:
-            unitGrp = modelGrp.create_group(unit)
-        
-
-
-        # Get test name from folder
-        testName = re.compile("\w*$").findall(testFolder)[0]
-
-        # Variable for the first time that the compressor is turned on
-        tOn = float('inf')
-
-        # Dict for max and min values of a given test
-        minValuesTest = {}
-        maxValuesTest = {}
-
-        dirList = os.listdir(testFolder)
-
-        # Set dataset attributes
-        testGrp = unitGrp.create_group(testName[2:])
-        testGrp.attrs['startTime'] = os.path.getmtime(f'{testFolder}/medicoesGerais.dat')
-        testGrp.attrs['runningIn'] = True if testName[0] == 'N' else False
-
-        # Check available high frequency readings 
-        corrRead = True if "corrente" in dirList else False
-        vibRead = True if "vibracao" in dirList else False   
-        voltRead = True if "tensao" in dirList else False
-        acuRead = True if "acusticas" in dirList else False
-
-        with open(f'{testFolder}/medicoesGerais.dat', encoding='ANSI') as csv_file:
-            nLines = len(csv_file.readlines())
-
-        with open(f'{testFolder}/medicoesGerais.dat', encoding='ANSI') as csv_file:
-
-            csv_reader = csv.reader(csv_file, delimiter='\t')
-            headers = next(csv_reader) # Extract headers
-            
-            for indexMeas, row in enumerate(tqdm.tqdm(csv_reader,desc="    Arquivo", position=3, leave = False, total = nLines-1)):
-                # Create new group for each measurement
-                measurementGrp = testGrp.create_group(str(indexMeas))
-
-                for columnNum, element in enumerate(row): # Add attributes
-                    attrName = nameVar(headers[columnNum])
-                    value = float(element.replace(",","."))
-                    measurementGrp.attrs[attrName] = value
-
-                    # Compare and add to min max dict
-                    addMinOrMax(minValuesTest, maxValuesTest, attrName, value)
-
-                # Get first "compressor on" time
-                tOn = tOn if not measurementGrp.attrs["compressorOn"] else min(tOn, measurementGrp.attrs["time"])
-
-                # Add high-frequency datasets
-
-                if corrRead:
-                    filePath = f"{testFolder}/corrente/corr{indexMeas}.dat"
-                    try:
-                        wvf = Waveform.read_labview_waveform(filePath,0)
-                        dSet = measurementGrp.create_dataset("current", data = wvf.data, compression="gzip", shuffle=True)
-                        dSet.attrs["dt"] = wvf.dt
-
-                        if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
-                            testGrp.attrs['startTime'] = os.path.getmtime(filePath)
-                        
-                        attrName = "currentRAW"
-
-                        # Compare and add to min max dict
-                        addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
-                        
-                    except:
-                        warnings.warn("File not found or empty:" + filePath)
-
-                if vibRead:
-                    filePath = f"{testFolder}/vibracao/vib{indexMeas}.dat"
-                    try:
-                        wvf = Waveform.read_labview_waveform(filePath,0)
-                        dSet = measurementGrp.create_dataset("vibrationLateral", data = wvf.data, compression="gzip", shuffle=True)
-                        dSet.attrs["dt"] = wvf.dt
-
-                        attrName = "vibrationLateralRAW"
-
-                        # Compare and add to min max dict
-                        addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
-
-                        wvf = Waveform.read_labview_waveform(filePath,1)
-                        dSet = measurementGrp.create_dataset("vibrationRigDummy", data = wvf.data, compression="gzip", shuffle=True)
-                        dSet.attrs["dt"] = wvf.dt
-
-                        attrName = "vibrationRigRAW"
-
-                        # Compare and add to min max dict
-                        addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
-
-                        wvf = Waveform.read_labview_waveform(filePath,2)
-                        dSet = measurementGrp.create_dataset("vibrationLongitudinal", data = wvf.data, compression="gzip", shuffle=True)
-                        dSet.attrs["dt"] = wvf.dt
-
-                        attrName = "vibrationLongitudinalRAW"
-
-                        # Compare and add to min max dict
-                        addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
-
-                        if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
-                            testGrp.attrs['startTime'] = os.path.getmtime(filePath)
-                    except:
-                        warnings.warn("File not found or empty:" + filePath)
-
-                        
-                if acuRead:
-                    filePath = f"{testFolder}/acusticas/acu{indexMeas}.dat"
-                    try:
-                        wvf = Waveform.read_labview_waveform(filePath,0)
-                        dSet = measurementGrp.create_dataset("acousticEmission", data = wvf.data, compression="gzip", shuffle=True)
-                        dSet.attrs["dt"] = wvf.dt
-
-                        if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
-                            testGrp.attrs['startTime'] = os.path.getmtime(filePath)
-
-                        attrName = "acousticEmissionRAW"
-
-                        # Compare and add to min max dict
-                        addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
-
-                    except:
-                        warnings.warn("File not found or empty:" + filePath)
-
-                    
-                if voltRead:
-                    filePath = f"{testFolder}/tensao/ten{indexMeas}.dat"
-                    try:
-                        wvf = Waveform.read_labview_waveform(filePath,0)
-                        dSet = measurementGrp.create_dataset("voltage", data = wvf.data, compression="gzip", shuffle=True)
-                        dSet.attrs["dt"] = wvf.dt
-
-                        if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
-                            testGrp.attrs['startTime'] = os.path.getmtime(filePath)
-
-                        attrName = "voltageRAW"
-
-                        # Compare and add to min max dict
-                        addMinOrMax(minValuesTest, maxValuesTest, attrName, wvf.data)
-
-                    except:
-                        warnings.warn("File not found or empty:" + filePath)
-        
-        for key in minValuesTest:
-            testGrp.attrs[f"min_{key}"] = minValuesTest[key]
-            testGrp.attrs[f"max_{key}"] = maxValuesTest[key]
-            if f"min_{key}" in unitGrp.attrs:
-                unitGrp.attrs[f"min_{key}"] = min(unitGrp.attrs[f"min_{key}"],minValuesTest[key])
-                unitGrp.attrs[f"max_{key}"] = max(unitGrp.attrs[f"max_{key}"],maxValuesTest[key])
-            if f"min_{key}" in modelGrp.attrs:
-                modelGrp.attrs[f"min_{key}"] = min(modelGrp.attrs[f"min_{key}"],minValuesTest[key])
-                modelGrp.attrs[f"max_{key}"] = max(modelGrp.attrs[f"max_{key}"],maxValuesTest[key])
-
-    
 
 if __name__ == "__main__":
     mainFolder = input("Digite a pasta de origem:\n")
     saveFolder = input("Digite a pasta de destino:\n")
-    # mainFolder = "D:/Dados - Thaler/Documentos/Amaciamento/Ensaios Brutos"
-    # saveFolder = "D:/Dados - Thaler/Documentos/Amaciamento"
+    # mainFolder = "D:\Dados - Thaler\Documentos\Amaciamento\Ensaios Brutos"
+    # saveFolder = "D:\Dados - Thaler\Documentos\Amaciamento"
 
     fullUnitFolder = os.listdir(mainFolder) # Extract folders
 
