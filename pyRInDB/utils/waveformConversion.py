@@ -2,6 +2,8 @@ import numpy as np
 import ctypes as ct
 import os
 import struct
+from typing_extensions import Self
+import warnings
 
 class Waveform:
     # Class for extracting data from binary LabVIEW waveform files
@@ -20,12 +22,16 @@ class Waveform:
         self.dt = dt
 
     @classmethod
-    def read_labview_waveform(cls,file_path:str, N:int = 0):
+    def read_labview_waveform(cls,file_path:str, N:int = 0) -> Self:
         # Extracts the Nth waveform from file
 
         file_path = file_path.replace("/","\\") # Fix file path for windows
 
         if os.path.isfile(file_path):
+            if os.path.getsize(file_path) == 0:
+                raise warnings.warn("File empty:" + file_path)
+                return cls(np.array([]),np.array([]),0)
+            
             # Loads DLL with labview functions
             if (struct.calcsize("P")*8)==64:
                 wvf_read_dll = ct.CDLL(os.path.dirname(__file__)+"/wvfRead64.dll")
@@ -52,10 +58,10 @@ class Waveform:
             time = np.array([ind*time_scale for ind in range(length)])
             return cls(data,time,time_scale)
         else:
-            raise Exception("File not found: " + file_path)
+            raise Exception("File not found")
 
     @classmethod
-    def read_array_labview_waveform(cls,file_path):
+    def read_array_labview_waveform(cls,file_path) -> list[Self]:
         # Extracts all waveforms from file
 
         file_path = file_path.replace("/","\\") # Fix file path for windows
