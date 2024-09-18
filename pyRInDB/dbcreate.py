@@ -121,22 +121,23 @@ def create_HF_dataset(testGrp:h5py.Group, folderIn: str, var:str):
 
         for indexMeas, file in enumerate(tqdm.tqdm(matching_files, desc = f"    {var}", position = 3, leave = False)):
             filePath = f"{folder}\{file}"
-            try:
-                wvf = Waveform.read_array_labview_waveform(filePath)
 
-                dSetLat.attrs["dt"] = wvf[0].dt
-                dSetLat[indexMeas,:] = wvf[0].data
+            wvf = Waveform.read_array_labview_waveform(filePath)
 
-                dSetRig.attrs["dt"] = wvf[1].dt
-                dSetRig[indexMeas,:] = wvf[1].data
+            if len(wvf[0].data) == 0:
+                continue
 
-                dSetLong.attrs["dt"] = wvf[2].dt
-                dSetLong[indexMeas,:] = wvf[2].data
+            dSetLat.attrs["dt"] = wvf[0].dt
+            dSetLat[indexMeas,:] = wvf[0].data
 
-                if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
-                    testGrp.attrs['startTime'] = os.path.getmtime(filePath)
-            except:
-                warnings.warn("File empty:" + filePath)
+            dSetRig.attrs["dt"] = wvf[1].dt
+            dSetRig[indexMeas,:] = wvf[1].data
+
+            dSetLong.attrs["dt"] = wvf[2].dt
+            dSetLong[indexMeas,:] = wvf[2].data
+
+            if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
+                testGrp.attrs['startTime'] = os.path.getmtime(filePath)
 
         return
     
@@ -150,16 +151,17 @@ def create_HF_dataset(testGrp:h5py.Group, folderIn: str, var:str):
 
         for indexMeas, file in enumerate(tqdm.tqdm(matching_files, desc = f"    {var}", position = 3, leave = False)):
             filePath = f"{folder}\{file}"
-            try:
-                wvf = Waveform.read_labview_waveform(filePath,0)
 
-                dSet.attrs["dt"] = wvf.dt
-                dSet[indexMeas,:] = wvf.data
+            wvf = Waveform.read_labview_waveform(filePath,0)
 
-                if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
-                    testGrp.attrs['startTime'] = os.path.getmtime(filePath)
-            except:
-                warnings.warn("File empty:" + filePath)
+            if len(wvf.data) == 0:
+                continue
+
+            dSet.attrs["dt"] = wvf.dt
+            dSet[indexMeas,:] = wvf.data
+
+            if testGrp.attrs['startTime']> os.path.getmtime(filePath): # Current file is older than MedicoesGerais
+                testGrp.attrs['startTime'] = os.path.getmtime(filePath)
 
         return
 
