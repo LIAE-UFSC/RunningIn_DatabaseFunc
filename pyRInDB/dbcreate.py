@@ -131,9 +131,9 @@ def create_HF_dataset(testGrp:h5py.Group, folderIn: str, var:str):
                 wvf[1].data = wvf[1].data[:25600]
                 wvf[2].data = wvf[2].data[:25600]
             elif len(wvf[0].data) < 25600:
-                wvf[0].data = np.pad(wvf[0].data, (0,25600-len(wvf[0].data)), 'empty')
-                wvf[1].data = np.pad(wvf[1].data, (0,25600-len(wvf[1].data)), 'empty')
-                wvf[2].data = np.pad(wvf[2].data, (0,25600-len(wvf[2].data)), 'empty')
+                wvf[0].data = np.pad(wvf[0].data, (0,25600-len(wvf[0].data)), constant_values = np.nan)
+                wvf[1].data = np.pad(wvf[1].data, (0,25600-len(wvf[1].data)), constant_values = np.nan)
+                wvf[2].data = np.pad(wvf[2].data, (0,25600-len(wvf[2].data)), constant_values = np.nan)
 
             dSetLat.attrs["dt"] = wvf[0].dt
             dSetLat[indexMeas,:] = wvf[0].data
@@ -169,12 +169,12 @@ def create_HF_dataset(testGrp:h5py.Group, folderIn: str, var:str):
                 if len(wvf.data) > 300000:
                     wvf.data = wvf.data[:300000]
                 elif len(wvf.data) < 300000:
-                    wvf.data = np.pad(wvf.data, (0,300000-len(wvf.data)), 'empty')
+                    wvf.data = np.pad(wvf.data, (0,300000-len(wvf.data)), constant_values = np.nan)
             else:
                 if len(wvf.data) > 25600:
                     wvf.data = wvf.data[:25600]
                 elif len(wvf.data) < 25600:
-                    wvf.data = np.pad(wvf.data, (0,25600-len(wvf.data)), 'empty')
+                    wvf.data = np.pad(wvf.data, (0,25600-len(wvf.data)), constant_values = np.nan)
 
             dSet.attrs["dt"] = wvf.dt
             dSet[indexMeas,:] = wvf.data
