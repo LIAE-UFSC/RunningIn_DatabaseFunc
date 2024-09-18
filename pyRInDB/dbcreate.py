@@ -330,7 +330,7 @@ def convertModel(UnitFoldersIn:list[str], fileOut:str, modelName:str, supressWar
     if supressWarnings:
         warnings.resetwarnings()
 
-def convertFolders(folderIn: list[str], folderOut: str):
+def convertFolders(folderIn: list[str], folderOut: str, filePrefix = "Model", supressWarnings = False) -> list[str]:
     allUnitFolders = os.listdir(folderIn)
 
     allModels = [re.findall("Unidade .", unit) for unit in allUnitFolders] # Get all folder names with "Unidade "
@@ -340,8 +340,8 @@ def convertFolders(folderIn: list[str], folderOut: str):
     for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
         r = re.compile(f"Unidade {model}.*")
         unitFolders = list(filter(r.match,allUnitFolders))
-        convertModel(unitFolders, f"{folderOut}\\Model{model}.hdf5", model)
-        listOut.append(f"{folderOut}\\Model{model}.hdf5")
+        convertModel(unitFolders, f"{folderOut}\\Model{model}.hdf5", model, supressWarnings=supressWarnings)
+        listOut.append(f"{folderOut}\\{filePrefix}{model}.hdf5")
 
     return listOut
 
