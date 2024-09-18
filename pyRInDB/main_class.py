@@ -3,6 +3,8 @@ import numpy as np
 import warnings
 import scipy.stats
 import pandas as pd
+from typing_extensions import Self
+from .dbcreate import convertModel, convertFolders
 
 class RunIn_File(h5py.File):
     # Class for running-in database in an hdf5 file
@@ -71,6 +73,16 @@ class RunIn_File(h5py.File):
         else:
             return self.units[item]
     
+    @classmethod
+    def convertModel(cls, foldersIn:list[str], fileOut:str, modelName:str, supressWarnings:bool = False) -> Self:
+        convertModel(foldersIn, fileOut, modelName, supressWarnings)
+        return cls(fileOut)
+
+    @classmethod
+    def convertFolders(cls, folderIn:str, folderOut:str, supressWarnings:bool = False) -> list[Self]:
+        listFiles = convertFolders(folderIn, folderOut, supressWarnings)
+        return [cls(file) for file in listFiles]
+
     def getTestDict(self):
         return {unit.name:unit.getTestNames() for unit in self.units}
     
