@@ -79,8 +79,8 @@ class RunIn_File(h5py.File):
         return cls(fileOut)
 
     @classmethod
-    def convertFolders(cls, folderIn:str, folderOut:str, supressWarnings:bool = False) -> list[Self]:
-        listFiles = convertFolders(folderIn, folderOut, supressWarnings)
+    def convertFolders(cls, folderIn:str, folderOut:str, filePrefix = "Model", supressWarnings:bool = False) -> list[Self]:
+        listFiles = convertFolders(folderIn, folderOut, filePrefix, supressWarnings)
         return [cls(file) for file in listFiles]
 
     def getTestDict(self):
