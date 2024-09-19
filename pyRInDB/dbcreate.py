@@ -18,6 +18,12 @@ def addMinOrMax(dictMin, dictMax, name, value):
         else:
             dictMin[name] = value.min()
             dictMax[name] = value.max()
+    elif isinstance(value, h5py.Dataset):
+        MaxRw = 1000
+        for i in range(0,len(value),MaxRw):
+            nextI = min(i+MaxRw-1,len(value)-1)
+            addMinOrMax(dictMin, dictMax, name, value[i:nextI+1,:])
+
     else:
         if name in dictMin:
             dictMin[name] = min(dictMin[name],value)
@@ -283,24 +289,24 @@ def convertModel(UnitFoldersIn:list[str], fileOut:str, modelName:str, supressWar
                 if corrRead:
                     create_HF_dataset(testGrp, testFolder, "current")
                     if "current" in testGrp:
-                        addMinOrMax(minValuesTest, maxValuesTest, "current", testGrp["current"][()])
+                        addMinOrMax(minValuesTest, maxValuesTest, "current", testGrp["current"])
 
                 if vibRead:
                     create_HF_dataset(testGrp, testFolder, "vibration")
                     if "vibrationLateral" in testGrp:
-                        addMinOrMax(minValuesTest, maxValuesTest, "vibrationLateral", testGrp["vibrationLateral"][()])
-                        addMinOrMax(minValuesTest, maxValuesTest, "vibrationRig", testGrp["vibrationRig"][()])
-                        addMinOrMax(minValuesTest, maxValuesTest, "vibrationLongitudinal", testGrp["vibrationLongitudinal"][()])
+                        addMinOrMax(minValuesTest, maxValuesTest, "vibrationLateral", testGrp["vibrationLateral"])
+                        addMinOrMax(minValuesTest, maxValuesTest, "vibrationRig", testGrp["vibrationRig"])
+                        addMinOrMax(minValuesTest, maxValuesTest, "vibrationLongitudinal", testGrp["vibrationLongitudinal"])
 
                 if acuRead:
                     create_HF_dataset(testGrp, testFolder, "acousticEmission")
                     if "acousticEmission" in testGrp:
-                        addMinOrMax(minValuesTest, maxValuesTest, "acousticEmission", testGrp["acousticEmission"][()])
+                        addMinOrMax(minValuesTest, maxValuesTest, "acousticEmission", testGrp["acousticEmission"])
 
                 if voltRead:
                     create_HF_dataset(testGrp, testFolder, "voltage")
                     if "voltage" in testGrp:
-                        addMinOrMax(minValuesTest, maxValuesTest, "voltage", testGrp["voltage"][()])
+                        addMinOrMax(minValuesTest, maxValuesTest, "voltage", testGrp["voltage"])
 
                 # Adds datasets for max and min values to test
                 minDset = testGrp.create_dataset("minValues", data = list(minValuesTest.values()), compression="gzip", shuffle=True)
