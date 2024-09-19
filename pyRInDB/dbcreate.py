@@ -282,21 +282,25 @@ def convertModel(UnitFoldersIn:list[str], fileOut:str, modelName:str, supressWar
 
                 if corrRead:
                     create_HF_dataset(testGrp, testFolder, "current")
-                    addMinOrMax(minValuesTest, maxValuesTest, "current", testGrp["current"][()])
+                    if "current" in testGrp:
+                        addMinOrMax(minValuesTest, maxValuesTest, "current", testGrp["current"][()])
 
                 if vibRead:
                     create_HF_dataset(testGrp, testFolder, "vibration")
-                    addMinOrMax(minValuesTest, maxValuesTest, "vibrationLateral", testGrp["vibrationLateral"][()])
-                    addMinOrMax(minValuesTest, maxValuesTest, "vibrationRig", testGrp["vibrationRig"][()])
-                    addMinOrMax(minValuesTest, maxValuesTest, "vibrationLongitudinal", testGrp["vibrationLongitudinal"][()])
+                    if "vibrationLateral" in testGrp:
+                        addMinOrMax(minValuesTest, maxValuesTest, "vibrationLateral", testGrp["vibrationLateral"][()])
+                        addMinOrMax(minValuesTest, maxValuesTest, "vibrationRig", testGrp["vibrationRig"][()])
+                        addMinOrMax(minValuesTest, maxValuesTest, "vibrationLongitudinal", testGrp["vibrationLongitudinal"][()])
 
                 if acuRead:
                     create_HF_dataset(testGrp, testFolder, "acousticEmission")
-                    addMinOrMax(minValuesTest, maxValuesTest, "acousticEmission", testGrp["acousticEmission"][()])
+                    if "acousticEmission" in testGrp:
+                        addMinOrMax(minValuesTest, maxValuesTest, "acousticEmission", testGrp["acousticEmission"][()])
 
                 if voltRead:
                     create_HF_dataset(testGrp, testFolder, "voltage")
-                    addMinOrMax(minValuesTest, maxValuesTest, "voltage", testGrp["voltage"][()])
+                    if "voltage" in testGrp:
+                        addMinOrMax(minValuesTest, maxValuesTest, "voltage", testGrp["voltage"][()])
 
                 # Adds datasets for max and min values to test
                 minDset = testGrp.create_dataset("minValues", data = list(minValuesTest.values()), compression="gzip", shuffle=True)
