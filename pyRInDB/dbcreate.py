@@ -349,6 +349,7 @@ def convertFolders(folderIn: list[str], folderOut: str, filePrefix = "Model", su
     for model in tqdm.tqdm(allModels,desc = " Modelo", position=0):
         r = re.compile(f"Unidade {model}.*")
         unitFolders = list(filter(r.match,allUnitFolders))
+        unitFolders = [os.path.join(folderIn, unitFolder) for unitFolder in unitFolders]
         convertModel(unitFolders, f"{folderOut}\\Model{model}.hdf5", model, supressWarnings=supressWarnings)
         listOut.append(f"{folderOut}\\{filePrefix}{model}.hdf5")
 
