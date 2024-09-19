@@ -89,9 +89,8 @@ class RunIn_File(h5py.File):
     def getUnits(self):
         return {unit.name:unit for unit in self.units}
     
-    def getMeasurements(self, testDict: dict = None, varName: list[str] = None, 
-                                tStart:float = None, tEnd:float = None, indexes: list[int] = None):
-        # Returns a dataframe containing the measurements of the desired indexes or time range
+    def to_dict(self, testDict: dict = None, vars: list[str] = None, 
+                    processesdVars: list[dict] = None, tStart:float = None, tEnd:float = None, indexes: list[int] = None) -> pd.DataFrame:
 
         if testDict is None:
             testDict = self.getTestDict()
@@ -101,10 +100,24 @@ class RunIn_File(h5py.File):
         for (unit,tests) in testDict.items():
             # Add unit name to each dict list
 
-            rows = [dict(item, unit=unit) for item in self[unit].getMeasurements(testName = tests, varName=varName, 
-                                                                                 tStart = tStart, tEnd = tEnd, 
-                                                                                 indexes = indexes)]
+            rows = self[unit].to_dict(testName = tests, vars = vars, processesdVars=processesdVars, tStart=tStart, tEnd=tEnd, indexes=indexes)
             data.extend(rows)
+
+        return data
+    
+    def to_dataframe(self, testDict: dict = None, vars: list[str] = None, 
+                     processesdVars: list[dict] = None, tStart:float = None, tEnd:float = None, indexes: list[int] = None) -> list[dict[np.ndarray]]:
+        
+        if testDict is None:
+            testDict = self.getTestDict()
+
+        data = pd.DataFrame()
+
+        for (unit,tests) in testDict.items():
+            # Add unit name to each dict list
+
+            unit_df = self[unit].to_dataframe(testName = tests, vars = vars, processesdVars=processesdVars, tStart=tStart, tEnd=tEnd, indexes=indexes)
+            data = pd.concat([data,unit_df])
 
         return data
 
@@ -150,8 +163,8 @@ class RunIn_File(h5py.File):
         def getTestNames(self):
             return [test.name for test in self.tests]
             
-        def getMeasurements(self, testName: list[str] = None, varName: list[str] = None, 
-                                     tStart:float = None, tEnd:float = None, indexes: list[int] = None):
+        def to_dict(self, testName: list[str] = None, vars: list[str] = None, 
+                    processesdVars: list[dict] = None, tStart:float = None, tEnd:float = None, indexes: list[int] = None) -> pd.DataFrame:
             # Returns a dataframe containing the measurements of the desired indexes or time range
 
             if testName is None:
@@ -163,10 +176,28 @@ class RunIn_File(h5py.File):
 
             for test in selTests:
                 # Add test name to each dict of list
-                rows = [dict(item, test=test.name) for item in test.getMeasurements(varName, tStart, tEnd, indexes)]
-                data.extend(rows)
+                row = test.to_dict(vars = vars, processesdVars=processesdVars, tStart=tStart, tEnd=tEnd, indexes=indexes)
+                row.update({"test":test.name, "unit":self.name})
+                data.append(row)
 
             return data
+        
+        def to_dataframe(self, testName: list[str] = None, vars: list[str] = None, 
+                         processesdVars: list[dict] = None, tStart:float = None, tEnd:float = None, indexes: list[int] = None) -> list[dict[np.ndarray]]:
+            if testName is None:
+                testName = self.getTestNames()
+
+            selTests = [test for test in self.tests if test.name in testName]
+
+            data = pd.DataFrame()
+
+            for test in selTests:
+                test_df = test.to_dataframe(vars = vars, processesdVars=processesdVars, tStart=tStart, tEnd=tEnd, indexes=indexes)
+                test_df["test"] = test.name
+                test_df["unit"] = self.name
+                data = pd.concat([data,test_df])
+
+            return pd.DataFrame(data)
 
         class RunIn_Test_Reference:
             # Class for a test group inside a hdf5 file
