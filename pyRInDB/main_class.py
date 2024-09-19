@@ -188,47 +188,64 @@ class RunIn_File(h5py.File):
             def __str__(self):
                 return self.name
             
-            def _applyProcess(self, data: np.array, process: str):
-                if [np.isnan(row).any() for row in data].count(True) > 0:
-                    return np.nan
-                if process == "RMS":
-                    return np.sqrt(np.mean(np.square(data)))
-                elif process == "Kurtosis":
-                    return scipy.stats.kurtosis(data)
-                elif process == "Variance":
-                    return np.var(data)
-                elif process == "Skewness":
-                    return scipy.stats.skew(data)
-                elif process == "Peak":
-                    return np.max(data)
-                elif process == "Crest":
-                    return np.max(data)/np.sqrt(np.mean(np.square(data)))
-                else:
-                    raise Exception("Invalid process. Choose from 'RMS', 'Kurtosis', 'Variance', 'Skewness', 'Peak' or 'Crest'.")
+            def _applyProcess(self, data: h5py.Dataset, processes: list[str], index: list[int]):
+                dbIndex = data.attrs["index"].tolist()
+                results = {process: np.empty((len(index))) for process in processes}
+
+                for kNew,ind in enumerate(index):
+                    # Check if the index is in the dataset
+                    if ind not in dbIndex:
+                        for process in processes:
+                            results[process][kNew] = np.nan
+                        continue
+                    else:
+                        row = data[dbIndex.index(ind),:]
+
+                    # Check if the row is all NaN
+                    if np.isnan(row).all():
+                        results[kNew] = np.nan
+                        continue
+                    elif np.isnan(row).any():
+                        # If the row has NaN values, remove them
+                        row = row[~np.isnan(row)]
+                    
+                    for process in processes:
+                        
+                        if process == "RMS":
+                            results[process][kNew] = np.sqrt(np.mean(np.square(row)))
+                        elif process == "Kurtosis":
+                            results[process][kNew] = scipy.stats.kurtosis(row)
+                        elif process == "Variance":
+                            results[process][kNew] = np.var(row)
+                        elif process == "Skewness":
+                            results[process][kNew] = scipy.stats.skew(row)
+                        elif process == "Peak":
+                            results[process][kNew] = np.max(row)
+                        elif process == "Crest":
+                            results[process][kNew] = np.max(row)/np.sqrt(np.mean(np.square(row)))
+                        else:
+                            raise Exception("Invalid process. Choose from 'RMS', 'Kurtosis', 'Variance', 'Skewness', 'Peak' or 'Crest'.")
+                    
+                return results
             
-            def _procVars(self, processesdVars: list[dict], index: int):
-                varStr = {"voltage": "voltageRAW",
-                          "acousticEmission": "acousticEmissionRAW",
-                          "current": "currentRAW",
-                          "vibrationLongitudinal": "vibrationRAWLongitudinal",
-                          "vibrationRig": "vibrationRAWRig",
-                          "vibrationLateral": "vibrationRAWLateral"}
+            def _procVars(self, processesdVars: list[dict], index: list[int]) -> dict[np.ndarray]:
 
                 data_processed = {}
                 for select in processesdVars:
                     varName = select["var"]
-                    var = varStr[varName] if varName in varStr.keys() else varName
 
                     processes = select["process"]
                     
-                    for process in processes:
-                        data_processed[varName+process] = np.nan
-                        if var in list(self._h5ref["0"].keys()):
-                            data_processed[varName+process] = self._applyProcess(self._h5ref[str(index)][var], process)
+                
+                    if varName in list(self._h5ref.keys()):
+                        proc = self._applyProcess(self._h5ref[varName], processes, index)
+                        data_processed.update({varName+key:proc[key] for key in proc.keys()})
+                    else:
+                        data_processed.update({varName+key:np.nan*np.ones(len(index)) for key in processes})
                 
                 return data_processed
 
-            def to_dict(self, vars: list[str] = None, processesdVars: list[dict] = None, tStart:float = None, tEnd:float = None, indexes: list[int] = None):
+            def to_dict(self, vars: list[str] = None, processesdVars: list[dict] = None, tStart:float = None, tEnd:float = None, indexes: list[int] = None) -> dict[np.ndarray]:
                 
                 if (indexes is not None) and ((tEnd is not None) or (tStart is not None)):
                     raise Exception("Both index and time range provided. Only one allowed.")
@@ -257,38 +274,48 @@ class RunIn_File(h5py.File):
 
                     indexes = np.where((time >= tStart) & (time <= tEnd))[0]
                     
-                for ind in indexes:
+                # Create a dictionary with the processed variables
+                row = self._procVars(processesdVars, indexes)
 
-                    # Create a dictionary with the processed variables
-                    row = self._procVars(processesdVars, ind)
-
-                    for var in vars:                            
+                for var in vars:                            
+                        
+                    if var in ["voltage","acousticEmission", "current",
+                            "vibrationLongitudinal", "vibrationRig", "vibrationLateral"]:
+                        # Get values from high frequency dataset
+                        if var in list(self._h5ref.keys()):
                             
-                        if var in ["voltageRAW","acousticEmissionRAW", "currentRAW",
-                                "vibrationRAWLongitudinal", "vibrationRAWRig", "vibrationRAWLateral"]:
-                            # Get values from high frequency dataset
-                            if var in list(self._h5ref[str(ind)].keys()):
-                                row[var] = self._h5ref[str(ind)][var][()]
-                            else:
-                                row[var] = [np.nan]
-                        elif var in measurementHeader:
-                            row[var] = self._h5ref["measurements"][ind,measurementHeader.index(var)]
-                        else:
-                            row[var] = np.nan                 
+                            dbIndex = self._h5ref[var].attrs["index"].tolist()
+                            indInDb = [dbIndex.index(ind) for ind in indexes if ind in dbIndex]
+                            indNotInDb = [k for k,ind in enumerate(indexes) if ind not in dbIndex]
 
-                    for key in row.keys():
-                        if key in data.keys():
-                            data[key].append(row[key])
+                            row[var] = self._h5ref[var][indInDb,:] # Get values from database
+
+                            for ind in indNotInDb: # Insert nan values where indexes is not in dbIndex
+                                row[var] = np.insert(row[var],ind,np.nan,axis=0)
+
                         else:
-                            data[key] = [row[key]]
+                            row[var] = np.nan*np.ones(len(indexes),1)
+                        
+                    elif var in measurementHeader:
+                        row[var] = self._h5ref["measurements"][indexes,measurementHeader.index(var)]
+                    else:
+                        row[var] = np.nan*np.ones(len(indexes))
+
+                for key in row.keys():
+                    if key in data.keys():
+                        data[key].append(row[key])
+                    else:
+                        data[key] = [row[key]]
                     
                 return data
 
-            def to_dataframe(self, vars: list[str] = None, processesdVars: list[dict] = None, tStart:float = None, tEnd:float = None, indexes: list[int] = None):
-                return pd.DataFrame(self.to_dict(vars, processesdVars, tStart, tEnd, indexes))
+            def to_dataframe(self, vars: list[str] = None, processesdVars: list[dict] = None, tStart:float = None, tEnd:float = None, indexes: list[int] = None) -> pd.DataFrame:
+                data_dict = self.to_dict(vars, processesdVars, tStart, tEnd, indexes)
+                
+                return pd.DataFrame({k: v[0] if v[0].ndim == 1 else v[0].tolist() for k, v in data_dict.items()})
 
-            def getVarNames(self):
+            def getVarNames(self) -> list[str]:
                 # Return the name of all measurement variables of a given test
 
                 # List of all available variables based on columnNames attribute and dataset names
-                return list(self._h5ref["measurements"].attrs["columnNames"])+list(self._h5ref["0"].keys())
+                return list(self._h5ref["measurements"].attrs["columnNames"])+list(self._h5ref.keys())
