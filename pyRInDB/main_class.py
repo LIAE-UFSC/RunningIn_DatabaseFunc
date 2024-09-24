@@ -393,7 +393,7 @@ class RunIn_File(h5py.File):
             def __str__(self):
                 return self.name
             
-            def _applyProcess(self, data: h5py.Dataset, processes: list[str], index: list[int]):
+            def _applyProcess(self, data: h5py.Dataset, processes: list[str], index: list[int], dbIndex: list[int]) -> dict[np.ndarray]:
                 """
                 Applies specified statistical processes to the rows of the dataset at given indices.
 
@@ -418,7 +418,6 @@ class RunIn_File(h5py.File):
                     If an invalid process name is provided.
                 """
 
-                dbIndex = data.attrs["index"].tolist()
                 results = {process: np.empty((len(index))) for process in processes}
 
                 for kNew,ind in enumerate(index):
@@ -473,10 +472,13 @@ class RunIn_File(h5py.File):
                 for select in processesdVars:
                     varName = select["var"]
                     processes = select["process"]
-                    
                 
                     if varName in list(self._h5ref.keys()): # Check if the variable is in the database
-                        proc = self._applyProcess(self._h5ref[varName], processes, index)
+                        if varName in ["vibrationLongitudinal", "vibrationRig", "vibrationLateral"]:
+                            dbIndex = self._h5ref["index_vibration"][()].tolist()
+                        else:
+                            dbIndex = self._h5ref["index_"+varName][()].tolist()
+                        proc = self._applyProcess(self._h5ref[varName], processes, index, dbIndex)
                         data_processed.update({varName+key:proc[key] for key in proc.keys()})
                     else: # If the variable is not in the database, fill with NaN
                         data_processed.update({varName+key:np.nan*np.ones(len(index)) for key in processes})
