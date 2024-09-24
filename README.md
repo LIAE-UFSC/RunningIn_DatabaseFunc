@@ -1,16 +1,16 @@
 # RunningIn_DatabaseFunc
 
 ## Description
-This repository contains methods for processing the experimental database from the compressor running-in project. 
+`pyRInDB` is a Python library for handling and processing HDF5 files from compressor tests with LabVIEW integration. It provides utilities for managing running-in databases, extracting data, and converting models. 
 The main functionalities provided are:
 * Converting LabVIEW waveform files to hdf5 dataset;
-* Extract data from hdf5 dataset to pandas dataframe.
+* Extract data from hdf5 dataset to pandas dataframe and to dict.
 
 ## Installation
 To use the scripts in this repository, you'll need to install the required dependencies. You can do this using pip and the provided requirements.txt file:
 
 ```bash
-pip install -r requirements.txt
+pip install -r pyRInDB/requirements.txt
 ```
 
 Using the LabVIEW waveform conversion functionalities also requires LabVIEW Runtime 2022. Visit [the official NI website](https://www.ni.com/en/support/downloads/software-products/download.labview-runtime.html#301740) for download options. The bit architecture should be the same as the python interpreter.
@@ -48,33 +48,71 @@ convertFolders('path/to/tests', 'path/to/output')
 
 ### Extracting Data from HDF5 Database
 
-To extract data from the HDF5 database into pandas datasets, use the `RunIn_File` class.
+#### Printing the name of all tests in the HDF5 file
 
 ```python
 # Example code for printing the name of all tests in the HDF5 file
-from source.runInDB_utils import RunIn_File
+from pyRInDB import RunIn_File
 
 # Open HDF5 file as a running-in database
 with RunIn_File(path) as testFile:
-  for unit in testFile:
-    for test in unit:
-      print(f"Unit: {unit} | Test: {test}")
+    for unit in testFile:
+        for test in unit:
+            print(f"Unit: {unit} | Test: {test}")
 ```
+
+#### Extracting data from the database
 
 ```python
 # Example code for extracting data from the database
-from source.runInDB_utils import RunIn_File
+from pyRInDB import RunIn_File
 
 # Open HDF5 file as a running-in database
 with RunIn_File("path/to/file.hdf5") as testFile:
-  unit = testFile["A1"] # Selects unit A1 from the database. Can also be accessed by indexing
-  test = unit[0] # Selects the first test of the unit. Can also be accessed by date ("YYYY_MM_DD")
+    unit = testFile["A1"]  # Selects unit A1 from the database. Can also be accessed by indexing
+    test = unit[0]  # Selects the first test of the unit. Can also be accessed by date ("YYYY_MM_DD")
 
-  # Extracts dataframe with vibration and discharge pressure data, for test measurements 0, 100 and 200. See documentation for full list of variables.
-  dados = test.getMeasurements(varName=["vibrationRAWLateral","presDischarge"], indexes = [0,100,200])
+    # Extracts dataframe with vibration and discharge pressure data, for test measurements 0, 100 and 200. See documentation for full list of variables.
+    dados = test.to_dataframe(vars=["vibrationRAWLateral", "presDischarge"], indexes=[0, 100, 200])
+```
+
+### Generating datasets
+
+#### Generating a dataset using convertModel
+
+```python
+# Example code for generating a dataset using convertModel
+from pyRInDB import RunIn_File
+
+folders_in = ["path/to/unit1", "path/to/unit2"]
+file_out = "path/to/output/model.hdf5"
+model_name = "ModelA"
+
+# Convert the folders into a single HDF5 file
+run_in_file = RunIn_File.convertModel(folders_in, file_out, model_name)
+
+print(f"Model dataset created at: {file_out}")
 
 print(dados)
 ```
+
+#### Generating a dataset using convertFolders
+
+```python
+# Example code for generating datasets using convertFolders
+from pyRInDB import RunIn_File
+
+folder_in = "path/to/input/folder"
+folder_out = "path/to/output/folder"
+file_prefix = "Model"
+
+# Convert the folders into multiple HDF5 files
+run_in_files = RunIn_File.convertFolders(folder_in, folder_out, file_prefix)
+
+for file in run_in_files:
+    print(f"Model dataset created at: {file}")
+```
+
 
 ## Contributing
 
