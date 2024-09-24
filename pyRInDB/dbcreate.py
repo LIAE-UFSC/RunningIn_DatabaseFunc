@@ -120,9 +120,7 @@ def create_HF_dataset(testGrp:h5py.Group, folderIn: str, var:str):
         dSetLat = testGrp.create_dataset("vibrationLateral", (len(indexes),25600), compression="gzip", shuffle=True)
         dSetRig = testGrp.create_dataset("vibrationRig", (len(indexes),25600), compression="gzip", shuffle=True)
 
-        dSetLong.attrs["index"] = indexes
-        dSetLat.attrs["index"] = indexes
-        dSetRig.attrs["index"] = indexes
+        testGrp.create_dataset("index", data = indexes)
 
         for indexMeas, file in enumerate(tqdm.tqdm(matching_files, desc = f"    {var}", position = 3, leave = False)):
             filePath = f"{folder}\\{file}"
@@ -160,7 +158,7 @@ def create_HF_dataset(testGrp:h5py.Group, folderIn: str, var:str):
         else:
             dSet = testGrp.create_dataset(var, (len(indexes),25600),compression="gzip", shuffle=True)
 
-        dSet.attrs["index"] = indexes
+        testGrp.create_dataset("index", data = indexes)
 
         for indexMeas, file in enumerate(tqdm.tqdm(matching_files, desc = f"    {var}", position = 3, leave = False)):
             filePath = f"{folder}\\{file}"
