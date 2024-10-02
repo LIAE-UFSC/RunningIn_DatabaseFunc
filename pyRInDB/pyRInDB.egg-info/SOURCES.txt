@@ -8,4 +8,3 @@ pyRInDB/pyRInDB.egg-info/requires.txt
 pyRInDB/pyRInDB.egg-info/top_level.txt
 pyRInDB/utils/__init__.py
 pyRInDB/utils/waveformConversion.py
-tests/test.py

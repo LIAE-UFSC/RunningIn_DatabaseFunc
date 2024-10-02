@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="pyRInDB",
-    version="0.1.0",
+    version="2.0.0",
     description="A project for handling and processing HDF5 files for compressor tests with LabVIEW integration.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
