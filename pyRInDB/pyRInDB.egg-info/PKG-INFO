@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: pyRInDB
-Version: 0.1.0
+Version: 2.0.0
 Summary: A project for handling and processing HDF5 files for compressor tests with LabVIEW integration.
 Home-page: https://github.com/LIAE-UFSC/RunningIn_DatabaseFunc
 Author: Gabriel Thaler
