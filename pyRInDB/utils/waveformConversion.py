@@ -29,7 +29,7 @@ class Waveform:
 
         if os.path.isfile(file_path):
             if os.path.getsize(file_path) == 0:
-                raise warnings.warn("File empty:" + file_path)
+                warnings.warn("File empty:" + file_path)
                 return cls(np.array([]),np.array([]),0)
             
             # Loads DLL with labview functions
