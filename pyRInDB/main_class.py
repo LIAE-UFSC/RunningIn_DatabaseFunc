@@ -567,7 +567,10 @@ class RunIn_File(h5py.File):
                         # Get values from high frequency dataset
                         if var in list(self._h5ref.keys()):
                             
-                            dbIndex = self._h5ref[var].attrs["index"].tolist()
+                            if var in ["vibrationLongitudinal", "vibrationRig", "vibrationLateral"]:
+                                dbIndex = self._h5ref["index_vibration"][()].tolist()
+                            else:
+                                dbIndex = self._h5ref["index_"+var][()].tolist()
                             indInDb = [dbIndex.index(ind) for ind in indexes if ind in dbIndex]
                             indNotInDb = [k for k,ind in enumerate(indexes) if ind not in dbIndex]
 
@@ -577,7 +580,7 @@ class RunIn_File(h5py.File):
                                 row[var] = np.insert(row[var],ind,np.nan,axis=0)
 
                         else:
-                            row[var] = np.nan*np.ones(len(indexes),1)
+                            row[var] = np.nan*np.ones((len(indexes),1))
                         
                     elif var in measurementHeader: # Get values from measurements dataset (low frequency)
                         row[var] = self._h5ref["measurements"][indexes,measurementHeader.index(var)]
