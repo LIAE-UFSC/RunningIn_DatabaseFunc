@@ -482,6 +482,11 @@ class RunIn_File(h5py.File):
                         data_processed.update({varName+key:proc[key] for key in proc.keys()})
                     else: # If the variable is not in the database, fill with NaN
                         data_processed.update({varName+key:np.nan*np.ones(len(index)) for key in processes})
+                    
+                    # If the variable is "current" and the RMS is NaN, fill with the RMS from the "currentRMS" variable if available (special case when HF data was not recorded)
+                    if (varName == "current") and ("RMS" in processes) and np.all(np.isnan(data_processed[varName + "RMS"])) and ("currentRMS" in self.get_varNames()):
+                        measurementHeader = list(self._h5ref["measurements"].attrs["columnNames"])
+                        data_processed.update({"currentRMS": self._h5ref["measurements"][index,measurementHeader.index("currentRMS")]})
                 
                 return data_processed
 
@@ -534,6 +539,9 @@ class RunIn_File(h5py.File):
                     raise Exception("Both index and time range provided. Only one allowed.")
                 
                 allVars = self.get_varNames()
+                if ("current" in allVars) and ("voltage" in allVars):
+                    # If current and voltage are available, power can be calculated
+                    allVars.append("power")
 
                 if vars is None:
                     vars = allVars
@@ -563,7 +571,7 @@ class RunIn_File(h5py.File):
                 for var in vars:                            
                         
                     if var in ["voltage","acousticEmission", "current",
-                            "vibrationLongitudinal", "vibrationRig", "vibrationLateral"]:
+                            "vibrationLongitudinal", "vibrationRig", "vibrationLateral","power"]:
                         # Get values from high frequency dataset
                         if var in list(self._h5ref.keys()):
                             
@@ -578,6 +586,18 @@ class RunIn_File(h5py.File):
 
                             for ind in indNotInDb: # Insert nan values where indexes is not in dbIndex
                                 row[var] = np.insert(row[var],ind,np.nan,axis=0)
+
+                        elif (var == "power") and ("current" in list(self._h5ref.keys())) and ("voltage" in list(self._h5ref.keys())):
+                            # Calculate power if current and voltage are available
+                            dbIndex = self._h5ref["index_current"][()].tolist()
+                            indInDb = [dbIndex.index(ind) for ind in indexes if ind in dbIndex]
+                            indNotInDb = [k for k,ind in enumerate(indexes) if ind not in dbIndex]
+
+                            row[var] = self._h5ref["current"][indInDb,:] * self._h5ref["voltage"][indInDb,:] # Get values from database
+
+                            for ind in indNotInDb: # Insert nan values where indexes is not in dbIndex
+                                row[var] = np.insert(row[var],ind,np.nan,axis=0)
+                            
 
                         else:
                             row[var] = np.nan*np.ones((len(indexes),1))
