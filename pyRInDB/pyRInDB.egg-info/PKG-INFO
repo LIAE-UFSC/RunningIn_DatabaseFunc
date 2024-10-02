@@ -1,3 +1,22 @@
+Metadata-Version: 2.1
+Name: pyRInDB
+Version: 2.0.0
+Summary: A project for handling and processing HDF5 files for compressor tests with LabVIEW integration.
+Home-page: https://github.com/LIAE-UFSC/RunningIn_DatabaseFunc
+Author: Gabriel Thaler
+Author-email: gabriel.thaler@labmetro.ufsc.br
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+Requires-Dist: h5py>=3.3.0
+Requires-Dist: numpy>=1.21.0
+Requires-Dist: tqdm>=4.62.0
+Requires-Dist: scipy>=1.7.0
+Requires-Dist: pandas>=1.3.0
+Requires-Dist: typing_extensions>=3.10.0.0
+
 # RunningIn_DatabaseFunc
 
 ## Description
