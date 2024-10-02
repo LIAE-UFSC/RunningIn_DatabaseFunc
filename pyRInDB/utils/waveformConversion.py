@@ -56,6 +56,10 @@ class Waveform:
             time_scale = time_scale.value
             data = np.array(data[:])
             time = np.array([ind*time_scale for ind in range(length)])
+
+            if data.size == 0:
+                warnings.warn("Waveform empty:" + file_path)
+                return cls(data,time,time_scale)
             return cls(data,time,time_scale)
         else:
             raise Exception("File not found")
@@ -67,6 +71,11 @@ class Waveform:
         file_path = file_path.replace("/","\\") # Fix file path for windows
 
         if os.path.isfile(file_path):
+
+            if os.path.getsize(file_path) == 0:
+                warnings.warn("File empty:" + file_path)
+                return [cls(np.array([]),np.array([]),0)]
+            
             # Loads DLL with labview functions
             if (struct.calcsize("P")*8)==64:
                 wvf_read_dll = ct.CDLL(os.path.dirname(__file__)+"/wvfRead64.dll")
@@ -95,6 +104,10 @@ class Waveform:
             wvf_read_dll.read_all_waveform_data(ct.c_char_p(path), N, dt_all, data_all, ct.c_int32(np.sum(length)))
 
             ArrayWaveforms = []
+
+            if N == 0:
+                warnings.warn("Waveform empty:" + file_path)
+                return [cls(data,time,time_scale)]
 
             iStart = 0
             for ind in range(N):
