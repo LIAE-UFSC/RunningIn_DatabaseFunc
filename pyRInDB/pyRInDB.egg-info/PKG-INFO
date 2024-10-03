@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: pyRInDB
-Version: 2.0.0
+Version: 2.0.1
 Summary: A project for handling and processing HDF5 files for compressor tests with LabVIEW integration.
 Home-page: https://github.com/LIAE-UFSC/RunningIn_DatabaseFunc
 Author: Gabriel Thaler
@@ -26,10 +26,11 @@ The main functionalities provided are:
 * Extract data from hdf5 dataset to pandas dataframe and to dict.
 
 ## Installation
-To use the scripts in this repository, you'll need to install the required dependencies. You can do this using pip and the provided requirements.txt file:
+
+In order to build and install this library, run the following command:
 
 ```bash
-pip install -r pyRInDB/requirements.txt
+python -m pip install 'pyRInDB @ git+https://github.com/LIAE-UFSC/RunningIn_DatabaseFunc/'
 ```
 
 Using the LabVIEW waveform conversion functionalities also requires LabVIEW Runtime 2022. Visit [the official NI website](https://www.ni.com/en/support/downloads/software-products/download.labview-runtime.html#301740) for download options. The bit architecture should be the same as the python interpreter.
@@ -56,18 +57,76 @@ Each test folder should contain the following:
   * acusticas: acoustic emissions measurements.
   * tensao: voltage measurements.
 
-To process test data and convert them to HDF5 format, use the `convertFolders` method:
-
-```python
-# Example code for processing LabVIEW files
-from source.convertDB import convertFolders
-
-convertFolders('path/to/tests', 'path/to/output')
-```
+### Extracting Data from HDF5 Database
 
 ### Extracting Data from HDF5 Database
 
-#### Printing the name of all tests in the HDF5 file
+The HDF5 database used in this project is structured to store data from compressor tests, with a hierarchical organization of groups and attributes. Below is an explanation of the groups and attributes within the HDF5 file:
+
+#### Groups
+
+1. **Root Group (`/ModelName`)**:
+    - The root group contains metadata about the entire dataset and serves as the entry point for accessing all other groups.
+    - **Attributes**:
+        - `model`: The compressor model.
+        - `fluid`: The refrigerant fluid.
+
+2. **Unit Groups (`/UnitName`)**:
+    - Each unit group represents a specific compressor unit. The name of the group corresponds to the unit's identifier (e.g., `A1`, `B2`).
+    - **Attributes**:
+        - `unit_id`: A unique identifier for the unit.
+        - `description`: A brief description of the unit.
+
+3. **Test Groups (`/UnitName/TestDate`)**:
+    - Each test group represents a specific test conducted on the unit. The name of the group corresponds to the test's date (e.g., `2023_01_01`, `2023_02_15`).
+    - **Attributes**:
+        - `startTime`: The start time of the test.
+        - `runningIn`: Indicates if it is the running-in, i.e. the first ever test of the compressor unit.
+
+#### Datasets
+
+1. **Low frequency measurements (`/UnitName/TestDate/measurements`)**:
+    - Contains raw measurement data from low frequency acquisitions collected during the test, including time. Normally these measurements are performed once per minute. The dataset has dimensions M-by-N, where M is the number of measurements and N is the number of variables.
+    - **Attributes**:
+        - `columnNames`: header of the dataset
+
+2. **High frequency dataset (`/UnitName/TestDate/var`)**:
+    - Contains raw measurements of high frequency acquisitions, which where acquired in batches (L consecutive samples per measurement). Each dataset relates to a different variable, such as `current`, `voltage`, `vibrationLateral`, etc. Each dataset has dimension K-by-L, where K is the number of measurements and L is the number of consecutive samples per measurement.
+    - **Attributes**:
+        - `dt`: Sampling period of the samples in each measurement.
+        - `startTime`: Time at which the first measurement was acquired.
+
+2. **High frequency indexes (`/UnitName/TestDate/index_+var`)**:
+    - Contains indexing relating each high-frequency measurement to the low frequency measurements, e.g. if the low frequency measurements were acquired once per minute, and the high-frequency batches of variable `var` are acquired once every 10 minutes, the index database `index_var` should look something like [0,10,20...].  The index dataset has dimension K, where k is the number of measurement batches.
+
+#### Accessing Data
+
+In order to facilitate access to data from the HDF5 database, you can use the `RunIn_File` class provided in the project. Here is an example of how to extract data:
+
+```python
+from pyRInDB import RunIn_File
+
+# Open the HDF5 file as a running-in database
+with RunIn_File("path/to/file.hdf5") as testFile:
+    # Select unit A1 from the database. Can also be accessed by indexing
+    unit = testFile["A1"]
+    
+    # Select the test conducted on 2023_01_01
+    test = unit["2023_01_01"]
+    
+    # Extract dataframe with vibration and discharge pressure data, for test measurements 0, 100, and 200
+    data = test.to_dataframe(vars=["vibrationRAWLateral", "presDischarge"], indexes=[0, 100, 200])
+
+print(data)
+```
+
+In this example:
+- The `RunIn_File` class is used to open the HDF5 file.
+- The unit "A1" is selected from the database.
+- The test conducted on `2023_01_01` is accessed.
+- The `to_dataframe` method is used to extract specific variables (`vibrationRAWLateral` and `presDischarge`) for the specified indexes (0, 100, 200).
+
+
 
 ```python
 # Example code for printing the name of all tests in the HDF5 file
@@ -135,7 +194,7 @@ for file in run_in_files:
 
 ## Contributing
 
-Contribution to this repository is restricted to researchers from LIAE/LABMETRO. Access should be requested via e-mail.
+Contribution to this repository is restricted to researchers from LIAE/LABMETRO - UFSC. Access should be requested via e-mail.
 
 ## Contact
 
