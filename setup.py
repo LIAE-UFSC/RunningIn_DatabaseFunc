@@ -9,8 +9,7 @@ setup(
     author="Gabriel Thaler",
     author_email="gabriel.thaler@labmetro.ufsc.br",
     url="https://github.com/LIAE-UFSC/RunningIn_DatabaseFunc",
-    packages=find_packages(where="pyRInDB"),
-    package_dir={"": "pyRInDB"},
+    packages=find_packages(),
     include_package_data=True,
     package_data={
         "pyRInDB": [
