@@ -133,8 +133,9 @@ def find_scores(y_true, y_predict):
     
     precision = tp / (tp + fp)
     recall = tp / (tp + fn)
+    f1_score = (2 * precision * recall / (precision + recall)) if tp != 0 else np.nan
 
     print ('Accuracy {:.2f}'.format((tp + tn)/(len(y_true))))
     print ('Precision {:.2f}'.format(precision))
     print ('Recall {:.2f}'.format(recall))
-    print ('F1 Score {:.2f}'.format(2 * precision * recall / (precision + recall)))   
+    print ('F1 Score {:.2f}'.format(f1_score))   

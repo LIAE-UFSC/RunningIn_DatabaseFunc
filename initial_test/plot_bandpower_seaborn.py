@@ -34,7 +34,7 @@ eixo_y = [[0, 250], [250, 500], [500, 750], [750, 1000]]
 new_data = [[5,2,3,4],[20, 12, 45, 30],[20, 12, 45, 30],[20, 12, 45, 95]] # Lista de valores bandpower
 
 
-#plot_seaborn_bandpower(eixo_y,new_data)
+#plot_seaborn_bandpower(eixo_y,new_data,60)
 
 
 
