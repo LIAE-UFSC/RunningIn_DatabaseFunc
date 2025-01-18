@@ -64,6 +64,7 @@ def critic_x_iteration(sample):
     critic_score_valid_x = torch.mean(torch.ones(valid_x.shape) * valid_x) #Wasserstein Loss
 
     #The sampled z are the anomalous points - points deviating from actual distribution of z (obtained through encoding x)
+
     z = torch.empty(1, batch_size, latent_space_dim).uniform_(0, 1)
     x_ = decoder(z)
     fake_x = critic_x(x_)
@@ -76,11 +77,13 @@ def critic_x_iteration(sample):
     v_ix = critic_x(ix)
     v_ix.mean().backward()
     gradients = ix.grad
+
     #Gradient Penalty Loss
     gp_loss = torch.sqrt(torch.sum(torch.square(gradients).view(-1)))
 
     #Critic has to maximize Cx(Valid X) - Cx(Fake X).
     #Maximizing the above is same as minimizing the negative.
+
     wl = critic_score_fake_x - critic_score_valid_x
     loss = wl + gp_loss
     loss.backward()
@@ -235,8 +238,8 @@ if __name__ == "__main__":
 
     TRAIN = True
 
-    #dataset = pd.read_csv(r'nntadGAN\meu_arquivo_massflow_A1_csv.csv')
-    dataset = pd.read_csv(r'nntadGAN\anomalias_visiveis.csv')
+    dataset = pd.read_csv(r'nntadGAN\meu_arquivo_massflow_A1_csv.csv')
+    #dataset = pd.read_csv(r'nntadGAN\anomalias_visiveis.csv')
     
 
     #Splitting intro train and test

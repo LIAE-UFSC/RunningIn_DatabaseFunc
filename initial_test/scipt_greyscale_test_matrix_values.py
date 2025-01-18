@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from source.runInDB_utils import RunIn_File
-from TimeFrequencyRunIn import dividir_em_bandas
+from script_TimeFrequencyRunIn import dividir_em_bandas
 
 np.random.seed(10)
 
