@@ -1,5 +1,5 @@
-from TimeFrequencyRunIn import FFT_ensaio, STFT_ensaio, bandpower, dividir_em_bandas
-from plot_bandpower_seaborn import plot_seaborn_bandpower
+from script_TimeFrequencyRunIn import FFT_ensaio, STFT_ensaio, bandpower, dividir_em_bandas
+from initial_test.script_plot_bandpower_seaborn import plot_seaborn_bandpower
 from source.runInDB_utils import RunIn_File
 import pandas as pd
 import numpy as np
