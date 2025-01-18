@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-from TimeFrequencyRunIn import FFT_ensaio, STFT_ensaio, bandpower
+from script_TimeFrequencyRunIn import FFT_ensaio, STFT_ensaio, bandpower
 
 path = r"\\LIAE-SANTINHO\Backups\Amaciamento_DatabaseMIMICRI\ModelA.hdf5"
 unit = "A1"
