@@ -115,7 +115,7 @@ def test(encoder, decoder, critic_x, df):
 
     return df
 
-# Carregar seu dataset
+# Carregar o dataset
 # df = pd.read_csv('meu_arquivo_massflow_A1_csv.csv')
 # Pre-processar seu dataset conforme necessário
 # ...
