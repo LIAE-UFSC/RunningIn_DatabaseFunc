@@ -33,3 +33,8 @@ print("Anomalias detectadas:")
 print(anomalies)
 
 #LLLLLLLL
+
+
+#27272727
+
+print(12)
