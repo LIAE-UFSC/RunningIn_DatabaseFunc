@@ -21,7 +21,7 @@ latent_dim = 100
 seq_length = 50
 n_samples = 1000
 batch_size = 32
-epochs = 50
+epochs = 100
 
 # Gera e carrega dados reais
 real_data = generate_real_data(n_samples, seq_length)
