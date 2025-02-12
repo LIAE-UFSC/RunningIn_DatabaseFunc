@@ -5,8 +5,24 @@ import numpy as np
 from torch.optim.lr_scheduler import StepLR
 from sklearn.neighbors import NearestNeighbors
 from sklearn.model_selection import train_test_split
-from testdataset import dividir_dados
+from pathlib import Path
+import pandas as pd
 
+def dividir_dados(caminho_arquivo):
+    caminho_arquivo = Path(caminho_arquivo)
+    
+    if not caminho_arquivo.exists():
+        raise FileNotFoundError(f"Arquivo não encontrado: {caminho_arquivo}")
+
+    df = pd.read_excel(caminho_arquivo, skiprows=1, header=None)
+    dados = df.iloc[:, 1].values.astype(np.float32)
+    treino, validacao = train_test_split(dados, test_size=0.25, random_state=42)
+    
+    # Convertendo para tensores do PyTorch e ajustando o formato
+    treino = torch.tensor(treino, dtype=torch.float32).unsqueeze(1)  # Formato (n, 1)
+    validacao = torch.tensor(validacao, dtype=torch.float32).unsqueeze(1)  # Formato (n, 1)
+    
+    return {"x_train": treino, "x_val": validacao}
 
 class BaseModel(nn.Module):
     def __init__(self, **kwargs):
@@ -77,7 +93,7 @@ class BaseModel(nn.Module):
 
     def load_model(self, file_path):
         """Load the model from a file."""
-        self.load_state_dict(torch.load(file_path,weights_only=True))
+        self.load_state_dict(torch.load(file_path, weights_only=True))
         print(f"Model loaded from {file_path}")
 
 class Autoencoder(BaseModel):
@@ -85,11 +101,10 @@ class Autoencoder(BaseModel):
         super(Autoencoder, self).__init__(**kwargs)
 
         # Extract parameters from kwargs
-        input_dim = kwargs.get("input_dim", 128)
+        input_dim = kwargs.get("input_dim", 1)
         hidden_dim = kwargs.get("hidden_dim", 32)
         activation_fn = kwargs.get("activation_fn", nn.ReLU)
         dropout = kwargs.get("dropout", 0.2)
-
 
         # Encoder: Single layer with batch normalization and dropout
         self.encoder = nn.Sequential(
@@ -129,7 +144,6 @@ class Autoencoder(BaseModel):
         # Extract validation data (optional)
         x_val = dataset.get("x_val", None)
 
-
         # Initialize lists to store loss values
         self.train_losses = []
         self.val_losses = [] if x_val is not None else None
@@ -158,7 +172,6 @@ class Autoencoder(BaseModel):
                 total_loss += loss.item()
 
             # Store average loss for this epoch
-            # avg_train_loss = total_loss / (dataset_size // batch_size)
             avg_train_loss = total_loss / dataset_size
             self.train_losses.append(avg_train_loss)
 
@@ -191,31 +204,9 @@ class Autoencoder(BaseModel):
             loss = self.loss_function(x, decoded)
         return loss.item()
 
-# def dividir_dados(caminho_arquivo):
-#     caminho_arquivo = Path(caminho_arquivo)
-    
-#     if not caminho_arquivo.exists():
-#         raise FileNotFoundError(f"Arquivo não encontrado: {caminho_arquivo}")
-
-#     df = pd.read_excel(caminho_arquivo, skiprows=1, header=None)
-#     dados = df.iloc[:, 1]
-#     treino, validacao = train_test_split(dados, test_size=0.25, random_state=42)
-    
-#     return treino, validacao
-
-# #teste
-# caminho = Path(__file__).parent / "meu_arquivo_massflow.xlsx"
-# treino, validacao = dividir_dados(caminho)
-# print("Treino:", treino.head())
-# print("Validação:", validacao.head())
-    
-#####################teste#####################################
-
-dividir_dados("meu_arquivo_massflow.xlsx")
-    
 # Parâmetros do modelo
 params = {
-    "input_dim": 128,
+    "input_dim": 1,
     "hidden_dim": 32,
     "activation_fn": nn.ReLU,
     "dropout": 0.2
@@ -229,7 +220,6 @@ learning_rate = 0.001
 model.compile_autoencoder(learning_rate=learning_rate)
 
 # Carregar e dividir os dados (certifique-se de que dividir_dados retorna os dados corretamente)
-# Aqui usamos o "dividir_dados" para carregar e dividir os dados
 dataset = dividir_dados("meu_arquivo_massflow.xlsx")
 
 # Exemplo de treinamento com parâmetros de épocas e batch_size
