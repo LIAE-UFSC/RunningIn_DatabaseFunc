@@ -7,6 +7,8 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.model_selection import train_test_split
 from pathlib import Path
 import pandas as pd
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
 
 def dividir_dados(caminho_arquivo):
     caminho_arquivo = Path(caminho_arquivo)
@@ -204,6 +206,22 @@ class Autoencoder(BaseModel):
             loss = self.loss_function(x, decoded)
         return loss.item()
 
+    #new
+    def extract_latent(self, x):
+        """
+        Extrai a representação latente dos dados de entrada.
+        
+        Args:
+            x (torch.Tensor): Dados de entrada, de formato (batch_size, input_dim).
+        
+        Returns:
+            torch.Tensor: Representação latente, de formato (batch_size, hidden_dim).
+        """
+        self.eval()  # Coloca o modelo em modo de avaliação
+        with torch.no_grad():  # Desabilita o cálculo de gradientes
+            latent_representation = self.encoder(x)  # Passa os dados pelo encoder
+        return latent_representation
+
 # Parâmetros do modelo
 params = {
     "input_dim": 1,
@@ -233,3 +251,43 @@ model.train_model(
     batch_size=batch_size,
     shuffle=True  # ou False, dependendo da sua necessidade
 )
+
+# mudanças na classe
+
+#input_dim = kwargs.get("input_dim", 1)
+#input_dim = kwargs.get("input_dim", 128)
+
+
+#avg_train_loss = total_loss / (dataset_size // batch_size)
+#avg_train_loss = total_loss / dataset_size
+
+####teste####
+
+x_train = dataset["x_train"]  # Dados de treino (formato: [n_amostras, input_dim])
+
+# Extraia a representação latente
+latent_representation = model.extract_latent(x_train)
+
+# Converta para numpy para visualização ou análise
+latent_representation = latent_representation.numpy()
+
+# Agora você pode visualizar o espaço latente
+print("Representação latente:", latent_representation)
+
+
+# Extrair a representação latente
+latent_representation = model.extract_latent(x_train).numpy()
+
+
+# Reduzir a dimensionalidade para 2D usando PCA
+pca = PCA(n_components=2)
+latent_2d = pca.fit_transform(latent_representation)
+
+# Criar o gráfico
+plt.figure(figsize=(8, 6))
+plt.scatter(latent_2d[:, 0], latent_2d[:, 1], alpha=0.6)
+plt.title("Representação 2D do Espaço Latente (PCA)")
+plt.xlabel("Componente Principal 1")
+plt.ylabel("Componente Principal 2")
+plt.grid(True)
+plt.show()
