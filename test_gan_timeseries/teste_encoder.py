@@ -16,13 +16,13 @@ def dividir_dados(caminho_arquivo):
     if not caminho_arquivo.exists():
         raise FileNotFoundError(f"Arquivo não encontrado: {caminho_arquivo}")
 
-    df = pd.read_excel(caminho_arquivo, skiprows=1, header=None)
+    df = pd.read_csv(caminho_arquivo, skiprows=1, header=None)
     dados = df.iloc[:, 1].values.astype(np.float32)
     treino, validacao = train_test_split(dados, test_size=0.25, random_state=42)
     
     # Convertendo para tensores do PyTorch e ajustando o formato
-    treino = torch.tensor(treino, dtype=torch.float32).unsqueeze(1)  # Formato (n, 1)
-    validacao = torch.tensor(validacao, dtype=torch.float32).unsqueeze(1)  # Formato (n, 1)
+    treino = torch.tensor(treino).unsqueeze(1)  # Formato (n, 1)
+    validacao = torch.tensor(validacao).unsqueeze(1)  # Formato (n, 1)
     
     return {"x_train": treino, "x_val": validacao}
 
@@ -206,84 +206,44 @@ class Autoencoder(BaseModel):
             loss = self.loss_function(x, decoded)
         return loss.item()
 
-    #new
-    def extract_latent(self, x):
-        """
-        Extrai a representação latente dos dados de entrada.
-        
-        Args:
-            x (torch.Tensor): Dados de entrada, de formato (batch_size, input_dim).
-        
-        Returns:
-            torch.Tensor: Representação latente, de formato (batch_size, hidden_dim).
-        """
-        self.eval()  # Coloca o modelo em modo de avaliação
-        with torch.no_grad():  # Desabilita o cálculo de gradientes
-            latent_representation = self.encoder(x)  # Passa os dados pelo encoder
-        return latent_representation
 
-# Parâmetros do modelo
 params = {
     "input_dim": 1,
     "hidden_dim": 32,
     "activation_fn": nn.ReLU,
-    "dropout": 0.2
-}
+    "dropout": 0
+        }
 
-# Criar o modelo com os parâmetros definidos
 model = Autoencoder(**params)
 
-# Compilar o modelo com uma taxa de aprendizado específica
-learning_rate = 0.001
-model.compile_autoencoder(learning_rate=learning_rate)
-
-# Carregar e dividir os dados (certifique-se de que dividir_dados retorna os dados corretamente)
-dataset = dividir_dados("meu_arquivo_massflow.xlsx")
-
-# Exemplo de treinamento com parâmetros de épocas e batch_size
-epochs = 10
+lr = 0.02
+model.compile_autoencoder(learning_rate=lr)
+dataset = dividir_dados("meu_arquivo_massflow_A1_csv.csv")
+epochs = 20
 batch_size = 32
+x_train = dataset["x_train"]  
 
-# Treinar o modelo com os dados e parâmetros fornecidos
+# Mantendo uma cópia dos dados originais
+x_train_original = x_train.clone()
+
+# Treinando o modelo
 model.train_model(
     dataset=dataset,
     epochs=epochs,
     batch_size=batch_size,
-    shuffle=True  # ou False, dependendo da sua necessidade
+    shuffle=True
 )
 
-# mudanças na classe
+# Avaliando o modelo após o treinamento
+model.eval()  # Coloca o modelo em modo de avaliação
+with torch.no_grad():  # Desabilita o cálculo de gradientes
+    latent_representation = model.encoder(x_train_original)  # Passa os dados originais pelo encoder
 
-#input_dim = kwargs.get("input_dim", 1)
-#input_dim = kwargs.get("input_dim", 128)
-
-
-#avg_train_loss = total_loss / (dataset_size // batch_size)
-#avg_train_loss = total_loss / dataset_size
-
-####teste####
-
-x_train = dataset["x_train"]  # Dados de treino (formato: [n_amostras, input_dim])
-
-# Extraia a representação latente
-latent_representation = model.extract_latent(x_train)
-
-# Converta para numpy para visualização ou análise
 latent_representation = latent_representation.numpy()
-
-# Agora você pode visualizar o espaço latente
 print("Representação latente:", latent_representation)
-
-
-# Extrair a representação latente
-latent_representation = model.extract_latent(x_train).numpy()
-
-
-# Reduzir a dimensionalidade para 2D usando PCA
 pca = PCA(n_components=2)
 latent_2d = pca.fit_transform(latent_representation)
 
-# Criar o gráfico
 plt.figure(figsize=(8, 6))
 plt.scatter(latent_2d[:, 0], latent_2d[:, 1], alpha=0.6)
 plt.title("Representação 2D do Espaço Latente (PCA)")
@@ -291,3 +251,26 @@ plt.xlabel("Componente Principal 1")
 plt.ylabel("Componente Principal 2")
 plt.grid(True)
 plt.show()
+
+# Reconstruindo a partir dos dados originais
+with torch.no_grad():
+    _, reconstruido = model(x_train_original)  # Obter a saída do decodificador
+
+reconstruido = reconstruido.numpy()
+
+# Exibindo os primeiros 10 valores
+print("Primeiros 10 valores originais:", x_train_original[:10].numpy().flatten())
+print("Primeiros 10 valores reconstruídos:", reconstruido[:10].flatten())
+
+# Gráfico de comparação
+plt.figure(figsize=(10, 6))
+plt.plot(x_train_original.numpy(), label="Original", alpha=0.7)
+plt.plot(reconstruido, label="Reconstruído", alpha=0.7)
+plt.title("Comparação entre Dados Originais e Reconstruídos")
+plt.xlabel("Índice")
+plt.ylabel("Valor")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+

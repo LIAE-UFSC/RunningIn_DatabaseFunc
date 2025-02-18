@@ -1,8 +1,6 @@
 from orion.data import load_signal
 from orion import Orion
 
-#LLLL
-
 train_data = load_signal('S-1-train')
 print("Dados de treino carregados:")
 print(train_data.head())
@@ -33,10 +31,3 @@ anomalies = orion.detect(new_data)
 
 print("Anomalias detectadas:")
 print(anomalies)
-
-#LLLLLLLL
-
-
-#27272727
-
-print(12)
