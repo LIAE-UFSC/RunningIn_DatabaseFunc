@@ -10,6 +10,22 @@ import pandas as pd
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 
+# def dividir_dados(caminho_arquivo):
+#     caminho_arquivo = Path(caminho_arquivo)
+    
+#     if not caminho_arquivo.exists():
+#         raise FileNotFoundError(f"Arquivo não encontrado: {caminho_arquivo}")
+
+#     df = pd.read_csv(caminho_arquivo, skiprows=1, header=None)
+#     dados = df.iloc[:, 1].values.astype(np.float32)
+#     treino, validacao = train_test_split(dados, test_size=0.25, random_state=42)
+    
+#     # Convertendo para tensores do PyTorch e ajustando o formato
+#     treino = torch.tensor(treino).unsqueeze(1)  # Formato (n, 1)
+#     validacao = torch.tensor(validacao).unsqueeze(1)  # Formato (n, 1)
+    
+#     return {"x_train": treino, "x_val": validacao}
+
 def dividir_dados(caminho_arquivo):
     caminho_arquivo = Path(caminho_arquivo)
     
@@ -18,7 +34,11 @@ def dividir_dados(caminho_arquivo):
 
     df = pd.read_csv(caminho_arquivo, skiprows=1, header=None)
     dados = df.iloc[:, 1].values.astype(np.float32)
-    treino, validacao = train_test_split(dados, test_size=0.25, random_state=42)
+    
+    # Dividindo os dados de forma sequencial
+    tamanho_treino = int(len(dados) * 0.75)
+    treino = dados[:tamanho_treino]
+    validacao = dados[tamanho_treino:]
     
     # Convertendo para tensores do PyTorch e ajustando o formato
     treino = torch.tensor(treino).unsqueeze(1)  # Formato (n, 1)
@@ -209,9 +229,9 @@ class Autoencoder(BaseModel):
 
 params = {
     "input_dim": 1,
-    "hidden_dim": 32,
+    "hidden_dim": 4,
     "activation_fn": nn.ReLU,
-    "dropout": 0
+    "dropout": 0.2
         }
 
 model = Autoencoder(**params)
@@ -219,7 +239,7 @@ model = Autoencoder(**params)
 lr = 0.02
 model.compile_autoencoder(learning_rate=lr)
 dataset = dividir_dados("meu_arquivo_massflow_A1_csv.csv")
-epochs = 20
+epochs = 200
 batch_size = 32
 x_train = dataset["x_train"]  
 
@@ -228,20 +248,23 @@ x_train_original = x_train.clone()
 
 # Treinando o modelo
 model.train_model(
+
     dataset=dataset,
     epochs=epochs,
     batch_size=batch_size,
-    shuffle=True
+    shuffle=False
 )
 
 # Avaliando o modelo após o treinamento
 model.eval()  # Coloca o modelo em modo de avaliação
-with torch.no_grad():  # Desabilita o cálculo de gradientes
-    latent_representation = model.encoder(x_train_original)  # Passa os dados originais pelo encoder
+with torch.no_grad():  
+    latent_representation = model.encoder(x_train_original)  
 
 latent_representation = latent_representation.numpy()
 print("Representação latente:", latent_representation)
+
 pca = PCA(n_components=2)
+
 latent_2d = pca.fit_transform(latent_representation)
 
 plt.figure(figsize=(8, 6))
@@ -258,9 +281,6 @@ with torch.no_grad():
 
 reconstruido = reconstruido.numpy()
 
-# Exibindo os primeiros 10 valores
-print("Primeiros 10 valores originais:", x_train_original[:10].numpy().flatten())
-print("Primeiros 10 valores reconstruídos:", reconstruido[:10].flatten())
 
 # Gráfico de comparação
 plt.figure(figsize=(10, 6))
