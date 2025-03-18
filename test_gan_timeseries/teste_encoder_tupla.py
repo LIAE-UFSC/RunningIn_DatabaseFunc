@@ -2,13 +2,15 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-from torch.optim.lr_scheduler import StepLR
-from sklearn.neighbors import NearestNeighbors
-from sklearn.model_selection import train_test_split
-from pathlib import Path
 import pandas as pd
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
+from pathlib import Path
+
+# from torch.optim.lr_scheduler import StepLR
+# from sklearn.neighbors import NearestNeighbors
+# from sklearn.model_selection import train_test_split
+
 
 def dividir_dados(caminho_arquivo):
     caminho_arquivo = Path(caminho_arquivo)
@@ -223,7 +225,7 @@ class Autoencoder(BaseModel):
 
 params = {
     "input_dim": 1,
-    "hidden_dim": 32,
+    "hidden_dim": 64,
     "activation_fn": nn.ReLU,
     "dropout": 0.2
         }
@@ -279,13 +281,13 @@ with torch.no_grad():
 reconstruido = reconstruido.numpy()
 
 # Gráfico de comparação com mapa de cores
-plt.figure(figsize=(10, 6))
-plt.scatter(range(len(x_train_original)), x_train_original.numpy(), c=t_train_original.numpy(), cmap='viridis', label="Original", alpha=0.7)
-plt.scatter(range(len(reconstruido)), reconstruido, c=t_train_original.numpy(), cmap='viridis', label="Reconstruído", alpha=0.7)
-plt.colorbar(label='Tempo')
-plt.title("Comparação entre Dados Originais e Reconstruídos")
-plt.xlabel("Índice")
-plt.ylabel("Valor")
-plt.legend()
-plt.grid(True)
-plt.show()
+# plt.figure(figsize=(10, 6))
+# plt.scatter(range(len(x_train_original)), x_train_original.numpy(), c=t_train_original.numpy(), cmap='viridis', label="Original", alpha=0.7)
+# plt.scatter(range(len(reconstruido)), reconstruido, c=t_train_original.numpy(), cmap='viridis', label="Reconstruído", alpha=0.7)
+# plt.colorbar(label='Tempo')
+# plt.title("Comparação entre Dados Originais e Reconstruídos")
+# plt.xlabel("Índice")
+# plt.ylabel("Valor")
+# plt.legend()
+# plt.grid(True)
+# plt.show()

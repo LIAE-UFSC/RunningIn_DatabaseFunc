@@ -231,7 +231,7 @@ params = {
     "input_dim": 1,
     "hidden_dim": 32,
     "activation_fn": nn.ReLU,
-    "dropout": 0.2
+    "dropout": 0.0
         }
 
 model = Autoencoder(**params)
