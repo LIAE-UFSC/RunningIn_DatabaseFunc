@@ -230,7 +230,7 @@ learning_rate = 0.001
 model.compile_autoencoder(learning_rate=learning_rate)
 
 # Carregar e dividir os dados (certifique-se de que dividir_dados retorna os dados corretamente)
-dataset = dividir_dados("meu_arquivo_massflow.xlsx")
+dataset = dividir_dados("meu_arquivo_massflow.csv")
 
 # Redimensiona os dados para a dimensão correta
 dataset["x_train"] = redimensionar_dados(dataset["x_train"], input_dim=128)
