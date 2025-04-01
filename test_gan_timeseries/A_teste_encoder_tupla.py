@@ -11,7 +11,6 @@ from pathlib import Path
 # from sklearn.neighbors import NearestNeighbors
 # from sklearn.model_selection import train_test_split
 
-
 def dividir_dados(caminho_arquivo):
     caminho_arquivo = Path(caminho_arquivo)
     
