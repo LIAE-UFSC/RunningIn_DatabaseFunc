@@ -120,66 +120,66 @@ def predict(X_new):
 
 #########################################################################################
 
-# for epoch in range(epochs):
+for epoch in range(epochs):
 
-#     activations = [X_train]  
+    activations = [X_train]  
 
-#     for i in range(len(weights)):
+    for i in range(len(weights)):
 
-#         z = np.dot(activations[i], weights[i]) + biases[i]
-#         activation = sigmoid(z)
-#         activations.append(activation)
+        z = np.dot(activations[i], weights[i]) + biases[i]
+        activation = sigmoid(z)
+        activations.append(activation)
 
-#     error = y_train - activations[-1]  
-#     loss = cross_entropy(y_train, activations[-1])
-#     losses.append(loss)
+    error = y_train - activations[-1]  
+    loss = cross_entropy(y_train, activations[-1])
+    losses.append(loss)
 
-#     # Calcula previsões e armazena a acuráciass
-#     predictions_train = (activations[-1] > 0.5).astype(int)
-#     accuracy_train = np.mean(predictions_train == y_train)
-#     accuracies.append(accuracy_train)
+    # Calcula previsões e armazena a acuráciass
+    predictions_train = (activations[-1] > 0.5).astype(int)
+    accuracy_train = np.mean(predictions_train == y_train)
+    accuracies.append(accuracy_train)
 
-#     deltas = []  
+    deltas = []  
 
-#     # Delta da camada de saída
-#     delta_output = error * sigmoid_derivative(activations[-1])  # Cálculo do delta da saída
-#     deltas.append(delta_output)
+    # Delta da camada de saída
+    delta_output = error * sigmoid_derivative(activations[-1])  # Cálculo do delta da saída
+    deltas.append(delta_output)
 
-#     # Cálculo do delta da camada oculta
-#     for i in reversed(range(len(weights) - 1)):
+    # Cálculo do delta da camada oculta
+    for i in reversed(range(len(weights) - 1)):
 
-#         delta_proxima = deltas[-1]  
-#         gradiente = delta_proxima.dot(weights[i + 1].T) 
-#         delta_oculta = gradiente * sigmoid_derivative(activations[i + 1])   
-#         deltas.append(delta_oculta)
+        delta_proxima = deltas[-1]  
+        gradiente = delta_proxima.dot(weights[i + 1].T) 
+        delta_oculta = gradiente * sigmoid_derivative(activations[i + 1])   
+        deltas.append(delta_oculta)
 
-#     deltas.reverse()
+    deltas.reverse()
 
-#     # Atualização dos pesos e bias
-#     for i in range(len(weights)):
+    # Atualização dos pesos e bias
+    for i in range(len(weights)):
         
-#         ativacoes_anterior = activations[i]      
-#         deltas_atual = deltas[i]  
-#         ativacoes_anterior_T = ativacoes_anterior.T 
-#         gradiente_pesos = np.dot(ativacoes_anterior_T, deltas_atual)  
-#         weights[i] += gradiente_pesos * learning_rate
-#         bias_atualizacao = np.sum(deltas_atual, axis=0, keepdims=True)
-#         biases[i] += bias_atualizacao * learning_rate
+        ativacoes_anterior = activations[i]      
+        deltas_atual = deltas[i]  
+        ativacoes_anterior_T = ativacoes_anterior.T 
+        gradiente_pesos = np.dot(ativacoes_anterior_T, deltas_atual)  
+        weights[i] += gradiente_pesos * learning_rate
+        bias_atualizacao = np.sum(deltas_atual, axis=0, keepdims=True)
+        biases[i] += bias_atualizacao * learning_rate
 
-#     if epoch % 1000 == 0:
-#         print(f"Perda na época {epoch}: {loss}")
+    if epoch % 1000 == 0:
+        print(f"Perda na época {epoch}: {loss}")
     
-#         # Validação do gradiente a cada 100 épocas 
-#         grad_approx = numerical_gradient(X_train, y_train, weights, biases)
-#         for layer in range(len(weights)):
-#             gradiente_pesos_calculado = np.dot(activations[layer].T, deltas[layer])
+        # Validação do gradiente a cada 100 épocas 
+        grad_approx = numerical_gradient(X_train, y_train, weights, biases)
+        for layer in range(len(weights)):
+            gradiente_pesos_calculado = np.dot(activations[layer].T, deltas[layer])
 
-#             # Comparar com o gradiente numérico
-#             weight_diff = np.linalg.norm(gradiente_pesos_calculado - grad_approx[layer][0])
-#             bias_diff = np.linalg.norm(bias_atualizacao - grad_approx[layer][1])
+            # Comparar com o gradiente numérico
+            weight_diff = np.linalg.norm(gradiente_pesos_calculado - grad_approx[layer][0])
+            bias_diff = np.linalg.norm(bias_atualizacao - grad_approx[layer][1])
 
-#             #print(f'Diferença no gradiente dos pesos na camada {layer}: {weight_diff}')
-#             #print(f'Diferença no gradiente dos biases na camada {layer}: {bias_diff}')
+            #print(f'Diferença no gradiente dos pesos na camada {layer}: {weight_diff}')
+            #print(f'Diferença no gradiente dos biases na camada {layer}: {bias_diff}')
 
 
 #################################################################################################################################
