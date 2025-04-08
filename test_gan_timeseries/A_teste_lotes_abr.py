@@ -7,6 +7,8 @@ from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from pathlib import Path
 
+np.random.seed(100)
+
 def dividir_dados(caminho_arquivo, porcentagem_lote=10):
     """Divide os dados em lotes sequenciais mantendo a estrutura original"""
     caminho_arquivo = Path(caminho_arquivo)
@@ -181,6 +183,7 @@ class Autoencoder(BaseModel):
 
 # Configuração e execução principal
 if __name__ == "__main__":
+
     # Parâmetros do modelo
     params = {
         "input_dim": 1,
@@ -208,21 +211,19 @@ if __name__ == "__main__":
     x_train_original = dataset["x_train"].clone()
     t_train_original = dataset["t_train"].clone()
 
-    # Treinar o modelo
-    print("\nIniciando treinamento...")
-    model.train_model(
-        dataset=dataset,
-        epochs=epochs,
-        batch_size=batch_size,
-        shuffle=False
-    )
+    #Treinar o modelo
+    # print("\nIniciando treinamento...")
+    # model.train_model(
+    #     dataset=dataset,
+    #     epochs=epochs,
+    #     batch_size=batch_size,
+    #     shuffle=False
+    # )
 
-    # SALVAMENTO DOS PESOS DO MODELO 
     model_path = "autoencoder_weights.pth"
     model.save_model(model_path)
     print(f"Pesos do modelo salvos em {model_path}")
 
-    # EXEMPLO DE CARREGAMENTO 
     # Criar novo modelo com mesma arquitetura
     loaded_model = Autoencoder(**params)
     loaded_model.compile_autoencoder(learning_rate=lr)
@@ -230,18 +231,25 @@ if __name__ == "__main__":
     # Carregar os pesos salvos
     loaded_model.load_model(model_path)
     print("Modelo carregado com sucesso!")
+    print(f"Pesos do modelo salvos em {model_path}")
 
-    # Verificar se os modelos são equivalentes
-    model.eval()  # Garantir que o modelo original está em modo de avaliação
-    loaded_model.eval()  # Garantir que o modelo carregado está em modo de avaliação
+    print("\nPesos salvos no modelo:")
+    for name, param in model.named_parameters():
+        print(f"\nCamada: {name}")
+        print(f"Tamanho: {param.size()}")
+        print(f"Valores (primeiros 5): {param.data.flatten()[:5].numpy()}")  # Mostra apenas os primeiros 5 valores
+
+    model.eval()  
+    loaded_model.eval()  
     
     with torch.no_grad():
+
         # Testar com os mesmos dados
         test_data = x_train_original[:5]
         _, original_output = model(test_data)
         _, loaded_output = loaded_model(test_data)
         
-        # Calcular diferença absoluta média
+        # ve o erro
         difference = torch.mean(torch.abs(original_output - loaded_output)).item()
         print("\nDiferença nas saídas após carregamento:", difference)
 
@@ -264,6 +272,7 @@ if __name__ == "__main__":
     plt.ylabel("Componente Principal 2")
     plt.grid(True)
     plt.show()
+
 
 
     
