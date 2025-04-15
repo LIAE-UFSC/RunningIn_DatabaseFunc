@@ -4,16 +4,17 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset, random_split
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import classification_report, confusion_matrix, precision_recall_fscore_support
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import LabelEncoder
 from sklearn.decomposition import PCA
 import seaborn as sns
+from pathlib import Path
 
 # Configuração de dispositivo
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Função para carregar e dividir os dados
+# 1. Função para carregar e preparar os dados (atualizada para classes A, B, C)
 def carregar_dados(caminho_arquivo):
     caminho_arquivo = Path(caminho_arquivo)
     
@@ -21,126 +22,52 @@ def carregar_dados(caminho_arquivo):
         raise FileNotFoundError(f"Arquivo não encontrado: {caminho_arquivo}")
 
     df = pd.read_csv(caminho_arquivo)
-    tempo = df.iloc[:, 0].values.astype(np.float32)  # Coluna time
-    dados = df.iloc[:, 1].values.astype(np.float32)   # Coluna massFlow
-    rotulos = df.iloc[:, 4].values.astype(np.int64)   # Coluna anomaly (1, 2 ou 3)
     
-    # Verificar se todas as 3 classes estão presentes
-    classes_presentes = np.unique(rotulos)
-    if len(classes_presentes) != 3:
-        raise ValueError(f"O dataset deve conter exatamente 3 classes. Classes encontradas: {classes_presentes}")
+    # Verificar se a coluna 'anomaly' existe e contém A, B, C
+    if 'anomaly' not in df.columns:
+        raise ValueError("Coluna 'anomaly' não encontrada no dataset")
     
-    # Normalização dos dados
-    dados = (dados - dados.mean()) / dados.std()
+    # Verificar classes presentes
+    classes_presentes = df['anomaly'].unique()
+    expected_classes = {'A', 'B', 'C'}
     
-    # Converter para tensores PyTorch
-    tempo = torch.tensor(tempo).unsqueeze(1).to(device)
-    dados = torch.tensor(dados).unsqueeze(1).to(device)
-    rotulos = torch.tensor(rotulos).to(device) - 1  # Convertendo classes para 0, 1, 2
+    if not set(classes_presentes).issubset(expected_classes):
+        raise ValueError(f"O dataset deve conter apenas classes A, B, C. Classes encontradas: {classes_presentes}")
     
-    # Criar dataset combinado
-    dataset = TensorDataset(tempo, dados, rotulos)
+    # Codificar as classes para números (A->0, B->1, C->2)
+    le = LabelEncoder()
+    df['anomaly_encoded'] = le.fit_transform(df['anomaly'])  # Isso converterá A,B,C para 0,1,2
     
-    # Dividir em treino (75%) e validação (25%)
-    tamanho_treino = int(0.75 * len(dataset))
-    tamanho_val = len(dataset) - tamanho_treino
-    treino_dataset, val_dataset = random_split(dataset, [tamanho_treino, tamanho_val])
+    # Extrair features e labels
+    X = df['massFlow'].values.astype(np.float32)  # Usando massFlow como feature
+    y = df['anomaly_encoded'].values.astype(np.int64)  # Classes codificadas
     
-    return treino_dataset, val_dataset
+    # Normalização
+    X = (X - X.mean()) / X.std()
+    
+    # Converter para tensores
+    X_tensor = torch.tensor(X).unsqueeze(1).to(device)
+    y_tensor = torch.tensor(y).to(device)
+    
+    # Criar dataset
+    dataset = TensorDataset(X_tensor, y_tensor)
+    
+    # Dividir em treino (70%), validação (15%) e teste (15%)
+    train_size = int(0.7 * len(dataset))
+    val_size = int(0.15 * len(dataset))
+    test_size = len(dataset) - train_size - val_size
+    
+    train_dataset, val_dataset, test_dataset = random_split(
+        dataset, [train_size, val_size, test_size]
+    )
+    
+    return train_dataset, val_dataset, test_dataset, le
 
-# Arquitetura da Rede Neural para 3 classes
-class ClassificadorSeriesTemporais(nn.Module):
-    def __init__(self, input_dim=1, hidden_dim=64):
-        super(ClassificadorSeriesTemporais, self).__init__()
-        
-        self.encoder = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(hidden_dim, hidden_dim//2),
-            nn.ReLU()
-        )
-        
-        self.classifier = nn.Sequential(
-            nn.Linear(hidden_dim//2, hidden_dim//4),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(hidden_dim//4, 3)  # 3 classes de saída
-        )
-        
-    def forward(self, x):
-        features = self.encoder(x)
-        logits = self.classifier(features)
-        return logits, features
+# [O resto do código permanece igual até a função avaliar_modelo_completo...]
 
-# Função de treinamento
-def treinar_modelo(treino_dataset, val_dataset, num_epochs=200, batch_size=32):
-    # Criar DataLoaders
-    treino_loader = DataLoader(treino_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    
-    # Inicializar modelo
-    model = ClassificadorSeriesTemporais().to(device)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=10, factor=0.5)
-    
-    # Armazenar métricas
-    historico = {'train_loss': [], 'val_loss': [], 'train_acc': [], 'val_acc': []}
-    
-    for epoch in range(num_epochs):
-        # Treino
-        model.train()
-        train_loss, train_correct = 0.0, 0
-        for tempo, dados, rotulos in treino_loader:
-            optimizer.zero_grad()
-            outputs, _ = model(dados)
-            loss = criterion(outputs, rotulos)
-            loss.backward()
-            optimizer.step()
-            
-            train_loss += loss.item()
-            _, predicted = torch.max(outputs.data, 1)
-            train_correct += (predicted == rotulos).sum().item()
-        
-        # Validação
-        model.eval()
-        val_loss, val_correct = 0.0, 0
-        with torch.no_grad():
-            for tempo, dados, rotulos in val_loader:
-                outputs, _ = model(dados)
-                loss = criterion(outputs, rotulos)
-                val_loss += loss.item()
-                _, predicted = torch.max(outputs.data, 1)
-                val_correct += (predicted == rotulos).sum().item()
-        
-        # Calcular métricas
-        train_loss /= len(treino_loader)
-        train_acc = train_correct / len(treino_dataset)
-        val_loss /= len(val_loader)
-        val_acc = val_correct / len(val_dataset)
-        
-        # Atualizar histórico
-        historico['train_loss'].append(train_loss)
-        historico['val_loss'].append(val_loss)
-        historico['train_acc'].append(train_acc)
-        historico['val_acc'].append(val_acc)
-        
-        # Ajustar learning rate
-        scheduler.step(val_loss)
-        
-        # Log
-        if (epoch+1) % 10 == 0:
-            print(f'Epoch {epoch+1}/{num_epochs} - Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}, Train Acc: {train_acc:.4f}, Val Acc: {val_acc:.4f}')
-    
-    return model, historico
-
-# Função para avaliação
-def avaliar_modelo(model, dataset):
-    loader = DataLoader(dataset, batch_size=32, shuffle=False)
+# 4. Função de Avaliação Completa (atualizada para mostrar A, B, C)
+def avaliar_modelo_completo(model, dataset, le, dataset_name="Teste"):
+    loader = DataLoader(dataset, batch_size=64, shuffle=False)
     model.eval()
     
     all_labels = []
@@ -148,88 +75,113 @@ def avaliar_modelo(model, dataset):
     all_features = []
     
     with torch.no_grad():
-        for tempo, dados, rotulos in loader:
-            outputs, features = model(dados)
-            _, predicted = torch.max(outputs.data, 1)
+        for inputs, labels in loader:
+            outputs, features = model(inputs)
+            _, preds = torch.max(outputs, 1)
             
-            all_labels.extend(rotulos.cpu().numpy() + 1)  # Convertendo de volta para 1, 2, 3
-            all_preds.extend(predicted.cpu().numpy() + 1)
+            all_labels.extend(labels.cpu().numpy())
+            all_preds.extend(preds.cpu().numpy())
             all_features.extend(features.cpu().numpy())
     
-    # Métricas de classificação
-    print("\nRelatório de Classificação:")
-    print(classification_report(all_labels, all_preds, target_names=['Classe 1', 'Classe 2', 'Classe 3']))
+    # Converter números de volta para A, B, C
+    all_labels = le.inverse_transform(all_labels)
+    all_preds = le.inverse_transform(all_preds)
     
-    # Matriz de confusão
-    cm = confusion_matrix(all_labels, all_preds)
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
-                xticklabels=['Classe 1', 'Classe 2', 'Classe 3'], 
-                yticklabels=['Classe 1', 'Classe 2', 'Classe 3'])
-    plt.title('Matriz de Confusão')
+    # 1. Relatório de Classificação Detalhado
+    print(f"\n{'='*50}")
+    print(f"AVALIAÇÃO NO CONJUNTO DE {dataset_name.upper()}")
+    print(f"{'='*50}")
+    
+    print("\nRelatório de Classificação Detalhado:")
+    print(classification_report(
+        all_labels, all_preds, 
+        target_names=['Classe A', 'Classe B', 'Classe C'],
+        digits=4
+    ))
+    
+    # 2. Matriz de Confusão
+    cm = confusion_matrix(all_labels, all_preds, labels=['A', 'B', 'C'])
+    plt.figure(figsize=(8,6))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=['Classe A', 'Classe B', 'Classe C'],
+                yticklabels=['Classe A', 'Classe B', 'Classe C'])
+    plt.title(f'Matriz de Confusão - {dataset_name}')
     plt.ylabel('Verdadeiro')
     plt.xlabel('Predito')
     plt.show()
     
-    return np.array(all_features), np.array(all_labels)
+    # 3. Métricas por Classe
+    precision, recall, f1, _ = precision_recall_fscore_support(all_labels, all_preds, labels=['A', 'B', 'C'])
+    print("\nMétricas por Classe:")
+    metrics_df = pd.DataFrame({
+        'Classe': ['A', 'B', 'C'],
+        'Precisão': precision,
+        'Recall': recall,
+        'F1-Score': f1
+    })
+    print(metrics_df.to_string(index=False))
+    
+    return np.array(all_features), all_labels
 
-# Função para visualização do espaço latente
-def visualizar_espaco_latente(features, labels):
-    # Redução para 2D com PCA
+# 5. Visualizações (atualizada para mostrar A, B, C)
+def visualizar_espaco_latente(features, labels, le=None, title="Espaço Latente"):
     pca = PCA(n_components=2)
     features_2d = pca.fit_transform(features)
     
+    # Se labels forem numéricas (0,1,2), converter para A,B,C
+    if le and all(isinstance(label, (int, np.integer)) for label in labels[:10]):  # Verifica os primeiros 10
+        labels = le.inverse_transform(labels)
+    
     plt.figure(figsize=(10, 8))
-    scatter = plt.scatter(features_2d[:, 0], features_2d[:, 1], c=labels, cmap='viridis', alpha=0.6)
-    plt.colorbar(scatter, ticks=[1, 2, 3], label='Classes')
-    plt.title('Espaço Latente (PCA 2D)')
+    scatter = plt.scatter(features_2d[:, 0], features_2d[:, 1], c=[ord(l) for l in labels], cmap='viridis', alpha=0.7)
+    
+    # Criar colorbar com A, B, C
+    classes = sorted(set(labels))
+    cbar = plt.colorbar(scatter, ticks=[ord(c) for c in classes])
+    cbar.ax.set_yticklabels(classes)
+    cbar.set_label('Classes')
+    
+    plt.title(f'{title} (PCA 2D) - Variância Explicada: {pca.explained_variance_ratio_.sum():.2f}')
     plt.xlabel('Componente Principal 1')
     plt.ylabel('Componente Principal 2')
     plt.grid(True)
     plt.show()
 
-# Função para plotar curvas de aprendizado
-def plotar_curvas(historico):
-    plt.figure(figsize=(12, 5))
+# 6. Pipeline Completo (atualizada)
+def pipeline_completa():
+    # 1. Carregar dados
+    caminho_arquivo = caminho_arquivo = r'C:\Users\PC-1\Documents\GitHub\RunningIn_DatabaseFunc\test_gan_timeseries\dataset_massflow_A1_com_labels.csv'  # Substitua pelo seu caminho
+    train_dataset, val_dataset, test_dataset, le = carregar_dados(caminho_arquivo)
     
-    plt.subplot(1, 2, 1)
-    plt.plot(historico['train_loss'], label='Treino')
-    plt.plot(historico['val_loss'], label='Validação')
-    plt.title('Curva de Loss')
-    plt.xlabel('Época')
-    plt.ylabel('Loss')
-    plt.legend()
-    
-    plt.subplot(1, 2, 2)
-    plt.plot(historico['train_acc'], label='Treino')
-    plt.plot(historico['val_acc'], label='Validação')
-    plt.title('Curva de Acurácia')
-    plt.xlabel('Época')
-    plt.ylabel('Acurácia')
-    plt.legend()
-    
-    plt.tight_layout()
-    plt.show()
-
-# Pipeline completo
-def pipeline_classificacao():
-    # 1. Carregar e preparar dados
-    caminho_arquivo = r"C:\Users\pedro\OneDrive\Área de Trabalho\GitHubAll\RunningIn_DatabaseFunc\test_gan_timeseries\meu_arquivo_massflow_A1_teste.csv"
-    treino_dataset, val_dataset = carregar_dados(caminho_arquivo)
+    print(f"\nDistribuição dos Dados:")
+    print(f"- Treino: {len(train_dataset)} amostras")
+    print(f"- Validação: {len(val_dataset)} amostras")
+    print(f"- Teste: {len(test_dataset)} amostras")
     
     # 2. Treinar modelo
-    model, historico = treinar_modelo(treino_dataset, val_dataset)
+    print("\nIniciando Treinamento...")
+    model, historico = treinar_modelo(train_dataset, val_dataset, num_epochs=100)
     
-    # 3. Avaliar modelo
-    print("\nAvaliação no Conjunto de Validação:")
-    features, labels = avaliar_modelo(model, val_dataset)
+    # 3. Avaliar em todos os conjuntos
+    print("\nAvaliando no Conjunto de Treino...")
+    train_features, train_labels = avaliar_modelo_completo(model, train_dataset, le, "Treino")
+    
+    print("\nAvaliando no Conjunto de Validação...")
+    val_features, val_labels = avaliar_modelo_completo(model, val_dataset, le, "Validação")
+    
+    print("\nAvaliando no Conjunto de Teste...")
+    test_features, test_labels = avaliar_modelo_completo(model, test_dataset, le, "Teste")
     
     # 4. Visualizações
-    plotar_curvas(historico)
-    visualizar_espaco_latente(features, labels)
+    plotar_metricas(historico)
     
-    return model
+    print("\nVisualizando Espaço Latente para Treino...")
+    visualizar_espaco_latente(train_features, train_labels, le, "Espaço Latente (Treino)")
+    
+    print("\nVisualizando Espaço Latente para Teste...")
+    visualizar_espaco_latente(test_features, test_labels, le, "Espaço Latente (Teste)")
+    
+    return model, le
 
-# Executar o pipeline
 if __name__ == "__main__":
-    modelo = pipeline_classificacao()
+    modelo_treinado, label_encoder = pipeline_completa()
