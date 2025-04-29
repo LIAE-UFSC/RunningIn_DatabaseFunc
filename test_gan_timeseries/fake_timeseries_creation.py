@@ -136,3 +136,6 @@ def plot_results(real_data, generator, latent_dim, seq_length):
 
 # Plota os resultados
 plot_results(real_data, generator, latent_dim, seq_length)
+
+
+
