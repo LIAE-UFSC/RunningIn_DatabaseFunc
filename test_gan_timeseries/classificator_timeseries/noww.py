@@ -11,7 +11,7 @@ from pathlib import Path
 # from sklearn.neighbors import NearestNeighbors
 # from sklearn.model_selection import train_test_split
 
-valor_amostras = 6
+valor_amostras = 8
 dataset = "dataset_com_tempo_janelamento_teste_8.csv"
 df_original = pd.read_csv("dataset_com_tempo_janelamento_teste_8.csv")
 

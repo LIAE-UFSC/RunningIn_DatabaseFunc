@@ -78,15 +78,15 @@ def reorganizar_dataset(
     
     return new_df
 
-
 # Exemplo de uso:
 df_com_tempo = reorganizar_dataset(
 
     caminho_arquivo='dataset_modificado.csv',
-    n_amostras=7,
+    n_amostras=16,
     incluir_tempo=False,
     salvar_csv=True,
-    nome_saida='dataset_com_tempo____teste_9090.csv',
-    janelamento=False,
-    amostras_repetidas=6
+    nome_saida='dataset_sem_tempo_com_janelamento_16_amostras.csv',
+    janelamento=True,
+    amostras_repetidas=12
+
 )
