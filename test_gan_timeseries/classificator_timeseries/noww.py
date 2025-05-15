@@ -353,3 +353,32 @@ plt.legend()
 plt.grid(True)
 plt.tight_layout()
 plt.show()
+
+caminho_arquivo = "dataset_5_amostras.csv"
+df_original = pd.read_csv(caminho_arquivo)
+
+# 2. Extrair apenas as colunas massFlow para reconstrução
+num_massflows = 5  # ou o número correto para seu caso
+massflow_cols = [f'massFlow_{i}' for i in range(1, num_massflows+1)]
+dados_originais = df_original[massflow_cols].values.astype(np.float32)
+
+# 3. Converter para tensor e reconstruir
+with torch.no_grad():
+    dados_tensor = torch.tensor(dados_originais)
+    _, dados_reconstruidos_tensor = model(dados_tensor)
+    dados_reconstruidos = dados_reconstruidos_tensor.numpy()
+
+# 4. Criar novo DataFrame mantendo a estrutura original
+df_reconstruido = df_original.copy()
+
+# Atualizar apenas as colunas massFlow com os valores reconstruídos
+for i, col in enumerate(massflow_cols):
+    df_reconstruido[col] = dados_reconstruidos[:, i]
+
+# 5. Salvar como novo arquivo CSV
+caminho_saida = "dados_reconstruidos.csv"
+df_reconstruido.to_csv(caminho_saida, index=False)
+
+print(f"Arquivo reconstruído salvo em: {caminho_saida}")
+print("\nExemplo das primeiras linhas:")
+print(df_reconstruido.head())
