@@ -106,30 +106,52 @@ class BaseModel(nn.Module):
         self.load_state_dict(torch.load(file_path, weights_only=True))
         print(f"Model loaded from {file_path}")
 
+# class Autoencoder(BaseModel):
+#     def __init__(self, **kwargs):
+#         super(Autoencoder, self).__init__(**kwargs)
+
+#         # Extract parameters from kwargs
+#         input_dim = kwargs.get("input_dim", 1)
+#         hidden_dim = kwargs.get("hidden_dim", 32)
+#         activation_fn = kwargs.get("activation_fn", nn.ReLU)
+#         dropout = kwargs.get("dropout", 0.2)
+
+#         # Encoder: Single layer with batch normalization and dropout
+#         self.encoder = nn.Sequential(
+#             nn.Linear(input_dim, hidden_dim),
+#             nn.BatchNorm1d(hidden_dim),
+#             activation_fn(),
+#             nn.Dropout(dropout)  # Dropout for regularization
+#         )
+
+#         # Decoder: Single layer with batch normalization and dropout
+#         self.decoder = nn.Sequential(
+#             nn.Linear(hidden_dim, input_dim),
+#             nn.BatchNorm1d(input_dim),
+#             activation_fn(),
+#             nn.Dropout(dropout)  # Dropout for regularization
+#         )
+
 class Autoencoder(BaseModel):
     def __init__(self, **kwargs):
         super(Autoencoder, self).__init__(**kwargs)
-
-        # Extract parameters from kwargs
+        
         input_dim = kwargs.get("input_dim", 1)
-        hidden_dim = kwargs.get("hidden_dim", 32)
-        activation_fn = kwargs.get("activation_fn", nn.ReLU)
-        dropout = kwargs.get("dropout", 0.2)
-
-        # Encoder: Single layer with batch normalization and dropout
+        latent_dim = kwargs.get("latent_dim", 32)  # Nova dimensão específica para o bottleneck
+        hidden_dim = kwargs.get("hidden_dim", 64)  # Dimensão das camadas intermediárias
+        
+        # Encoder
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
-            nn.BatchNorm1d(hidden_dim),
-            activation_fn(),
-            nn.Dropout(dropout)  # Dropout for regularization
+            nn.ReLU(),
+            nn.Linear(hidden_dim, latent_dim),  # 👈 Camada que define o espaço latente
         )
-
-        # Decoder: Single layer with batch normalization and dropout
+        
+        # Decoder
         self.decoder = nn.Sequential(
+            nn.Linear(latent_dim, hidden_dim),
+            nn.ReLU(),
             nn.Linear(hidden_dim, input_dim),
-            nn.BatchNorm1d(input_dim),
-            activation_fn(),
-            nn.Dropout(dropout)  # Dropout for regularization
         )
 
         self.latent_output = None  # Attribute to store the bottleneck layer output
@@ -218,6 +240,7 @@ class Autoencoder(BaseModel):
 params = {
     "input_dim": 5,
     "hidden_dim": 64,
+    "latent_dim":40,
     "activation_fn": nn.ReLU,
     "dropout": 0.0
         }
@@ -358,7 +381,7 @@ caminho_arquivo = "dataset_5_amostras.csv"
 df_original = pd.read_csv(caminho_arquivo)
 
 # 2. Extrair apenas as colunas massFlow para reconstrução
-num_massflows = 5  # ou o número correto para seu caso
+num_massflows = 5  # ou o número correto para seu caso##########################################################################
 massflow_cols = [f'massFlow_{i}' for i in range(1, num_massflows+1)]
 dados_originais = df_original[massflow_cols].values.astype(np.float32)
 
@@ -382,3 +405,60 @@ df_reconstruido.to_csv(caminho_saida, index=False)
 print(f"Arquivo reconstruído salvo em: {caminho_saida}")
 print("\nExemplo das primeiras linhas:")
 print(df_reconstruido.head())
+
+
+amostra_teste = torch.tensor(dados_originais[:1])  # Pega a primeira amostra
+with torch.no_grad():
+    latent, _ = model(amostra_teste)
+
+dimensao_latente = latent.shape[1]
+print(f"Dimensão do espaço latente: {dimensao_latente}")
+
+# # Gerar representações latentes para todos os dados
+# with torch.no_grad():
+#     dados_tensor = torch.tensor(dados_originais)
+#     latent_representations, _ = model(dados_tensor)
+#     latent_np = latent_representations.numpy()
+
+# # Criar DataFrame com as representações latentes
+# df_latent = pd.DataFrame(latent_np, 
+#                         columns=[f'Latent_{i}' for i in range(latent_np.shape[1])])
+
+# # Adicionar colunas adicionais do original (não-massFlow)
+# colunas_nao_massflow = [col for col in df_original.columns if not col.startswith('massFlow')]
+# for col in colunas_nao_massflow:
+#     df_latent[col] = df_original[col]
+
+# # Reordenar colunas para manter a estrutura similar
+# colunas_ordenadas = colunas_nao_massflow + [f'Latent_{i}' for i in range(latent_np.shape[1])]
+# df_latent = df_latent[colunas_ordenadas]
+
+# # Salvar para CSV
+# caminho_latente = "espaco_latente.csv"
+# df_latent.to_csv(caminho_latente, index=False)
+
+# print(f"\nArquivo do espaço latente salvo em: {caminho_latente}")
+# print("\nExemplo da estrutura:")
+# print(df_latent.head())
+
+
+with torch.no_grad():
+    dados_tensor = torch.tensor(dados_originais)
+    latent_representations, _ = model(dados_tensor)
+    latent_np = latent_representations.numpy()
+
+# Criar DataFrame com colunas 'massflow_1', 'massflow_2', etc.
+df_latent = pd.DataFrame(latent_np, 
+                         columns=[f'massflow_{i+1}' for i in range(latent_np.shape[1])])
+
+# Extrair o label (por exemplo, 'anomaly') e garantir que ele seja a última coluna
+label_col = df_original['anomaly'].reset_index(drop=True)  # Ajustar se o nome do label for diferente
+df_latent['anomaly'] = label_col
+
+# Salvar o DataFrame
+caminho_latente = "espaco_latente.csv"
+df_latent.to_csv(caminho_latente, index=False)
+
+print(f"\nArquivo do espaço latente salvo em: {caminho_latente}")
+print("\nExemplo da estrutura:")
+print(df_latent.head())
