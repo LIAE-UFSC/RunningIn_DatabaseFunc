@@ -12,8 +12,8 @@ from pathlib import Path
 # from sklearn.model_selection import train_test_split
 
 valor_amostras = 6
-dataset = "dataset_6_amostras.csv"
-df_original = pd.read_csv("dataset_6_amostras.csv")
+dataset = "dataset_com_tempo_janelamento_teste_8.csv"
+df_original = pd.read_csv("dataset_com_tempo_janelamento_teste_8.csv")
 
 def dividir_dados(caminho_arquivo, num_massflows=5):
     caminho_arquivo = Path(caminho_arquivo)
@@ -244,7 +244,7 @@ class Autoencoder(BaseModel):
 params = {
     "input_dim": valor_amostras,
     "hidden_dim": 64,
-    "latent_dim":6,
+    "latent_dim":4,
     "activation_fn": nn.ReLU,
     "dropout": 0.0
         }
@@ -444,7 +444,6 @@ print(f"Dimensão do espaço latente: {dimensao_latente}")
 # print(f"\nArquivo do espaço latente salvo em: {caminho_latente}")
 # print("\nExemplo da estrutura:")
 # print(df_latent.head())
-
 
 with torch.no_grad():
     dados_tensor = torch.tensor(dados_originais)
