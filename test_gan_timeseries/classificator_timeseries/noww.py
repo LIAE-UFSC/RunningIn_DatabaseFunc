@@ -11,6 +11,10 @@ from pathlib import Path
 # from sklearn.neighbors import NearestNeighbors
 # from sklearn.model_selection import train_test_split
 
+valor_amostras = 6
+dataset = "dataset_6_amostras.csv"
+df_original = pd.read_csv("dataset_6_amostras.csv")
+
 def dividir_dados(caminho_arquivo, num_massflows=5):
     caminho_arquivo = Path(caminho_arquivo)
     
@@ -238,9 +242,9 @@ class Autoencoder(BaseModel):
 
 
 params = {
-    "input_dim": 5,
+    "input_dim": valor_amostras,
     "hidden_dim": 64,
-    "latent_dim":40,
+    "latent_dim":6,
     "activation_fn": nn.ReLU,
     "dropout": 0.0
         }
@@ -249,7 +253,7 @@ model = Autoencoder(**params)
 
 lr = 0.02
 model.compile_autoencoder(learning_rate=lr)
-dataset = dividir_dados("dataset_5_amostras.csv", num_massflows=5)
+dataset = dividir_dados(dataset, num_massflows=valor_amostras)
 epochs = 200
 batch_size = 32
 x_train = dataset["x_train"]  
@@ -377,11 +381,11 @@ plt.grid(True)
 plt.tight_layout()
 plt.show()
 
-caminho_arquivo = "dataset_5_amostras.csv"
-df_original = pd.read_csv(caminho_arquivo)
+#caminho_arquivo = dataset
+#df_original = pd.read_csv(dataset)
 
 # 2. Extrair apenas as colunas massFlow para reconstrução
-num_massflows = 5  # ou o número correto para seu caso##########################################################################
+num_massflows = valor_amostras  # ou o número correto para seu caso##########################################################################
 massflow_cols = [f'massFlow_{i}' for i in range(1, num_massflows+1)]
 dados_originais = df_original[massflow_cols].values.astype(np.float32)
 
@@ -449,7 +453,7 @@ with torch.no_grad():
 
 # Criar DataFrame com colunas 'massflow_1', 'massflow_2', etc.
 df_latent = pd.DataFrame(latent_np, 
-                         columns=[f'massflow_{i+1}' for i in range(latent_np.shape[1])])
+                         columns=[f'massFlow_{i+1}' for i in range(latent_np.shape[1])])
 
 # Extrair o label (por exemplo, 'anomaly') e garantir que ele seja a última coluna
 label_col = df_original['anomaly'].reset_index(drop=True)  # Ajustar se o nome do label for diferente
