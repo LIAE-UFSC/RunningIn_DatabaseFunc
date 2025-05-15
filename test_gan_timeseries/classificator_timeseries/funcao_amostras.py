@@ -70,10 +70,10 @@ def reorganizar_dataset(
 df_com_tempo = reorganizar_dataset(
 
     caminho_arquivo='dataset_modificado.csv',
-    n_amostras=3,
-    incluir_tempo=True,
+    n_amostras=5,
+    incluir_tempo=False,
     salvar_csv=True,
-    nome_saida=f'dataset_com_tempo_3_amostras.csv'
+    nome_saida=f'dataset_5_amostras.csv'
 )
 
 # df_sem_tempo.to_csv('dataset_sem_tempo.csv', index=False)
