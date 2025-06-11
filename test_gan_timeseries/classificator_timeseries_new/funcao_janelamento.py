@@ -82,11 +82,11 @@ def reorganizar_dataset(
 df_com_tempo = reorganizar_dataset(
 
     caminho_arquivo='dataset_rotulado.csv',
-    n_amostras= 8,
+    n_amostras= 1,
     incluir_tempo=False,
     salvar_csv=True,
-    nome_saida='dataset_sem_tempo_com_janelamento_4_amostras.csv',
-    janelamento=True,
-    amostras_repetidas= 4
+    nome_saida='datasettt_8.csv',
+    janelamento=False,
+    amostras_repetidas= 1
 
 )
