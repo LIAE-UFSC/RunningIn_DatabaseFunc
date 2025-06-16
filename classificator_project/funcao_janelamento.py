@@ -30,22 +30,19 @@ def reorganizar_dataset(
     if janelamento and (amostras_repetidas >= n_amostras or amostras_repetidas < 1):
         raise ValueError("amostras_repetidas deve ser menor que n_amostras e maior ou igual a 1")
     
-    # Carrega o dataset
     df = pd.read_csv(caminho_arquivo)
     
-    # Extrai colunas
     time_values = df['time'].values if incluir_tempo else None
     mass_flow = df['massFlow'].values
     anomaly = df['anomaly'].values
 
-    # Prepara lista de dados reorganizados
     new_data = []
     
-    # Define o passo para a iteração
     passo = (n_amostras - amostras_repetidas) if janelamento else n_amostras
     
     for i in range(0, len(mass_flow) - (n_amostras - 1), passo):
         if i + (n_amostras - 1) < len(mass_flow):
+            
             # Pega 'n_amostras' valores consecutivos de massFlow
             mass_flows = mass_flow[i:i + n_amostras]
             
@@ -61,17 +58,14 @@ def reorganizar_dataset(
             
             new_data.append(linha)
     
-    # Define nomes das colunas
     colunas = []
     if incluir_tempo:
         colunas.append('massFlow_0')  # Nomeia o tempo como massFlow_0
     colunas.extend([f'massFlow_{j+1}' for j in range(n_amostras)])
     colunas.append('anomaly')
     
-    # Cria o DataFrame
     new_df = pd.DataFrame(new_data, columns=colunas)
     
-    # Salva em CSV se solicitado
     if salvar_csv:
         new_df.to_csv(nome_saida, index=False)
         print(f"Dataset salvo como '{nome_saida}'")
