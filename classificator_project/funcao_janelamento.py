@@ -78,7 +78,7 @@ def reorganizar_dataset(
     
     return new_df
 
-# Exemplo de uso:
+
 df_com_tempo = reorganizar_dataset(
 
     caminho_arquivo='dataset_rotulado.csv',
