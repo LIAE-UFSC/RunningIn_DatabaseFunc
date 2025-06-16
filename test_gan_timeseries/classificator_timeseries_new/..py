@@ -73,7 +73,7 @@ df_com_tempo = reorganizar_dataset(
     n_amostras=6,
     incluir_tempo=False,
     salvar_csv=True,
-    nome_saida=f'dataset_6_amostras.csv'
+    nome_saida='datasettt_6.csv'
 )
 
 # df_sem_tempo.to_csv('dataset_sem_tempo.csv', index=False)
