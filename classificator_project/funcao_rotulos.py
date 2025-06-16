@@ -58,8 +58,6 @@ def label_dataset_by_time(
     df.to_csv(output_csv, index=False)
     print(f"Dataset rotulado salvo em {output_csv}")
 
-
-
 time_ranges = [
     (0, 18000, 0),       # Não amaciado
     (54000, 100000, 1),  # Amaciado
@@ -67,15 +65,13 @@ time_ranges = [
 
 grey_zone = (18000, 54000)  # Zona de transição (grey zone)
 
-
-# EXEMPLO DE USO (com os novos parâmetros)
 label_dataset_by_time(
 
     input_csv='dataset_massflow.csv',
     time_ranges=time_ranges,
     grey_zone=grey_zone,
-    exclude_grey=False,       # Se True, remove a grey_zone do dataset final
-    save_greyzone=True,      # Se True, salva a grey_zone em um CSV separado
+    exclude_grey=True,       
+    save_greyzone=True,      #Salva csv da greyzone 
     greyzone_csv='dataset_greyzone.csv',  
     output_csv='dataset_rotulado.csv'
 
