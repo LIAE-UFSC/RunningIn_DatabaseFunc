@@ -59,6 +59,7 @@ def label_dataset_by_time(
     print(f"Dataset rotulado salvo em {output_csv}")
 
 time_ranges = [
+    
     (0, 18000, 0),       # Não amaciado
     (54000, 100000, 1),  # Amaciado
 ]
