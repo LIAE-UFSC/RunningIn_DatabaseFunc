@@ -236,28 +236,11 @@ model.train_model(
     shuffle=False
 )
 
-# Avaliando o modelo após o treinamento ################### PCA NAO ESTOU TESTANDO
-
-# Geração da representação latente
 model.eval()
 with torch.no_grad():  
     latent_representation = model.encoder(x_train_original)  
 
-# PCA e visualização
-latent_representation = latent_representation.numpy()
-pca = PCA(n_components=2)
-latent_2d = pca.fit_transform(latent_representation)
 
-# plt.figure(figsize=(8, 6))
-# plt.scatter(latent_2d[:, 0], latent_2d[:, 1], c=np.arange(len(latent_2d)), cmap='viridis', alpha=0.6)
-# plt.colorbar(label='Índice da Amostra')
-# plt.title("Representação 2D do Espaço Latente (PCA)")
-# plt.xlabel("Componente Principal 1")
-# plt.ylabel("Componente Principal 2")
-
-#plt.show()
-
-# Reconstruindo a partir dos dados originais
 with torch.no_grad():
     _, reconstruido = model(x_train_original)  # Obter a saída do decodificador
 
@@ -265,20 +248,7 @@ reconstruido = reconstruido.numpy()
 
 original = x_train_original.numpy()
 
-# Plot para cada feature
-# for i in range(original.shape[1]):
-#     plt.figure(figsize=(10, 4))
-#     plt.plot(original[:, i], label='Original', color='blue', alpha=0.6)
-#     plt.plot(reconstruido[:, i], label='Reconstruído', color='red', alpha=0.6)
-#     plt.title(f'Reconstrução da coluna massFlow_{i}')
-#     plt.legend()
-#     plt.show()
 
-# Supondo que:
-# x_train_original é um tensor PyTorch de formato (amostras, features)
-# reconstruido é um array numpy de formato (amostras, features)
-
-# Converter tudo para numpy se necessário
 if isinstance(x_train_original, torch.Tensor):
     original_np = x_train_original.numpy()
 else:
@@ -296,48 +266,13 @@ time_steps = np.arange(original_np.shape[0])
 
 plt.figure(figsize=(14, 8))
 
-# for feature_idx in range(num_features):
-#     plt.subplot(num_features, 1, feature_idx+1)
-    
-#     # Plot original vs reconstruído para cada feature
-#     plt.plot(time_steps, original_np[:, feature_idx], 
-#              'b-', label='Original', alpha=0.7, linewidth=1)
-#     plt.plot(time_steps, reconstruido_np[:, feature_idx], 
-#              'r--', label='Reconstruído', alpha=0.7, linewidth=1)
-    
-#     plt.title(f'Feature massFlow_{feature_idx+1} - Original vs Reconstruído')
-#     plt.ylabel('Valor')
-#     plt.legend()
-    
-#     if feature_idx == num_features-1:
-#         plt.xlabel('Índice Temporal')
-
-# plt.tight_layout()
-# plt.show()
-
-
-# Plot agregado de todas as features
-plt.figure(figsize=(14, 6))
 
 # Concatenar todas as features (achatando o array)
 original_flat = original_np.flatten()
-reconstruido_flat = reconstruido_np.flatten()
+reconstruido_flat = reconstruido_np.flatten() 
 time_steps_flat = np.arange(len(original_flat))
 
-# plt.plot(time_steps_flat, original_flat, 
-#          'b-', label='Original (todas features)', alpha=0.5, linewidth=1)
-# plt.plot(time_steps_flat, reconstruido_flat, 
-#          'r-', label='Reconstruído (todas features)', alpha=0.5, linewidth=1)
-
-# plt.title('Comparação Agregada - Todas Features Concatenadas')
-# plt.xlabel('Índice Temporal Contínuo')
-# plt.ylabel('Valor')
-# plt.legend()
-# plt.grid(True)
-# plt.tight_layout()
-# plt.show()
-
-num_massflows = valor_amostras  # ou o número correto para seu caso##########################################################################
+num_massflows = valor_amostras  
 massflow_cols = [f'massFlow_{i}' for i in range(1, num_massflows+1)]
 dados_originais = df_original[massflow_cols].values.astype(np.float32)
 
@@ -368,7 +303,6 @@ with torch.no_grad():
 dimensao_latente = latent.shape[1]
 print(f"Dimensão do espaço latente: {dimensao_latente}")
 
-
 with torch.no_grad():
     dados_tensor = torch.tensor(dados_originais)
     latent_representations, _ = model(dados_tensor)
@@ -389,3 +323,71 @@ df_latent.to_csv(caminho_latente, index=False)
 print(f"\nArquivo do espaço latente salvo em: {caminho_latente}")
 print("\nExemplo da estrutura:")
 print(df_latent.head())
+
+# Recarregar os três CSVs (ou usar os dataframes já existentes)
+df_original_reloaded = pd.read_csv("dataset_balanceado_pronto.csv")
+df_reconstruido_reloaded = pd.read_csv("dataset_dados_reconstruidos.csv")
+df_latente_reloaded = pd.read_csv("dataset_espaco_latente.csv")
+
+# PCA e visualização
+# latent_representation = latent_representation.numpy()
+# pca = PCA(n_components=2)
+# latent_2d = pca.fit_transform(latent_representation)
+
+# plt.figure(figsize=(8, 6))
+# plt.scatter(latent_2d[:, 0], latent_2d[:, 1], c=np.arange(len(latent_2d)), cmap='viridis', alpha=0.6)
+# plt.colorbar(label='Índice da Amostra')
+# plt.title("Representação 2D do Espaço Latente (PCA)")
+# plt.xlabel("Componente Principal 1")
+# plt.ylabel("Componente Principal 2")
+
+#plt.show()
+
+# Reconstruindo a partir dos dados originais
+
+# Plot para cada feature
+# for i in range(original.shape[1]):
+#     plt.figure(figsize=(10, 4))
+#     plt.plot(original[:, i], label='Original', color='blue', alpha=0.6)
+#     plt.plot(reconstruido[:, i], label='Reconstruído', color='red', alpha=0.6)
+#     plt.title(f'Reconstrução da coluna massFlow_{i}')
+#     plt.legend()
+#     plt.show()
+
+# Supondo que:
+# x_train_original é um tensor PyTorch de formato (amostras, features)
+
+# for feature_idx in range(num_features):
+#     plt.subplot(num_features, 1, feature_idx+1)
+    
+#     # Plot original vs reconstruído para cada feature
+#     plt.plot(time_steps, original_np[:, feature_idx], 
+#              'b-', label='Original', alpha=0.7, linewidth=1)
+#     plt.plot(time_steps, reconstruido_np[:, feature_idx], 
+#              'r--', label='Reconstruído', alpha=0.7, linewidth=1)
+    
+#     plt.title(f'Feature massFlow_{feature_idx+1} - Original vs Reconstruído')
+#     plt.ylabel('Valor')
+#     plt.legend()
+    
+#     if feature_idx == num_features-1:
+#         plt.xlabel('Índice Temporal')
+
+# plt.tight_layout()
+# plt.show()
+
+# Plot agregado de todas as features
+# plt.figure(figsize=(14, 6))
+
+# plt.plot(time_steps_flat, original_flat, 
+#          'b-', label='Original (todas features)', alpha=0.5, linewidth=1)
+# plt.plot(time_steps_flat, reconstruido_flat, 
+#          'r-', label='Reconstruído (todas features)', alpha=0.5, linewidth=1)
+
+# plt.title('Comparação Agregada - Todas Features Concatenadas')
+# plt.xlabel('Índice Temporal Contínuo')
+# plt.ylabel('Valor')
+# plt.legend()
+# plt.grid(True)
+# plt.tight_layout()
+# plt.show()
