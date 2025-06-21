@@ -22,7 +22,8 @@ def label_dataset_by_time(
     - output_csv (str, opcional): Caminho para o arquivo CSV de saída.
 
     Retorna:
-    - None (os datasets são salvos em arquivos CSV).
+    - df_labeled (DataFrame): Dataset final rotulado.
+    - df_grey (DataFrame or None): Dataset da zona cinzenta, se aplicável.
     """
 
     df = pd.read_csv(input_csv)
@@ -40,6 +41,8 @@ def label_dataset_by_time(
         mask = (df['time'] >= start) & (df['time'] <= end)
         df.loc[mask, label_col] = label
 
+    df_grey = None
+
     if grey_zone:
         grey_start, grey_end = grey_zone
         grey_mask = (df['time'] >= grey_start) & (df['time'] <= grey_end)
@@ -49,6 +52,9 @@ def label_dataset_by_time(
             df_grey[label_col] = 'grey_zone'
             df_grey.to_csv(greyzone_csv, index=False)
             print(f"Zona cinzenta salva em {greyzone_csv}")
+        elif not exclude_grey:
+            df_grey = df[grey_mask].copy()
+            df_grey[label_col] = 'grey_zone'
 
         if exclude_grey:
             df = df[~grey_mask]
@@ -58,22 +64,19 @@ def label_dataset_by_time(
     df.to_csv(output_csv, index=False)
     print(f"Dataset rotulado salvo em {output_csv}")
 
-time_ranges = [
-    
-    (0, 18000, 0),       # Não amaciado
-    (54000, 100000, 1),  # Amaciado
-]
+    return df, df_grey
 
-grey_zone = (18000, 54000)  # Zona de transição (grey zone)
-
-label_dataset_by_time(
-
+df_labeled, df_grey = label_dataset_by_time(
     input_csv='dataset_massflow.csv',
-    time_ranges=time_ranges,
-    grey_zone=grey_zone,
-    exclude_grey=True,       
-    save_greyzone=True,      #Salva csv da greyzone 
-    greyzone_csv='dataset_greyzone.csv',  
+    time_ranges=[
+        (0, 18000, 0),
+        (54000, 100000, 1),
+    ],
+    grey_zone=(18000, 54000),
+    exclude_grey=True,
+    save_greyzone=True,
+    greyzone_csv='dataset_greyzone.csv',
     output_csv='dataset_rotulado.csv'
-
 )
+
+print(df_labeled.head())
