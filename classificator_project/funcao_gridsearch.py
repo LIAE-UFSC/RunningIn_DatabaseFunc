@@ -89,6 +89,7 @@ def busca_grade_completa(
     # ==============================================
 
     for i, params in enumerate(combinacoes, 1):
+        
         exec_id = f"exec_{i:04d}"
         pasta_exec = os.path.join(pasta_resultados, exec_id)
         os.makedirs(pasta_exec, exist_ok=True)
@@ -150,11 +151,12 @@ def busca_grade_completa(
     # ==============================================
     # 4. Finalização
     # ==============================================
+
     with open(os.path.join(pasta_resultados, 'metadados_completos.json'), 'w') as f:
         json.dump(metadados, f, indent=4)
     
-    print(f"\n✅ Busca concluída! {len(combinacoes)} combinações processadas")
-    print(f"📁 Pasta de resultados: {os.path.abspath(pasta_resultados)}")
+    print(f"\n Busca concluída! {len(combinacoes)} combinações processadas")
+    print(f" Pasta de resultados: {os.path.abspath(pasta_resultados)}")
     
     return metadados
 
