@@ -3,7 +3,7 @@ import itertools
 import pandas as pd
 from datetime import datetime
 import json
-from classificator_project.autoencoderNNpy import BaseModel, Autoencoder, processar_autoencoder, plot_autoencoder_results
+from autoencoderNNpy import BaseModel, Autoencoder, processar_autoencoder, plot_autoencoder_results
 from funcao_rotulos import label_dataset_by_time
 from funcao_janelamento import reorganizar_dataset
 from funcao_random_undersampling import balancear_csv_por_undersampling
@@ -12,13 +12,10 @@ from funcao_random_undersampling import balancear_csv_por_undersampling
 def busca_grade_completa(
     input_csv='dataset_massflow.csv',
     # TODOS os parâmetros agora são listas
-    lista_time_ranges=[
-        [(0, 18000, 0), (54000, 100000, 1)],  # Padrão
-        #[(0, 20000, 0), (60000, 100000, 1)]   # Alternativa
+    lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)], 
     ],
     lista_grey_zones=[
         (18000, 54000),  # Padrão
-        #(20000, 60000)   # Alternativa
     ],
     lista_n_amostras=[5, 8, 10],
     lista_janelamento=[True, False],
@@ -171,7 +168,7 @@ resultados = busca_grade_completa(
     lista_n_amostras=[5, 8],
     lista_janelamento=[True],
     lista_amostras_repetidas=[1, 3],
-    lista_latent_dims=[2, 3],
+    lista_latent_dims=[2, 3, 4],
     lista_learning_rates=[0.02],
     lista_epochs=[200],
     lista_batch_sizes=[32],
