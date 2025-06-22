@@ -5,10 +5,12 @@ def label_dataset_by_time(
     time_ranges,
     grey_zone=None,
     exclude_grey=False,
-    save_greyzone=False,
+    save_greyzone_csv=False,
+    save_csv = True,
     greyzone_csv='greyzone_dataset.csv',
     output_csv='labeled_dataset.csv'
 ):
+    
     """
     Rotula o dataset de acordo com intervalos de tempo definidos, substituindo a terceira coluna (se existir) pelos rótulos.
 
@@ -17,7 +19,8 @@ def label_dataset_by_time(
     - time_ranges (list of tuples): Lista de tuplas no formato (start_time, end_time, label).
     - grey_zone (tuple, opcional): Tupla no formato (start_time, end_time) para o espaço cinzento.
     - exclude_grey (bool, opcional): Se True, exclui o espaço cinzento do dataset final.
-    - save_greyzone (bool, opcional): Se True, salva os dados da zona cinzenta em um CSV separado.
+    - save_greyzone_csv (bool, opcional): Se True, salva os dados da zona cinzenta em um CSV separado.
+    - save_csv (bool, opcional): Se True, salva o dataset rotulado em um arquivo CSV.
     - greyzone_csv (str, opcional): Caminho para o arquivo CSV da zona cinzenta.
     - output_csv (str, opcional): Caminho para o arquivo CSV de saída.
 
@@ -47,7 +50,7 @@ def label_dataset_by_time(
         grey_start, grey_end = grey_zone
         grey_mask = (df['time'] >= grey_start) & (df['time'] <= grey_end)
 
-        if save_greyzone:
+        if save_greyzone_csv:
             df_grey = df[grey_mask].copy()
             df_grey[label_col] = 'grey_zone'
             df_grey.to_csv(greyzone_csv, index=False)
@@ -60,9 +63,11 @@ def label_dataset_by_time(
             df = df[~grey_mask]
         else:
             df.loc[grey_mask, label_col] = 'grey_zone'
+    
+    if save_csv:
 
-    df.to_csv(output_csv, index=False)
-    print(f"Dataset rotulado salvo em {output_csv}")
+        df.to_csv(output_csv, index=False)
+        print(f"Dataset rotulado salvo em {output_csv}")
 
     return df, df_grey
 
@@ -76,7 +81,8 @@ if __name__ == "__main__":
         ],
         grey_zone=(18000, 54000),
         exclude_grey=True,
-        save_greyzone=True,
+        save_greyzone_csv=False,
+        save_csv = False,
         greyzone_csv='dataset_greyzone.csv',
         output_csv='dataset_rotulado.csv'
     )

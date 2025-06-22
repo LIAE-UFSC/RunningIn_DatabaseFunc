@@ -1,11 +1,12 @@
 import pandas as pd
 
-def balancear_csv_por_undersampling(input_csv, coluna_classe='anomaly', output_csv='dataset_balanceado.csv', embaralhar=True):
+def balancear_csv_por_undersampling(input_csv, save_csv = True, coluna_classe='anomaly', output_csv='dataset_balanceado.csv', embaralhar=True):
     """
     Realiza random undersampling em um CSV, balanceando as classes com base na menor classe.
 
     Parâmetros:
     - input_csv (str): Caminho para o arquivo CSV de entrada.
+    - Save_csv (bool): Se True, salva o dataset balanceado em um arquivo CSV.
     - coluna_classe (str): Nome da coluna com os rótulos das classes.
     - output_csv (str): Caminho para salvar o arquivo CSV balanceado.
     - embaralhar (bool): Se True, embaralha as amostras após o balanceamento.
@@ -32,8 +33,10 @@ def balancear_csv_por_undersampling(input_csv, coluna_classe='anomaly', output_c
     else:
         df_balanceado = df_balanceado.reset_index(drop=True)
 
-    df_balanceado.to_csv(output_csv, index=False)
-    print(f"Dataset balanceado salvo em {output_csv}")
+    if save_csv:
+        
+        df_balanceado.to_csv(output_csv, index=False)
+        print(f"Dataset balanceado salvo em {output_csv}")
 
     return df_balanceado
 

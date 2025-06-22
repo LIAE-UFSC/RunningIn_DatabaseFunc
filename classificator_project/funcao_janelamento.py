@@ -79,7 +79,7 @@ if __name__ == "__main__":
         caminho_arquivo='dataset_rotulado.csv',
         n_amostras= 8,
         incluir_tempo=False,
-        salvar_csv=True,
+        salvar_csv=False,
         nome_saida='dataset_janelado_n_amostras.csv',
         janelamento=True,
         amostras_repetidas= 4
