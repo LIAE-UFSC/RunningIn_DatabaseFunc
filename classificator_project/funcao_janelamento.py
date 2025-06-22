@@ -1,7 +1,8 @@
 import pandas as pd
 
 def reorganizar_dataset(
-    caminho_arquivo, 
+    caminho_arquivo=None,  # Modificado: tornamos opcional
+    df_dados=None,         # Novo parâmetro para receber DataFrame diretamente
     n_amostras=5, 
     incluir_tempo=False,
     rotulo_ultimo=True,
@@ -14,7 +15,8 @@ def reorganizar_dataset(
     Reorganiza o dataset em grupos de 'n_amostras' consecutivas, com controle preciso de overlap.
 
     Parâmetros:
-    - caminho_arquivo: str. Caminho do arquivo CSV original.
+    - caminho_arquivo (opcional): str. Caminho do arquivo CSV original.
+    - df_dados (opcional): DataFrame. DataFrame diretamente (alternativa a caminho_arquivo).
     - n_amostras: int. Quantidade de amostras por linha (padrão=5).
     - incluir_tempo: bool. Se True, adiciona o tempo como primeira feature (massFlow_0).
     - rotulo_ultimo: bool. Se True, usa o rótulo da última amostra; senão, usa o da primeira.
@@ -30,8 +32,15 @@ def reorganizar_dataset(
     if janelamento and (amostras_repetidas >= n_amostras or amostras_repetidas < 1):
         raise ValueError("amostras_repetidas deve ser menor que n_amostras e maior ou igual a 1")
     
-    df = pd.read_csv(caminho_arquivo)
+    # NOVO BLOCO: Seleção da fonte de dados
+    if df_dados is not None:
+        df = df_dados.copy()
+    elif caminho_arquivo is not None:
+        df = pd.read_csv(caminho_arquivo)
+    else:
+        raise ValueError("Forneça caminho_arquivo ou df_dados")
     
+    # Restante da função ORIGINAL (inalterado)
     time_values = df['time'].values if incluir_tempo else None
     mass_flow = df['massFlow'].values
     anomaly = df['anomaly'].values
@@ -72,17 +81,21 @@ def reorganizar_dataset(
     
     return new_df
 
+# Exemplo de uso com DataFrame (novo)
 if __name__ == "__main__":
-   
-    df_com_tempo = reorganizar_dataset(
-
+    # Opção tradicional com arquivo
+    df_arquivo = reorganizar_dataset(
         caminho_arquivo='dataset_rotulado.csv',
-        n_amostras= 8,
-        incluir_tempo=False,
-        salvar_csv=False,
-        nome_saida='dataset_janelado_n_amostras.csv',
+        n_amostras=8,
         janelamento=True,
-        amostras_repetidas= 4
-
+        amostras_repetidas=4
     )
-
+    
+    # Opção nova com DataFrame
+    dados = pd.read_csv('dataset_rotulado.csv')  # Carrega antes
+    df_direto = reorganizar_dataset(
+        df_dados=dados,  # Novo formato
+        n_amostras=8,
+        janelamento=True,
+        amostras_repetidas=4
+    )

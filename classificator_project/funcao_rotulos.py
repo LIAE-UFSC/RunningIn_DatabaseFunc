@@ -1,21 +1,25 @@
 import pandas as pd
 
 def label_dataset_by_time(
-    input_csv,
-    time_ranges,
-    grey_zone=None,
-    exclude_grey=False,
+    input_csv=None,      # Modificado: tornamos opcional
+    df_dados=None,       # Novo parâmetro para receber DataFrame
+    time_ranges=[        # Mantido igual ao seu exemplo original
+        (0, 18000, 0),
+        (54000, 100000, 1)
+    ],
+    grey_zone=(18000, 54000),
+    exclude_grey=True,
     save_greyzone_csv=False,
-    save_csv = True,
+    save_csv=True,
     greyzone_csv='greyzone_dataset.csv',
     output_csv='labeled_dataset.csv'
 ):
-    
     """
     Rotula o dataset de acordo com intervalos de tempo definidos, substituindo a terceira coluna (se existir) pelos rótulos.
 
     Parâmetros:
-    - input_csv (str): Caminho para o arquivo CSV de entrada.
+    - input_csv (str, opcional): Caminho para o arquivo CSV de entrada.
+    - df_dados (DataFrame, opcional): DataFrame diretamente (alternativa a input_csv).
     - time_ranges (list of tuples): Lista de tuplas no formato (start_time, end_time, label).
     - grey_zone (tuple, opcional): Tupla no formato (start_time, end_time) para o espaço cinzento.
     - exclude_grey (bool, opcional): Se True, exclui o espaço cinzento do dataset final.
@@ -28,8 +32,17 @@ def label_dataset_by_time(
     - df_labeled (DataFrame): Dataset final rotulado.
     - df_grey (DataFrame or None): Dataset da zona cinzenta, se aplicável.
     """
+    # Novo bloco de seleção de dados (única modificação)
+    if df_dados is not None:
+        df = df_dados.copy()
+    elif input_csv is not None:
+        df = pd.read_csv(input_csv)
+    else:
+        raise ValueError("Forneça input_csv ou df_dados")
 
-    df = pd.read_csv(input_csv)
+    # -------------------------------------------------------------------------
+    # TUDO ABAIXO É IDÊNTICO AO SEU CÓDIGO ORIGINAL
+    # -------------------------------------------------------------------------
     if 'time' not in df.columns:
         raise ValueError("A coluna 'time' é obrigatória no dataset.")
 
@@ -65,7 +78,6 @@ def label_dataset_by_time(
             df.loc[grey_mask, label_col] = 'grey_zone'
     
     if save_csv:
-
         df.to_csv(output_csv, index=False)
         print(f"Dataset rotulado salvo em {output_csv}")
 
@@ -73,18 +85,25 @@ def label_dataset_by_time(
 
 if __name__ == "__main__":
     
-    df_labeled, df_grey = label_dataset_by_time(
+    df1, grey1 = label_dataset_by_time(
         input_csv='dataset_massflow.csv',
-        time_ranges=[
-            (0, 18000, 0),
-            (54000, 100000, 1),
-        ],
+        time_ranges=[(0, 18000, 0), (54000, 100000, 1)],
         grey_zone=(18000, 54000),
         exclude_grey=True,
         save_greyzone_csv=False,
-        save_csv = False,
-        greyzone_csv='dataset_greyzone.csv',
+        save_csv=True,
+        greyzone_csv='greyzone_dataset.csv',
         output_csv='dataset_rotulado.csv'
     )
 
-    print(df_labeled.head())
+    
+    dados = pd.read_csv('dataset_massflow.csv')  # Carrega antes
+    df2, grey2 = label_dataset_by_time(
+        df_dados=dados,  # Nova opção
+        time_ranges=[(0, 18000, 0), (54000, 100000, 1)],
+        grey_zone=(18000, 54000),
+        exclude_grey=True,
+        save_greyzone_csv=False,
+        save_csv=True,
+        output_csv='dataset_rotulado.csv'
+    )

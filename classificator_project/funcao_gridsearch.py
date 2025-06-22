@@ -2,153 +2,184 @@ import os
 import itertools
 import pandas as pd
 from datetime import datetime
+import json
 from autoeoncoderNNpy import BaseModel, Autoencoder, processar_autoencoder, plot_autoencoder_results
 from funcao_rotulos import label_dataset_by_time
 from funcao_janelamento import reorganizar_dataset
 from funcao_random_undersampling import balancear_csv_por_undersampling
 
 
-def executar_busca_em_grade(
+def busca_grade_completa(
     input_csv='dataset_massflow.csv',
-    # Parâmetros fixos para label_dataset_by_time
-    time_ranges=[(0, 18000, 0), (54000, 100000, 1)],
-    grey_zone=(18000, 54000),
-    # Parâmetros variáveis para reorganizar_dataset
+    # TODOS os parâmetros agora são listas
+    lista_time_ranges=[
+        [(0, 18000, 0), (54000, 100000, 1)],  # Padrão
+        #[(0, 20000, 0), (60000, 100000, 1)]   # Alternativa
+    ],
+    lista_grey_zones=[
+        (18000, 54000),  # Padrão
+        #(20000, 60000)   # Alternativa
+    ],
     lista_n_amostras=[5, 8, 10],
     lista_janelamento=[True, False],
     lista_amostras_repetidas=[1, 4],
-    # Parâmetros variáveis para o autoencoder
     lista_latent_dims=[2, 3, 5],
-    # Parâmetros fixos adicionais
-    learning_rate=0.02,
-    epochs=200,
-    batch_size=32,
-    train_size=0.75
+    lista_learning_rates=[0.01, 0.02, 0.05],
+    lista_epochs=[100, 200],
+    lista_batch_sizes=[32, 64],
+    lista_train_sizes=[0.7, 0.8],
+    # Configurações opcionais
+    output_dir='resultados_personalizados'
 ):
     """
-    Executa todo o pipeline com busca em grade e retorna resultados organizados.
+    Executa uma busca em grade completa onde TODOS os parâmetros podem variar.
+    
+    Retorna:
+    - Um dicionário com metadados de todas execuções
+    - Arquivos salvos em pastas organizadas por combinação
     """
-    # 1. Criar pasta de resultados (com timestamp para evitar sobrescrita)
+    
+    # ==============================================
+    # 1. Preparação Inicial
+    # ==============================================
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    pasta_resultados = f"resultados_{timestamp}"
+    pasta_resultados = f"{output_dir}_{timestamp}" if output_dir else f"resultados_{timestamp}"
     os.makedirs(pasta_resultados, exist_ok=True)
     
-    resultados = {}
+    # Estrutura para resultados
 
-    # 2. Etapa 1: Rotulação Fixa
-    print(">>> Etapa 1/4: Rotulando dados temporais...")
-    df_labeled, _ = label_dataset_by_time(
-        input_csv=input_csv,
-        time_ranges=time_ranges,
-        grey_zone=grey_zone,
-        exclude_grey=True,
-        save_greyzone=True,
-        greyzone_csv=os.path.join(pasta_resultados, 'greyzone_dataset.csv'),
-        output_csv=os.path.join(pasta_resultados, 'dataset_rotulado.csv')
-    )
-
-    # 3. Etapa 2: Gerar combinações de parâmetros
-    combinacoes_reorg = []
-    for n_amostras in lista_n_amostras:
-        for janelamento in lista_janelamento:
-            if janelamento:
-                for amostras_repetidas in lista_amostras_repetidas:
-                    combinacoes_reorg.append({
-                        'n_amostras': n_amostras,
-                        'janelamento': janelamento,
-                        'amostras_repetidas': amostras_repetidas
-                    })
-            else:
-                combinacoes_reorg.append({
-                    'n_amostras': n_amostras,
-                    'janelamento': janelamento,
-                    'amostras_repetidas': None  # Não aplicável
-                })
-
-    # 4. Processar cada combinação
-    print(f"\n>>> Etapa 2/4: Reorganizando dados ({len(combinacoes_reorg)} combinações)...")
-    for i, combo in enumerate(combinacoes_reorg):
-        print(f"\nCombinação {i+1}: n_amostras={combo['n_amostras']}, janelamento={combo['janelamento']}, repeticoes={combo['amostras_repetidas']}")
-
-        # Reorganização
-        df_reorg = reorganizar_dataset(
-            caminho_arquivo=os.path.join(pasta_resultados, 'dataset_rotulado.csv'),
-            n_amostras=combo['n_amostras'],
-            incluir_tempo=False,
-            rotulo_ultimo=True,
-            salvar_csv=True,
-            nome_saida=os.path.join(pasta_resultados, f'dataset_reorg_{i+1}.csv'),
-            janelamento=combo['janelamento'],
-            amostras_repetidas=combo['amostras_repetidas'] if combo['janelamento'] else 1
-        )
-
-        # Balanceamento
-        print(">>> Etapa 3/4: Balanceando dados...")
-        df_balanceado = balancear_csv_por_undersampling(
-            input_csv=os.path.join(pasta_resultados, f'dataset_reorg_{i+1}.csv'),
-            output_csv=os.path.join(pasta_resultados, f'dataset_balanceado_{i+1}.csv'),
-            embaralhar=False
-        )
-
-        # 5. Autoencoder para cada dimensão latente
-        print(">>> Etapa 4/4: Processando autoencoder...")
-        for latent_dim in lista_latent_dims:
-            print(f"  - latent_dim={latent_dim}")
-            params_ae = {
-                'input_dim': combo['n_amostras'],
-                'latent_dim': latent_dim
-            }
-
-            df_reconstruido, df_latente, _ = processar_autoencoder(
-                df_original=df_balanceado,
-                params_autoencoder=params_ae,
-                learning_rate=learning_rate,
-                epochs=epochs,
-                batch_size=batch_size,
-                train_size=train_size
-            )
-
-            # Salvar resultados
-            suffix = f"comb{i+1}_latent{latent_dim}"
-            df_reconstruido.to_csv(
-                os.path.join(pasta_resultados, f'reconstruido_{suffix}.csv'), 
-                index=False
-            )
-            df_latente.to_csv(
-                os.path.join(pasta_resultados, f'latente_{suffix}.csv'), 
-                index=False
-            )
-
-            # Registrar metadados
-            resultados[suffix] = {
-                'params_preprocess': combo,
-                'params_autoencoder': params_ae,
-                'caminhos': {
-                    'reconstruido': os.path.join(pasta_resultados, f'reconstruido_{suffix}.csv'),
-                    'latente': os.path.join(pasta_resultados, f'latente_{suffix}.csv'),
-                    'balanceado': os.path.join(pasta_resultados, f'dataset_balanceado_{i+1}.csv')
-                }
-            }
-
-    # 6. Salvar sumário executivo
-    df_sumario = pd.DataFrame.from_dict(resultados, orient='index')
-    df_sumario.to_csv(os.path.join(pasta_resultados, 'sumario_executivo.csv'), index=True)
-    print(f"\n✔ Busca concluída! Resultados salvos em: {pasta_resultados}")
-
-    return {
-        'resultados': resultados,
-        'pasta_resultados': pasta_resultados,
-        'sumario': df_sumario
+    metadados = {
+        'config': {
+            'input_csv': input_csv,
+            'total_combinacoes': None,  # Será calculado
+            'timestamp': timestamp
+        },
+        'execucoes': {}
     }
 
+    # ==============================================
+    # 2. Gerar TODAS as combinações possíveis
+    # ==============================================
+    parametros_variados = {
 
-# Exemplo mínimo
-resultados = executar_busca_em_grade(
+        'time_ranges': lista_time_ranges,
+        'grey_zone': lista_grey_zones,
+        'n_amostras': lista_n_amostras,
+        'janelamento': lista_janelamento,
+        'amostras_repetidas': lista_amostras_repetidas,
+        'latent_dim': lista_latent_dims,
+        'learning_rate': lista_learning_rates,
+        'epochs': lista_epochs,
+        'batch_size': lista_batch_sizes,
+        'train_size': lista_train_sizes
+    }
+
+    # Gera todas combinações válidas
+    combinacoes = []
+    for combo in itertools.product(*parametros_variados.values()):
+        current = dict(zip(parametros_variados.keys(), combo))
+        
+        # Filtra combinações inválidas
+        if current['janelamento'] and current['amostras_repetidas'] >= current['n_amostras']:
+            continue
+            
+        combinacoes.append(current)
+
+    metadados['config']['total_combinacoes'] = len(combinacoes)
+
+    # ==============================================
+    # 3. Processamento para cada combinação
+    # ==============================================
+
+    for i, params in enumerate(combinacoes, 1):
+        exec_id = f"exec_{i:04d}"
+        pasta_exec = os.path.join(pasta_resultados, exec_id)
+        os.makedirs(pasta_exec, exist_ok=True)
+        
+        print(f"\n🔧 Execução {i}/{len(combinacoes)} - ID: {exec_id}")
+        
+        # --- 3.1 Rotulação Temporal ---
+        df_rotulado, _ = label_dataset_by_time(
+            
+            input_csv=input_csv,
+            time_ranges=params['time_ranges'],
+            grey_zone=params['grey_zone'],
+            exclude_grey=True,
+            save_greyzone_csv=False,
+            save_csv=False
+        )
+        
+        # --- 3.2 Reorganização ---
+        df_reorg = reorganizar_dataset(
+            df_dados=df_rotulado,
+            n_amostras=params['n_amostras'],
+            janelamento=params['janelamento'],
+            amostras_repetidas=params['amostras_repetidas'] if params['janelamento'] else None,
+            salvar_csv=False
+        )
+        
+        # --- 3.3 Balanceamento (SALVA) ---
+        arquivo_balanceado = os.path.join(pasta_exec, 'dataset_balanceado.csv')
+        df_balanceado = balancear_csv_por_undersampling(
+            df_dados=df_reorg,
+            output_csv=arquivo_balanceado,
+            embaralhar=False
+        )
+        
+        # --- 3.4 Autoencoder (SALVA latente) ---
+        arquivo_latente = os.path.join(pasta_exec, 'espaco_latente.csv')
+        _, df_latente, _ = processar_autoencoder(
+            df_original=df_balanceado,
+            params_autoencoder={
+                'input_dim': params['n_amostras'],
+                'latent_dim': params['latent_dim']
+            },
+            learning_rate=params['learning_rate'],
+            epochs=params['epochs'],
+            batch_size=params['batch_size'],
+            train_size=params['train_size']
+        )
+        df_latente.to_csv(arquivo_latente, index=False)
+        
+        # --- 3.5 Registra metadados ---
+        metadados['execucoes'][exec_id] = {
+            'params': params,
+            'arquivos': {
+                'balanceado': arquivo_balanceado,
+                'latente': arquivo_latente
+            }
+        }
+
+    # ==============================================
+    # 4. Finalização
+    # ==============================================
+    with open(os.path.join(pasta_resultados, 'metadados_completos.json'), 'w') as f:
+        json.dump(metadados, f, indent=4)
+    
+    print(f"\n✅ Busca concluída! {len(combinacoes)} combinações processadas")
+    print(f"📁 Pasta de resultados: {os.path.abspath(pasta_resultados)}")
+    
+    return metadados
+
+
+
+# Exemplo com múltiplas variações
+resultados = busca_grade_completa(
+
+    input_csv='dataset_massflow.csv',
+    lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)],],
+    lista_grey_zones=[(18000, 54000),],
     lista_n_amostras=[5, 8],
-    lista_janelamento=[True, False],
-    lista_latent_dims=[2, 3]
+    lista_janelamento=[True],
+    lista_amostras_repetidas=[1, 3],
+    lista_latent_dims=[2, 3],
+    lista_learning_rates=[0.02],
+    lista_epochs=[200],
+    lista_batch_sizes=[32],
+    lista_train_sizes=[0.7]
+
 )
 
 # Acessar resultados
-print(resultados['pasta_resultados'])  # Caminho da pasta
-print(resultados['resultados']['comb1_latent2']['params_preprocess'])  # Parâmetros usados
+print(f"Total execuções: {resultados['config']['total_combinacoes']}")
+print("Primeira execução:", resultados['execucoes']['exec_0001']['params'])
