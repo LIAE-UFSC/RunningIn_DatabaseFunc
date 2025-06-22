@@ -37,13 +37,16 @@ def balancear_csv_por_undersampling(input_csv, coluna_classe='anomaly', output_c
 
     return df_balanceado
 
-balancear_csv_por_undersampling(
+if __name__ == "__main__":
+    
 
-    input_csv='dataset_janelado_n_amostras.csv',
-    output_csv='dataset_balanceado_pronto.csv',
-    embaralhar=False
+    balancear_csv_por_undersampling(
 
-)
+        input_csv='dataset_janelado_n_amostras.csv',
+        output_csv='dataset_balanceado_pronto.csv',
+        embaralhar=False
+
+    )
 
 
 

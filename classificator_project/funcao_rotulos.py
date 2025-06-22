@@ -66,17 +66,19 @@ def label_dataset_by_time(
 
     return df, df_grey
 
-df_labeled, df_grey = label_dataset_by_time(
-    input_csv='dataset_massflow.csv',
-    time_ranges=[
-        (0, 18000, 0),
-        (54000, 100000, 1),
-    ],
-    grey_zone=(18000, 54000),
-    exclude_grey=True,
-    save_greyzone=True,
-    greyzone_csv='dataset_greyzone.csv',
-    output_csv='dataset_rotulado.csv'
-)
+if __name__ == "__main__":
+    
+    df_labeled, df_grey = label_dataset_by_time(
+        input_csv='dataset_massflow.csv',
+        time_ranges=[
+            (0, 18000, 0),
+            (54000, 100000, 1),
+        ],
+        grey_zone=(18000, 54000),
+        exclude_grey=True,
+        save_greyzone=True,
+        greyzone_csv='dataset_greyzone.csv',
+        output_csv='dataset_rotulado.csv'
+    )
 
-print(df_labeled.head())
+    print(df_labeled.head())

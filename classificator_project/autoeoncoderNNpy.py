@@ -327,10 +327,10 @@ def plot_autoencoder_results(df_original, df_reconstruido,
 
 if __name__ == "__main__":
 
-    # Carregar dados
+    
     df_original = pd.read_csv("dataset_balanceado_pronto.csv")
     
-    # Configurar parâmetros
+    
     params_autoencoder = {
         "input_dim": 8,
         "hidden_dim": 64,
@@ -345,7 +345,7 @@ if __name__ == "__main__":
         learning_rate=0.02,
         epochs=300,
         batch_size=32,
-        train_size=1
+        train_size=0.75
     )
     
     plot_autoencoder_results(
