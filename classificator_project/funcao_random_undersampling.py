@@ -68,6 +68,7 @@ if __name__ == "__main__":
     
     # Opção nova com DataFrame
     dados = pd.read_csv('dataset_janelado_n_amostras.csv')  # Carrega antes
+    
     df_balanceado = balancear_csv_por_undersampling(
         df_dados=dados,  # Novo formato
         output_csv='dataset_balanceado_pronto.csv',

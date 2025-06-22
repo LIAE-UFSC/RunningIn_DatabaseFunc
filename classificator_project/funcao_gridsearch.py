@@ -3,7 +3,7 @@ import itertools
 import pandas as pd
 from datetime import datetime
 import json
-from autoeoncoderNNpy import BaseModel, Autoencoder, processar_autoencoder, plot_autoencoder_results
+from classificator_project.autoencoderNNpy import BaseModel, Autoencoder, processar_autoencoder, plot_autoencoder_results
 from funcao_rotulos import label_dataset_by_time
 from funcao_janelamento import reorganizar_dataset
 from funcao_random_undersampling import balancear_csv_por_undersampling
@@ -160,7 +160,6 @@ def busca_grade_completa(
     print(f"📁 Pasta de resultados: {os.path.abspath(pasta_resultados)}")
     
     return metadados
-
 
 
 # Exemplo com múltiplas variações
