@@ -11,7 +11,6 @@ from funcao_metodos import avaliar_modelos
 
 
 def busca_grade_completa(
-        
     input_csv='dataset_massflow.csv',
     lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)]],
     lista_grey_zones=[(18000, 54000)],
@@ -25,15 +24,21 @@ def busca_grade_completa(
     lista_train_sizes=[0.7, 0.8],
     output_dir='resultados_personalizados'
 ):
+    from datetime import datetime
+    import os
+    import itertools
+    import json
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     pasta_resultados = f"{output_dir}_{timestamp}"
-    pasta_top5 = os.path.join(pasta_resultados, "top_5percent")
+    pasta_top5_balanceado = os.path.join(pasta_resultados, "top_5percent")
     pasta_latente_melhor = os.path.join(pasta_resultados, "latente_melhor")
+    pasta_top5_latente = os.path.join(pasta_resultados, "top_5percent_latente")
     
     os.makedirs(pasta_resultados, exist_ok=True)
-    os.makedirs(pasta_top5, exist_ok=True)
+    os.makedirs(pasta_top5_balanceado, exist_ok=True)
     os.makedirs(pasta_latente_melhor, exist_ok=True)
+    os.makedirs(pasta_top5_latente, exist_ok=True)
 
     metadados = {
         'config': {
@@ -46,6 +51,7 @@ def busca_grade_completa(
 
     resultados_top5 = []
     resultados_latente_melhor = []
+    resultados_top5_latente = []
 
     parametros_variados = {
         'time_ranges': lista_time_ranges,
@@ -124,12 +130,26 @@ def busca_grade_completa(
                                  key=lambda x: x[1]['Acuracia'])[0]
         melhor_acuracia = resultados_balanceado[melhor_classificador]['Acuracia']
 
-        # Salvar para análise do top 5%
+        # Encontrar melhor classificador para dados latentes
+        melhor_classificador_latente = max(resultados_latente.items(),
+                                         key=lambda x: x[1]['Acuracia'])[0]
+        melhor_acuracia_latente = resultados_latente[melhor_classificador_latente]['Acuracia']
+
+        # Salvar para análise do top 5% (dados balanceados)
         resultados_top5.append({
             'exec_id': exec_id,
             'classificador': melhor_classificador,
             'dataset': 'balanceado',
             'acuracia': melhor_acuracia,
+            'parametros': params
+        })
+
+        # Salvar para análise do top 5% (dados latentes)
+        resultados_top5_latente.append({
+            'exec_id': exec_id,
+            'classificador': melhor_classificador_latente,
+            'dataset': 'latente',
+            'acuracia': melhor_acuracia_latente,
             'parametros': params
         })
 
@@ -153,17 +173,26 @@ def busca_grade_completa(
             },
             'resultados_balanceado': resultados_balanceado,
             'resultados_latente': resultados_latente,
-            'melhor_classificador': melhor_classificador
+            'melhor_classificador': melhor_classificador,
+            'melhor_classificador_latente': melhor_classificador_latente
         }
 
-    # Processar top 5%
+    # Processar top 5% para dados balanceados
     resultados_top5.sort(key=lambda x: x['acuracia'], reverse=True)
     num_top5 = max(1, int(len(resultados_top5) * 0.05))
     top5_final = resultados_top5[:num_top5]
     
+    # Processar top 5% para dados latentes
+    resultados_top5_latente.sort(key=lambda x: x['acuracia'], reverse=True)
+    num_top5_latente = max(1, int(len(resultados_top5_latente) * 0.05))
+    top5_latente_final = resultados_top5_latente[:num_top5_latente]
+    
     # Salvar resultados nas pastas específicas
-    with open(os.path.join(pasta_top5, 'resultados_top5.json'), 'w', encoding='utf-8') as f:
+    with open(os.path.join(pasta_top5_balanceado, 'resultados_top5.json'), 'w', encoding='utf-8') as f:
         json.dump(top5_final, f, indent=2, ensure_ascii=False)
+    
+    with open(os.path.join(pasta_top5_latente, 'resultados_top5_latente.json'), 'w', encoding='utf-8') as f:
+        json.dump(top5_latente_final, f, indent=2, ensure_ascii=False)
     
     with open(os.path.join(pasta_latente_melhor, 'resultados_latente_melhor.json'), 'w', encoding='utf-8') as f:
         json.dump(resultados_latente_melhor, f, indent=2, ensure_ascii=False)
@@ -174,12 +203,14 @@ def busca_grade_completa(
     
     print(f"\n✅ Busca concluída! {len(combinacoes)} combinações processadas")
     print(f"📁 Pasta de resultados: {os.path.abspath(pasta_resultados)}")
-    print(f"📊 Top 5% salvo em: {os.path.join(pasta_top5, 'resultados_top5.json')}")
+    print(f"📊 Top 5% (balanceado) salvo em: {os.path.join(pasta_top5_balanceado, 'resultados_top5.json')}")
+    print(f"📊 Top 5% (latente) salvo em: {os.path.join(pasta_top5_latente, 'resultados_top5_latente.json')}")
     print(f"📈 Casos com latente melhor salvo em: {os.path.join(pasta_latente_melhor, 'resultados_latente_melhor.json')}")
     
     return {
         'pasta_resultados': pasta_resultados,
-        'pasta_top5': pasta_top5,
+        'pasta_top5_balanceado': pasta_top5_balanceado,
+        'pasta_top5_latente': pasta_top5_latente,
         'pasta_latente_melhor': pasta_latente_melhor
     }
 
@@ -191,9 +222,9 @@ if __name__ == "__main__":
         input_csv='dataset_massflow.csv',
         lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)]],
         lista_grey_zones=[(18000, 54000)],
-        lista_n_amostras=[5, 8],
+        lista_n_amostras=[8, 10, 12],
         lista_janelamento=[True],
-        lista_amostras_repetidas=[1, 3],
+        lista_amostras_repetidas=[4,5,6],
         lista_latent_dims=[2],
         lista_learning_rates=[0.02],
         lista_epochs=[200],
