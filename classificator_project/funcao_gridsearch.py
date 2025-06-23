@@ -7,16 +7,14 @@ from autoencoderNNpy import BaseModel, Autoencoder, processar_autoencoder, plot_
 from funcao_rotulos import label_dataset_by_time
 from funcao_janelamento import reorganizar_dataset
 from funcao_random_undersampling import balancear_csv_por_undersampling
+from funcao_metodos import avaliar_modelos
 
 
 def busca_grade_completa(
+        
     input_csv='dataset_massflow.csv',
-    # TODOS os parâmetros agora são listas
-    lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)], 
-    ],
-    lista_grey_zones=[
-        (18000, 54000),  # Padrão
-    ],
+    lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)]],
+    lista_grey_zones=[(18000, 54000)],
     lista_n_amostras=[5, 8, 10],
     lista_janelamento=[True, False],
     lista_amostras_repetidas=[1, 4],
@@ -25,40 +23,31 @@ def busca_grade_completa(
     lista_epochs=[100, 200],
     lista_batch_sizes=[32, 64],
     lista_train_sizes=[0.7, 0.8],
-    # Configurações opcionais
     output_dir='resultados_personalizados'
 ):
-    """
-    Executa uma busca em grade completa onde TODOS os parâmetros podem variar.
     
-    Retorna:
-    - Um dicionário com metadados de todas execuções
-    - Arquivos salvos em pastas organizadas por combinação
-    """
-    
-    # ==============================================
-    # 1. Preparação Inicial
-    # ==============================================
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    pasta_resultados = f"{output_dir}_{timestamp}" if output_dir else f"resultados_{timestamp}"
-    os.makedirs(pasta_resultados, exist_ok=True)
+    pasta_resultados = f"{output_dir}_{timestamp}"
+    pasta_top5 = os.path.join(pasta_resultados, "top_5percent")
+    pasta_latente_melhor = os.path.join(pasta_resultados, "latente_melhor")
     
-    # Estrutura para resultados
+    os.makedirs(pasta_resultados, exist_ok=True)
+    os.makedirs(pasta_top5, exist_ok=True)
+    os.makedirs(pasta_latente_melhor, exist_ok=True)
 
     metadados = {
         'config': {
             'input_csv': input_csv,
-            'total_combinacoes': None,  # Será calculado
+            'total_combinacoes': None,
             'timestamp': timestamp
         },
         'execucoes': {}
     }
 
-    # ==============================================
-    # 2. Gerar TODAS as combinações possíveis
-    # ==============================================
-    parametros_variados = {
+    resultados_top5 = []
+    resultados_latente_melhor = []
 
+    parametros_variados = {
         'time_ranges': lista_time_ranges,
         'grey_zone': lista_grey_zones,
         'n_amostras': lista_n_amostras,
@@ -71,34 +60,24 @@ def busca_grade_completa(
         'train_size': lista_train_sizes
     }
 
-    # Gera todas combinações válidas
     combinacoes = []
     for combo in itertools.product(*parametros_variados.values()):
         current = dict(zip(parametros_variados.keys(), combo))
-        
-        # Filtra combinações inválidas
         if current['janelamento'] and current['amostras_repetidas'] >= current['n_amostras']:
             continue
-            
         combinacoes.append(current)
 
     metadados['config']['total_combinacoes'] = len(combinacoes)
 
-    # ==============================================
-    # 3. Processamento para cada combinação
-    # ==============================================
-
     for i, params in enumerate(combinacoes, 1):
-        
         exec_id = f"exec_{i:04d}"
         pasta_exec = os.path.join(pasta_resultados, exec_id)
         os.makedirs(pasta_exec, exist_ok=True)
         
         print(f"\n🔧 Execução {i}/{len(combinacoes)} - ID: {exec_id}")
         
-        # --- 3.1 Rotulação Temporal ---
+        # Processamento dos dados (etapas 1-4)
         df_rotulado, _ = label_dataset_by_time(
-            
             input_csv=input_csv,
             time_ranges=params['time_ranges'],
             grey_zone=params['grey_zone'],
@@ -107,7 +86,6 @@ def busca_grade_completa(
             save_csv=False
         )
         
-        # --- 3.2 Reorganização ---
         df_reorg = reorganizar_dataset(
             df_dados=df_rotulado,
             n_amostras=params['n_amostras'],
@@ -116,7 +94,6 @@ def busca_grade_completa(
             salvar_csv=False
         )
         
-        # --- 3.3 Balanceamento (SALVA) ---
         arquivo_balanceado = os.path.join(pasta_exec, 'dataset_balanceado.csv')
         df_balanceado = balancear_csv_por_undersampling(
             df_dados=df_reorg,
@@ -124,7 +101,6 @@ def busca_grade_completa(
             embaralhar=False
         )
         
-        # --- 3.4 Autoencoder (SALVA latente) ---
         arquivo_latente = os.path.join(pasta_exec, 'espaco_latente.csv')
         _, df_latente, _ = processar_autoencoder(
             df_original=df_balanceado,
@@ -139,45 +115,90 @@ def busca_grade_completa(
         )
         df_latente.to_csv(arquivo_latente, index=False)
         
-        # --- 3.5 Registra metadados ---
+        # Avaliação dos modelos
+        resultados_balanceado = avaliar_modelos(arquivo_balanceado)
+        resultados_latente = avaliar_modelos(arquivo_latente)
+
+        # Encontrar melhor classificador para dados balanceados
+        melhor_classificador = max(resultados_balanceado.items(), 
+                                 key=lambda x: x[1]['Acuracia'])[0]
+        melhor_acuracia = resultados_balanceado[melhor_classificador]['Acuracia']
+
+        # Salvar para análise do top 5%
+        resultados_top5.append({
+            'exec_id': exec_id,
+            'classificador': melhor_classificador,
+            'dataset': 'balanceado',
+            'acuracia': melhor_acuracia,
+            'parametros': params
+        })
+
+        # Verificar se espaço latente foi melhor para algum classificador
+        for classificador, metricas in resultados_balanceado.items():
+            if resultados_latente[classificador]['Acuracia'] > metricas['Acuracia']:
+                resultados_latente_melhor.append({
+                    'exec_id': exec_id,
+                    'classificador': classificador,
+                    'acuracia_balanceado': metricas['Acuracia'],
+                    'acuracia_latente': resultados_latente[classificador]['Acuracia'],
+                    'parametros': params
+                })
+
+        # Salvar metadados
         metadados['execucoes'][exec_id] = {
             'params': params,
             'arquivos': {
                 'balanceado': arquivo_balanceado,
                 'latente': arquivo_latente
-            }
+            },
+            'resultados_balanceado': resultados_balanceado,
+            'resultados_latente': resultados_latente,
+            'melhor_classificador': melhor_classificador
         }
 
-    # ==============================================
-    # 4. Finalização
-    # ==============================================
-
-    with open(os.path.join(pasta_resultados, 'metadados_completos.json'), 'w') as f:
-        json.dump(metadados, f, indent=4)
+    # Processar top 5%
+    resultados_top5.sort(key=lambda x: x['acuracia'], reverse=True)
+    num_top5 = max(1, int(len(resultados_top5) * 0.05))
+    top5_final = resultados_top5[:num_top5]
     
-    print(f"\n Busca concluída! {len(combinacoes)} combinações processadas")
-    print(f" Pasta de resultados: {os.path.abspath(pasta_resultados)}")
+    # Salvar resultados nas pastas específicas
+    with open(os.path.join(pasta_top5, 'resultados_top5.json'), 'w', encoding='utf-8') as f:
+        json.dump(top5_final, f, indent=2, ensure_ascii=False)
     
-    return metadados
+    with open(os.path.join(pasta_latente_melhor, 'resultados_latente_melhor.json'), 'w', encoding='utf-8') as f:
+        json.dump(resultados_latente_melhor, f, indent=2, ensure_ascii=False)
+    
+    # Salvar metadados completos
+    with open(os.path.join(pasta_resultados, 'metadados_completos.json'), 'w', encoding='utf-8') as f:
+        json.dump(metadados, f, indent=2, ensure_ascii=False)
+    
+    print(f"\n✅ Busca concluída! {len(combinacoes)} combinações processadas")
+    print(f"📁 Pasta de resultados: {os.path.abspath(pasta_resultados)}")
+    print(f"📊 Top 5% salvo em: {os.path.join(pasta_top5, 'resultados_top5.json')}")
+    print(f"📈 Casos com latente melhor salvo em: {os.path.join(pasta_latente_melhor, 'resultados_latente_melhor.json')}")
+    
+    return {
+        'pasta_resultados': pasta_resultados,
+        'pasta_top5': pasta_top5,
+        'pasta_latente_melhor': pasta_latente_melhor
+    }
 
 
-# Exemplo com múltiplas variações
-resultados = busca_grade_completa(
+# Exemplo de uso reduzido para teste
+if __name__ == "__main__":
 
-    input_csv='dataset_massflow.csv',
-    lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)],],
-    lista_grey_zones=[(18000, 54000),],
-    lista_n_amostras=[5, 8],
-    lista_janelamento=[True],
-    lista_amostras_repetidas=[1, 3],
-    lista_latent_dims=[2, 3, 4],
-    lista_learning_rates=[0.02],
-    lista_epochs=[200],
-    lista_batch_sizes=[32],
-    lista_train_sizes=[0.7]
+    resultados = busca_grade_completa(
+        input_csv='dataset_massflow.csv',
+        lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)]],
+        lista_grey_zones=[(18000, 54000)],
+        lista_n_amostras=[5, 8],
+        lista_janelamento=[True],
+        lista_amostras_repetidas=[1, 3],
+        lista_latent_dims=[2],
+        lista_learning_rates=[0.02],
+        lista_epochs=[200],
+        lista_batch_sizes=[32],
+        lista_train_sizes=[0.7],
 
-)
+    )
 
-# Acessar resultados
-print(f"Total execuções: {resultados['config']['total_combinacoes']}")
-print("Primeira execução:", resultados['execucoes']['exec_0001']['params'])
