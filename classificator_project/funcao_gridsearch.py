@@ -31,7 +31,7 @@ def busca_grade_completa(
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     pasta_resultados = f"{output_dir}_{timestamp}"
-    pasta_top5_balanceado = os.path.join(pasta_resultados, "top_5percent")
+    pasta_top5_balanceado = os.path.join(pasta_resultados, "top_5percent_balanceado")
     pasta_latente_melhor = os.path.join(pasta_resultados, "latente_melhor")
     pasta_top5_latente = os.path.join(pasta_resultados, "top_5percent_latente")
     
@@ -49,7 +49,7 @@ def busca_grade_completa(
         'execucoes': {}
     }
 
-    resultados_top5 = []
+    resultados_top5_balanceado = []
     resultados_latente_melhor = []
     resultados_top5_latente = []
 
@@ -136,7 +136,7 @@ def busca_grade_completa(
         melhor_acuracia_latente = resultados_latente[melhor_classificador_latente]['Acuracia']
 
         # Salvar para análise do top 5% (dados balanceados)
-        resultados_top5.append({
+        resultados_top5_balanceado.append({
             'exec_id': exec_id,
             'classificador': melhor_classificador,
             'dataset': 'balanceado',
@@ -178,9 +178,9 @@ def busca_grade_completa(
         }
 
     # Processar top 5% para dados balanceados
-    resultados_top5.sort(key=lambda x: x['acuracia'], reverse=True)
-    num_top5 = max(1, int(len(resultados_top5) * 0.05))
-    top5_final = resultados_top5[:num_top5]
+    resultados_top5_balanceado.sort(key=lambda x: x['acuracia'], reverse=True)
+    num_top5 = max(1, int(len(resultados_top5_balanceado) * 0.05))
+    top5_final = resultados_top5_balanceado[:num_top5]
     
     # Processar top 5% para dados latentes
     resultados_top5_latente.sort(key=lambda x: x['acuracia'], reverse=True)
