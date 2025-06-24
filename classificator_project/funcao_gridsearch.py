@@ -54,6 +54,7 @@ def busca_grade_completa(
     resultados_top5_latente = []
 
     parametros_variados = {
+
         'time_ranges': lista_time_ranges,
         'grey_zone': lista_grey_zones,
         'n_amostras': lista_n_amostras,
@@ -223,10 +224,10 @@ if __name__ == "__main__":
         input_csv='dataset_massflow.csv',
         lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)]],
         lista_grey_zones=[(18000, 54000)],
-        lista_n_amostras=[8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32],
+        lista_n_amostras=[8, 10],
         lista_janelamento=[True],
-        lista_amostras_repetidas=[4,6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30],
-        lista_latent_dims=[2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+        lista_amostras_repetidas=[4,6],
+        lista_latent_dims=[2,4],
         lista_learning_rates=[0.02],
         lista_epochs=[200],
         lista_batch_sizes=[32],
