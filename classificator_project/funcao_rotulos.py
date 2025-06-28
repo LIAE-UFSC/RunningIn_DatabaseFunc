@@ -32,7 +32,7 @@ def label_dataset_by_time(
     - df_labeled (DataFrame): Dataset final rotulado.
     - df_grey (DataFrame or None): Dataset da zona cinzenta, se aplicável.
     """
-    # Novo bloco de seleção de dados (única modificação)
+
     if df_dados is not None:
         df = df_dados.copy()
     elif input_csv is not None:
@@ -40,9 +40,6 @@ def label_dataset_by_time(
     else:
         raise ValueError("Forneça input_csv ou df_dados")
 
-    # -------------------------------------------------------------------------
-    # TUDO ABAIXO É IDÊNTICO AO SEU CÓDIGO ORIGINAL
-    # -------------------------------------------------------------------------
     if 'time' not in df.columns:
         raise ValueError("A coluna 'time' é obrigatória no dataset.")
 
