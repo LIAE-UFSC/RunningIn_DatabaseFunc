@@ -32,7 +32,6 @@ def reorganizar_dataset(
     if janelamento and (amostras_repetidas >= n_amostras or amostras_repetidas < 1):
         raise ValueError("amostras_repetidas deve ser menor que n_amostras e maior ou igual a 1")
     
-    # NOVO BLOCO: Seleção da fonte de dados
     if df_dados is not None:
         df = df_dados.copy()
     elif caminho_arquivo is not None:
@@ -40,7 +39,6 @@ def reorganizar_dataset(
     else:
         raise ValueError("Forneça caminho_arquivo ou df_dados")
     
-    # Restante da função ORIGINAL (inalterado)
     time_values = df['time'].values if incluir_tempo else None
     mass_flow = df['massFlow'].values
     anomaly = df['anomaly'].values
