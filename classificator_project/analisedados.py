@@ -1,4 +1,6 @@
 import json
+import matplotlib.pyplot as plt
+import numpy as np
 
 caminho_json = r'classificator_project\resultados_personalizados_20250623_182637\metadados_completos.json'
 
@@ -11,13 +13,6 @@ def analisar_acuracia_comparativa(metadados_completos):
     """
     Analisa e compara a acurácia dos classificadores em datasets balanceados
     e no espaço latente para cada método de classificação.
-
-    Args:
-        metadados_completos (dict): Dicionário contendo os resultados das execuções.
-
-    Returns:
-        dict: Um dicionário com a porcentagem de vezes que o dataset latente
-              teve melhor acurácia para cada método de classificação.
     """
     metodos_classificacao = ["regressao_logistica", "SVM(RBF)", "arvore_de_decisao"]
     resultados_comparativos = {metodo: {"melhor_latente": 0, "total_ensaios": 0} for metodo in metodos_classificacao}
@@ -41,31 +36,19 @@ def analisar_acuracia_comparativa(metadados_completos):
 
     return percentagens
 
-try:
-    metadados_completos = carregar_metadados(caminho_json)
-    
-    # Chamar a função com os metadados fornecidos
-    percentagens_melhor_latente = analisar_acuracia_comparativa(metadados_completos)
-
-    # Imprimir as porcentagens
-    for metodo, percentagem in percentagens_melhor_latente.items():
-        print(f"O dataset latente teve melhor acurácia em {percentagem:.2f}% dos ensaios para o método '{metodo}'.")
-
-except FileNotFoundError:
-    print(f"Erro: Arquivo não encontrado no caminho {caminho_json}")
-except json.JSONDecodeError:
-    print(f"Erro: O arquivo {caminho_json} não é um JSON válido")
-except Exception as e:
-    print(f"Ocorreu um erro inesperado: {str(e)}")
-
-
-import matplotlib.pyplot as plt
-import numpy as np
-
 def plot_acuracia_crescente(metadados_completos):
     metodos = ["regressao_logistica", "SVM(RBF)", "arvore_de_decisao"]
     tipos_dataset = ["balanceado", "latente"]
-    cores = {'balanceado': 'blue', 'latente': 'red'}
+    
+    # Cores distintas para cada combinação método-tipo
+    cores = {
+        "regressao_logistica_balanceado": "#1f77b4",  # azul
+        "regressao_logistica_latente": "#ff7f0e",     # laranja
+        "SVM(RBF)_balanceado": "#2ca02c",            # verde
+        "SVM(RBF)_latente": "#d62728",               # vermelho
+        "arvore_de_decisao_balanceado": "#9467bd",   # roxo
+        "arvore_de_decisao_latente": "#8c564b"       # marrom
+    }
     
     # Preparar os dados
     dados = {metodo: {tipo: [] for tipo in tipos_dataset} for metodo in metodos}
@@ -81,13 +64,14 @@ def plot_acuracia_crescente(metadados_completos):
     
     for metodo in metodos:
         for tipo in tipos_dataset:
+            chave_cor = f"{metodo}_{tipo}"
             acuracias_ordenadas = sorted(dados[metodo][tipo])
             x = range(1, len(acuracias_ordenadas) + 1)
             ax.plot(
                 x, 
                 acuracias_ordenadas, 
                 label=f"{metodo} ({tipo})",
-                color=cores[tipo],
+                color=cores[chave_cor],
                 linestyle='--' if tipo == 'balanceado' else '-',
                 marker='o' if metodo == 'regressao_logistica' else ('s' if metodo == 'SVM(RBF)' else '^')
             )
@@ -100,5 +84,19 @@ def plot_acuracia_crescente(metadados_completos):
     plt.tight_layout()
     plt.show()
 
+try:
+    metadados_completos = carregar_metadados(caminho_json)
+    
+    percentagens_melhor_latente = analisar_acuracia_comparativa(metadados_completos)
 
-plot_acuracia_crescente(metadados_completos)
+    for metodo, percentagem in percentagens_melhor_latente.items():
+        print(f"O dataset latente teve melhor acurácia em {percentagem:.2f}% dos ensaios para o método '{metodo}'.")
+
+    plot_acuracia_crescente(metadados_completos)
+
+except FileNotFoundError:
+    print(f"Erro: Arquivo não encontrado no caminho {caminho_json}")
+except json.JSONDecodeError:
+    print(f"Erro: O arquivo {caminho_json} não é um JSON válido")
+except Exception as e:
+    print(f"Ocorreu um erro inesperado: {str(e)}")
