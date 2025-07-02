@@ -24,10 +24,6 @@ def busca_grade_completa(
     lista_train_sizes=[0.7, 0.8],
     output_dir='resultados_personalizados'
 ):
-    from datetime import datetime
-    import os
-    import itertools
-    import json
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     pasta_resultados = f"{output_dir}_{timestamp}"
@@ -227,7 +223,7 @@ if __name__ == "__main__":
         lista_n_amostras=[8, 10],
         lista_janelamento=[True],
         lista_amostras_repetidas=[4,6],
-        lista_latent_dims=[2,4],
+        lista_latent_dims=[4],
         lista_learning_rates=[0.02],
         lista_epochs=[200],
         lista_batch_sizes=[32],
