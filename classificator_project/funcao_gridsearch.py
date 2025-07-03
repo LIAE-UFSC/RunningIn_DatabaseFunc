@@ -80,12 +80,19 @@ def busca_grade_completa(
         condicao1 = current['janelamento'] and current['amostras_repetidas'] >= current['n_amostras']
         
         # Restrição 2: hidden_dim deve ser maior que latent_dim (arquitetura do autoencoder)
-        # condicao2 = current['hidden_dim'] <= current['latent_dim']
+        condicao2 = current['hidden_dim'] <= current['latent_dim']
+
+        # Restrição 3: hidden_dim deve ser maior que latent_dim (arquitetura do autoencoder)
+        condicao3 = current['n_amostras'] <= current['latent_dim']
         
         if condicao1:
             continue
-        # if condicao2:
-        #     continue
+        if condicao2:
+            continue
+        if condicao3:
+            continue
+
+        
         
         combinacoes.append(current)
 
@@ -234,20 +241,19 @@ def busca_grade_completa(
 
 
 if __name__ == "__main__":
-
     resultados = busca_grade_completa(
-
+        
         input_csv='dataset_massflow.csv',
         lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)]],
         lista_grey_zones=[(18000, 54000)],
-        lista_n_amostras=[16],
+        lista_n_amostras=[2, 4, 6, 8, 12, 16, 24],
         lista_janelamento=[True],
-        lista_amostras_repetidas=[4],
-        lista_latent_dims=[10],
-        lista_hidden_dims=[128],  
-        lista_learning_rates=[0.02],
-        lista_epochs=[200],
+        lista_amostras_repetidas=[4, 6],
+        lista_latent_dims=[4, 6, 8],
+        lista_hidden_dims=[16, 32, 64, 128],
+        lista_learning_rates=[0.005],
+        lista_epochs=[300],
         lista_batch_sizes=[32],
         lista_train_sizes=[0.7],
-
     )
+

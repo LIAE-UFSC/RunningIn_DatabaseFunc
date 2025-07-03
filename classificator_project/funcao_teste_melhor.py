@@ -80,7 +80,7 @@ def calcular_media_acuracia(metadados):
     }
 
 
-with open(r'classificator_project\resultados_personalizados_20250703_010122\metadados_completos.json', 'r') as f:
+with open(r'resultados_personalizados_20250703_143321\metadados_completos.json', 'r') as f:
     metadados = json.load(f)
 
 # Plotagem

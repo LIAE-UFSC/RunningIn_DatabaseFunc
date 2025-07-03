@@ -49,9 +49,10 @@ def plot_accuracy_comparisons(json_path, output_dir='plots', metric='Acuracia'):
 
             for exec_data in execucoes_com_param:
                 try:
-                    dados['balanceado']['x'].append(exec_data['params'][param])
+                    param_value = exec_data['params'][param]
+                    dados['balanceado']['x'].append(param_value)
                     dados['balanceado']['y'].append(exec_data['resultados_balanceado'][method][metric])
-                    dados['latente']['x'].append(exec_data['params'][param])
+                    dados['latente']['x'].append(param_value)
                     dados['latente']['y'].append(exec_data['resultados_latente'][method][metric])
                 except KeyError as e:
                     print(f"   ! Erro em {param}: {e}")
@@ -70,30 +71,42 @@ def plot_accuracy_comparisons(json_path, output_dir='plots', metric='Acuracia'):
             x_bal = np.array(dados['balanceado']['x'])
             y_bal = np.array(dados['balanceado']['y'])
             sort_idx = np.argsort(x_bal)
+            x_bal_sorted = x_bal[sort_idx]
+            y_bal_sorted = y_bal[sort_idx]
             
-            ax1.scatter(x_bal[sort_idx], y_bal[sort_idx],
+            # Usar valores exatos no eixo X e ajustar espaçamento
+            ax1.scatter(x_bal_sorted, y_bal_sorted,
                        color=colors['balanceado'], s=80,
                        alpha=0.8, label='Balanceado')
+            
+            # Definir ticks exatos para o eixo X
+            ax1.set_xticks(np.unique(x_bal_sorted))
             
             # Plotar dados latentes
             x_lat = np.array(dados['latente']['x'])
             y_lat = np.array(dados['latente']['y'])
             sort_idx = np.argsort(x_lat)
+            x_lat_sorted = x_lat[sort_idx]
+            y_lat_sorted = y_lat[sort_idx]
             
-            ax2.scatter(x_lat[sort_idx], y_lat[sort_idx],
+            ax2.scatter(x_lat_sorted, y_lat_sorted,
                        color=colors['latente'], s=80,
                        alpha=0.8, label='Latente')
+            
+            # Definir ticks exatos para o eixo X
+            ax2.set_xticks(np.unique(x_lat_sorted))
 
             # Configurações comuns para os gráficos
             for ax in (ax1, ax2):
+                # Ajustar limites do eixo X com base nos valores reais
                 unique_vals = np.unique(ax.get_xticks())
                 if len(unique_vals) > 1:
-                    padding = (unique_vals[-1] - unique_vals[0]) * 0.05
+                    padding = (unique_vals[-1] - unique_vals[0]) * 0.1  # Reduzi o padding
                     ax.set_xlim(unique_vals[0] - padding, unique_vals[-1] + padding)
                 
                 ax.set_ylim(0.0, 1.05)
                 ax.grid(True, linestyle='--', alpha=0.3)
-                ax.legend()
+                ax.legend(loc='lower right')
                 ax.set_xlabel(param, fontsize=12)
                 ax.set_ylabel(metric, fontsize=12)
 
@@ -146,10 +159,7 @@ def plot_accuracy_comparisons(json_path, output_dir='plots', metric='Acuracia'):
     print(f"Gráficos salvos em: {os.path.abspath(output_dir)}")
 
 # Exemplo de uso
-
-caminho_json = r'classificator_project\resultados_personalizados_20250703_010122\metadados_completos.json'
-
 if __name__ == "__main__":
-    plot_accuracy_comparisons(
-        caminho_json
-    )
+
+    caminho_json = r'resultados_personalizados_20250703_143321\metadados_completos.json'
+    plot_accuracy_comparisons(caminho_json)
