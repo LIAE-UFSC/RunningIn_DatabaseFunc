@@ -330,6 +330,7 @@ if __name__ == "__main__":
     df_original = pd.read_csv("dataset_balanceado_pronto.csv")
     
     params_autoencoder = {
+        
         "input_dim": 8,
         "hidden_dim": 64,
         "latent_dim": 4,

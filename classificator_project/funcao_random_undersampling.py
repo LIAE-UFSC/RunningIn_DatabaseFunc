@@ -1,4 +1,7 @@
 import pandas as pd
+import numpy as np
+
+np.random.seed(42)  
 
 def balancear_csv_por_undersampling(
     input_csv=None,      # Modificado: tornamos opcional

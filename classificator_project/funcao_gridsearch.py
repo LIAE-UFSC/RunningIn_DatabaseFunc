@@ -3,11 +3,15 @@ import itertools
 import pandas as pd
 from datetime import datetime
 import json
+from io import StringIO
 from autoencoderNNpy import BaseModel, Autoencoder, processar_autoencoder, plot_autoencoder_results
 from funcao_rotulos import label_dataset_by_time
 from funcao_janelamento import reorganizar_dataset
 from funcao_random_undersampling import balancear_csv_por_undersampling
 from funcao_metodos import avaliar_modelos
+import numpy as np
+
+np.random.seed(42)  # Define a semente como 42 (pode ser qualquer número inteiro)
 
 
 def busca_grade_completa(
@@ -18,6 +22,7 @@ def busca_grade_completa(
     lista_janelamento=[True, False],
     lista_amostras_repetidas=[1, 4],
     lista_latent_dims=[2, 3, 5],
+    lista_hidden_dims=[32, 64, 128],  # Novo parâmetro adicionado
     lista_learning_rates=[0.01, 0.02, 0.05],
     lista_epochs=[100, 200],
     lista_batch_sizes=[32, 64],
@@ -27,6 +32,8 @@ def busca_grade_completa(
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     pasta_resultados = f"{output_dir}_{timestamp}"
+    
+    # Cria apenas as pastas para os resultados finais
     pasta_top5_balanceado = os.path.join(pasta_resultados, "top_5percent_balanceado")
     pasta_latente_melhor = os.path.join(pasta_resultados, "latente_melhor")
     pasta_top5_latente = os.path.join(pasta_resultados, "top_5percent_latente")
@@ -57,29 +64,39 @@ def busca_grade_completa(
         'janelamento': lista_janelamento,
         'amostras_repetidas': lista_amostras_repetidas,
         'latent_dim': lista_latent_dims,
+        'hidden_dim': lista_hidden_dims,
         'learning_rate': lista_learning_rates,
         'epochs': lista_epochs,
         'batch_size': lista_batch_sizes,
         'train_size': lista_train_sizes
     }
 
+    # Geração de todas as combinações possíveis de parâmetros
     combinacoes = []
     for combo in itertools.product(*parametros_variados.values()):
         current = dict(zip(parametros_variados.keys(), combo))
-        if current['janelamento'] and current['amostras_repetidas'] >= current['n_amostras']:
+        
+        # Restrição 1: Se janelamento=True, amostras_repetidas deve ser < n_amostras
+        condicao1 = current['janelamento'] and current['amostras_repetidas'] >= current['n_amostras']
+        
+        # Restrição 2: hidden_dim deve ser maior que latent_dim (arquitetura do autoencoder)
+        # condicao2 = current['hidden_dim'] <= current['latent_dim']
+        
+        if condicao1:
             continue
+        # if condicao2:
+        #     continue
+        
         combinacoes.append(current)
 
     metadados['config']['total_combinacoes'] = len(combinacoes)
 
     for i, params in enumerate(combinacoes, 1):
         exec_id = f"exec_{i:04d}"
-        pasta_exec = os.path.join(pasta_resultados, exec_id)
-        os.makedirs(pasta_exec, exist_ok=True)
         
         print(f"\n🔧 Execução {i}/{len(combinacoes)} - ID: {exec_id}")
         
-        # Processamento dos dados (etapas 1-4)
+        # Processamento dos dados - todas as funções configuradas para não salvar arquivos
         df_rotulado, _ = label_dataset_by_time(
             input_csv=input_csv,
             time_ranges=params['time_ranges'],
@@ -97,30 +114,37 @@ def busca_grade_completa(
             salvar_csv=False
         )
         
-        arquivo_balanceado = os.path.join(pasta_exec, 'dataset_balanceado.csv')
+        # Balanceamento sem salvar arquivo
         df_balanceado = balancear_csv_por_undersampling(
             df_dados=df_reorg,
-            output_csv=arquivo_balanceado,
+            output_csv=None,
             embaralhar=False
         )
         
-        arquivo_latente = os.path.join(pasta_exec, 'espaco_latente.csv')
+        # Processamento do autoencoder sem salvar arquivo
         _, df_latente, _ = processar_autoencoder(
             df_original=df_balanceado,
             params_autoencoder={
                 'input_dim': params['n_amostras'],
-                'latent_dim': params['latent_dim']
+                'latent_dim': params['latent_dim'],
+                'hidden_dim': params['hidden_dim']  
             },
             learning_rate=params['learning_rate'],
             epochs=params['epochs'],
             batch_size=params['batch_size'],
             train_size=params['train_size']
         )
-        df_latente.to_csv(arquivo_latente, index=False)
         
-        # Avaliação dos modelos
-        resultados_balanceado = avaliar_modelos(arquivo_balanceado)
-        resultados_latente = avaliar_modelos(arquivo_latente)
+        # Avaliação usando arquivos temporários em memória
+        with StringIO() as buffer:
+            df_balanceado.to_csv(buffer, index=False)
+            buffer.seek(0)
+            resultados_balanceado = avaliar_modelos(buffer)
+        
+        with StringIO() as buffer:
+            df_latente.to_csv(buffer, index=False)
+            buffer.seek(0)
+            resultados_latente = avaliar_modelos(buffer)
 
         # Encontrar melhor classificador para dados balanceados
         melhor_classificador = max(resultados_balanceado.items(), 
@@ -161,13 +185,9 @@ def busca_grade_completa(
                     'parametros': params
                 })
 
-        # Salvar metadados
+        # Atualização dos metadados (sem referências a arquivos)
         metadados['execucoes'][exec_id] = {
             'params': params,
-            'arquivos': {
-                'balanceado': arquivo_balanceado,
-                'latente': arquivo_latente
-            },
             'resultados_balanceado': resultados_balanceado,
             'resultados_latente': resultados_latente,
             'melhor_classificador': melhor_classificador,
@@ -184,7 +204,7 @@ def busca_grade_completa(
     num_top5_latente = max(1, int(len(resultados_top5_latente) * 0.05))
     top5_latente_final = resultados_top5_latente[:num_top5_latente]
     
-    # Salvar resultados nas pastas específicas
+    # Salvar resultados consolidados
     with open(os.path.join(pasta_top5_balanceado, 'resultados_top5.json'), 'w', encoding='utf-8') as f:
         json.dump(top5_final, f, indent=2, ensure_ascii=False)
     
@@ -205,6 +225,7 @@ def busca_grade_completa(
     print(f"📈 Casos com latente melhor salvo em: {os.path.join(pasta_latente_melhor, 'resultados_latente_melhor.json')}")
     
     return {
+
         'pasta_resultados': pasta_resultados,
         'pasta_top5_balanceado': pasta_top5_balanceado,
         'pasta_top5_latente': pasta_top5_latente,
@@ -212,22 +233,21 @@ def busca_grade_completa(
     }
 
 
-# Exemplo de uso reduzido para teste
 if __name__ == "__main__":
 
     resultados = busca_grade_completa(
-        
+
         input_csv='dataset_massflow.csv',
         lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)]],
         lista_grey_zones=[(18000, 54000)],
-        lista_n_amostras=[8, 10],
+        lista_n_amostras=[4, 8, 16, 32],
         lista_janelamento=[True],
-        lista_amostras_repetidas=[4,6],
-        lista_latent_dims=[4],
+        lista_amostras_repetidas=[2, 4, 8, 16],
+        lista_latent_dims=[2, 4, 8, 16],
+        lista_hidden_dims=[16, 32, 64, 128],  
         lista_learning_rates=[0.02],
         lista_epochs=[200],
         lista_batch_sizes=[32],
         lista_train_sizes=[0.7],
 
     )
-
