@@ -11,7 +11,7 @@ from funcao_random_undersampling import balancear_csv_por_undersampling
 from funcao_metodos import avaliar_modelos
 import numpy as np
 
-np.random.seed(42)  # Define a semente como 42 (pode ser qualquer número inteiro)
+np.random.seed(42)  
 
 
 def busca_grade_completa(
@@ -240,11 +240,11 @@ if __name__ == "__main__":
         input_csv='dataset_massflow.csv',
         lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)]],
         lista_grey_zones=[(18000, 54000)],
-        lista_n_amostras=[4, 8, 16, 32],
+        lista_n_amostras=[16],
         lista_janelamento=[True],
-        lista_amostras_repetidas=[2, 4, 8, 16],
-        lista_latent_dims=[2, 4, 8, 16],
-        lista_hidden_dims=[16, 32, 64, 128],  
+        lista_amostras_repetidas=[4],
+        lista_latent_dims=[10],
+        lista_hidden_dims=[128],  
         lista_learning_rates=[0.02],
         lista_epochs=[200],
         lista_batch_sizes=[32],
