@@ -4,6 +4,7 @@ import os
 import numpy as np
 
 def plot_accuracy_comparisons(json_path, output_dir='plots', metric='Acuracia'):
+
     # 1. Carregar dados
     try:
         with open(json_path, 'r', encoding='utf-8') as f:
@@ -23,7 +24,7 @@ def plot_accuracy_comparisons(json_path, output_dir='plots', metric='Acuracia'):
     ]
 
     # 3. Configuração dos gráficos
-    plt.style.use('seaborn')
+    # plt.style.use('seaborn')
     colors = {
         'balanceado': '#3498db',  # Azul original
         'latente': '#e74c3c'      # Vermelho original
@@ -159,7 +160,9 @@ def plot_accuracy_comparisons(json_path, output_dir='plots', metric='Acuracia'):
     print(f"Gráficos salvos em: {os.path.abspath(output_dir)}")
 
 # Exemplo de uso
+
 if __name__ == "__main__":
 
     caminho_json = r'resultados_personalizados_20250703_143321\metadados_completos.json'
+
     plot_accuracy_comparisons(caminho_json)
