@@ -345,6 +345,7 @@ if __name__ == "__main__":
         epochs=300,
         batch_size=32,
         train_size=0.75
+
     )
     
     plot_autoencoder_results(

@@ -1,5 +1,4 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
@@ -8,32 +7,41 @@ from sklearn.metrics import (accuracy_score, precision_score,
                              recall_score, f1_score, confusion_matrix)
 
 
-def avaliar_modelos(caminho_arquivo, test_size=0.3, random_state=42):
+def avaliar_modelos(caminho_treino, caminho_teste, random_state=42):
     """
-    Avalia modelos de classificação e retorna métricas no formato JSON serializável
+    Avalia modelos de classificação usando datasets separados para treino e teste.
+    Retorna métricas no formato JSON serializável.
+    
+    Args:
+        caminho_treino: Caminho para o arquivo CSV de treino
+        caminho_teste: Caminho para o arquivo CSV de teste
+        random_state: Seed para reprodutibilidade
     """
-    # Carregar e preparar dados
-    df = pd.read_csv(caminho_arquivo)
-    feature_cols = [col for col in df.columns if col != "anomaly"]
-    X = df[feature_cols].values
-    y = df['anomaly'].values
+    # Carregar dados de treino e teste
+    df_treino = pd.read_csv(caminho_treino)
+    df_teste = pd.read_csv(caminho_teste)
     
-    # Dividir dados
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=random_state, stratify=y
-    )
+    # Verificar se as colunas são iguais em ambos datasets
+    if not set(df_treino.columns) == set(df_teste.columns):
+        raise ValueError("Os datasets de treino e teste têm colunas diferentes")
     
-    # Normalizar
+    # Preparar features e target
+    feature_cols = [col for col in df_treino.columns if col != "anomaly"]
+    X_train = df_treino[feature_cols].values
+    y_train = df_treino['anomaly'].values
+    X_test = df_teste[feature_cols].values
+    y_test = df_teste['anomaly'].values
+    
+    # Normalizar dados
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     
     # Modelos a serem avaliados
-    
     modelos = {
-        "regressao_logistica": LogisticRegression(max_iter=1000),
-        "SVM(RBF)": SVC(probability=True),
-        "arvore_de_decisao": DecisionTreeClassifier()
+        "regressao_logistica": LogisticRegression(max_iter=1000, random_state=random_state),
+        "SVM(RBF)": SVC(probability=True, random_state=random_state),
+        "arvore_de_decisao": DecisionTreeClassifier(random_state=random_state)
     }
     
     resultados = {}
@@ -47,40 +55,42 @@ def avaliar_modelos(caminho_arquivo, test_size=0.3, random_state=42):
         tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
         
         resultados[nome] = {
-            "Acuracia": float(accuracy_score(y_test, y_pred)),  # Converter para float
+            "Acuracia": float(accuracy_score(y_test, y_pred)),
             "Precisao": float(precision_score(y_test, y_pred, zero_division=0)),
             "Recall": float(recall_score(y_test, y_pred)),
             "F1_score": float(f1_score(y_test, y_pred)),
             "matriz_de_confusao": [
-                [int(tn), int(fp)],  # Converter para int
+                [int(tn), int(fp)],
                 [int(fn), int(tp)]
             ],
             "Detalhes_Matriz": {
-                "verdadeiros_ositivos (VP)": int(tp),
+                "verdadeiros_positivos (VP)": int(tp),
                 "verdadeiros_negativos (VN)": int(tn),
                 "falsos_positivos (FP)": int(fp),
-                "Falsos_negativos (FN)": int(fn)
+                "falsos_negativos (FN)": int(fn)
             }
         }
     
     return resultados
 
+
 if __name__ == "__main__":
-    # resultados = avaliar_modelos("dataset_espaco_latente.csv")
-    resultados = avaliar_modelos('dataset_balanceado_pronto.csv')
+    # Exemplo de uso
+    resultados = avaliar_modelos(
+        caminho_treino='dataset_balanceado_pronto.csv',
+        caminho_teste='dataset_para_teste.csv'
+    )
     
+    # Exibir resultados
     for modelo, metricas in resultados.items():
         print(f"\n=== {modelo} ===")
         for nome_metrica, valor in metricas.items():
-            if nome_metrica != "Matriz de Confusão":
-                # Verifica se o valor é numérico antes de formatar
+            if nome_metrica != "matriz_de_confusao":
                 if isinstance(valor, (int, float)):
                     print(f"{nome_metrica}: {valor:.4f}")
                 else:
                     print(f"{nome_metrica}: {valor}")
             else:
                 print("\nMatriz de Confusão:")
-                print(valor)
-    
-    # Para retornar os resultados (se necessário para outras operações)
-
+                print(f"[[TN: {valor[0][0]}, FP: {valor[0][1]}]")
+                print(f" [FN: {valor[1][0]}, TP: {valor[1][1]}]]")
