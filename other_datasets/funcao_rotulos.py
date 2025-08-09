@@ -94,7 +94,6 @@ def label_multiple_datasets(
     return labeled_datasets, greyzone_datasets
 
 
-# Exemplo de uso
 if __name__ == "__main__":
     datasets = ["dados_A1.csv","dados_A2.csv" ]  # Substitua pelo seu arquivo
     grey_start = 18000    # Tempo onde a greyzone começa
