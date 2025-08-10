@@ -8,7 +8,7 @@ from sklearn.metrics import (accuracy_score, precision_score,
 import pandas as pd
 import numpy as np
 
-def avaliar_modelos(caminho_arquivo_treino, caminho_arquivo_teste=None, test_size=0.3, random_state=42):
+def avaliar_metodos(caminho_arquivo_treino, caminho_arquivo_teste=None, test_size=0.3, random_state=42):
     """
     Avalia modelos de classificação com tratamento robusto para dimensionalidade
     

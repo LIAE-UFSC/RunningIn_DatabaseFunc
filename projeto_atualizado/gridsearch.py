@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import itertools
 import pandas as pd
 from datetime import datetime
@@ -8,8 +9,8 @@ from autoencoder import BaseModel, Autoencoder, processar_autoencoder, plot_auto
 from funcao_rotulos import label_dataset_by_time
 from funcao_janelamento import reorganizar_dataset
 from funcao_random_undersampling import balancear_csv_por_undersampling
-from funcao_metodos import avaliar_modelos
-import numpy as np
+from funcao_metodos import avaliar_metodos
+from classificadores import avaliar_classificadores
 
 np.random.seed(42)
 
@@ -164,12 +165,12 @@ def busca_grade_completa(
         with StringIO() as buffer:
             df_balanceado.to_csv(buffer, index=False)
             buffer.seek(0)
-            resultados_balanceado = avaliar_modelos(buffer)
+            resultados_balanceado = avaliar_metodos(buffer)
         
         with StringIO() as buffer:
             df_latente.to_csv(buffer, index=False)
             buffer.seek(0)
-            resultados_latente = avaliar_modelos(buffer)
+            resultados_latente = avaliar_metodos(buffer)
 
         # [Restante do código de avaliação e salvamento permanece igual]
         melhor_classificador = max(resultados_balanceado.items(), 
@@ -252,6 +253,7 @@ def busca_grade_completa(
     }
 
 if __name__ == "__main__":
+
     resultados = busca_grade_completa(
         input_csvs=['dataset_A1_01_07.csv', 'dataset_A2_02_10.csv'],  # Múltiplos datasets de treino
         test_csv='dataset_A2_08_08.csv',  # Dataset de teste separado
@@ -266,4 +268,5 @@ if __name__ == "__main__":
         lista_epochs=[300],
         lista_batch_sizes=[32],
         lista_train_sizes=[0.7],
+        
     )

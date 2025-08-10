@@ -187,9 +187,11 @@ class Autoencoder(BaseModel):
         return loss.item()
     
 
-def processar_autoencoder(df_original, params_autoencoder, learning_rate=0.02, epochs=200, batch_size=32, train_size=0.75, df_latente_input=None):
+def processar_autoencoder(df_original, params_autoencoder, learning_rate=0.02, epochs=200, 
+                         batch_size=32, train_size=0.75, df_latente_input=None,
+                         return_both_latent=False):
     """
-    Processa dados usando um autoencoder com divisão interna dos dados
+    Processa dados usando um autoencoder e gera representações latentes
     
     Args:
         df_original (pd.DataFrame): DataFrame com os dados originais para treinamento
@@ -198,10 +200,13 @@ def processar_autoencoder(df_original, params_autoencoder, learning_rate=0.02, e
         epochs (int): Número de épocas de treinamento
         batch_size (int): Tamanho do batch
         train_size (float): Proporção dos dados para treinamento
-        df_latente_input (pd.DataFrame, optional): DataFrame para gerar o espaço latente. Se None, usa df_original.
+        df_latente_input (pd.DataFrame, optional): DataFrame para gerar o espaço latente
+        return_both_latent (bool): Se True, retorna ambos espaços latentes (treino e teste)
         
     Returns:
-        tuple: (df_reconstruido, df_latente, dimensao_latente)
+        tuple: 
+            - Se return_both_latent=False: (df_reconstruido, df_latente, dim_latente)
+            - Se return_both_latent=True: (df_reconstruido, df_latente_treino, df_latente_teste, dim_latente)
     """
     # --- 1. Divisão dos dados ---
     massflow_cols = [col for col in df_original.columns if col.startswith('massFlow_')]
@@ -232,35 +237,53 @@ def processar_autoencoder(df_original, params_autoencoder, learning_rate=0.02, e
     )
     
     # --- 4. Reconstrução e Espaço Latente ---
-    # Usa df_latente_input se fornecido, senão usa df_original
-    dados_para_latente = df_latente_input[massflow_cols].values.astype(np.float32) if df_latente_input is not None else dados
-    dados_tensor_latente = torch.tensor(dados_para_latente)
-    
-    # Reconstrução sempre usa df_original
-    dados_tensor_reconstrucao = torch.tensor(dados)
+    # Prepara tensores
+    dados_tensor = torch.tensor(dados)
+    dados_tensor_latente_input = torch.tensor(df_latente_input[massflow_cols].values.astype(np.float32)) if df_latente_input is not None else None
     
     with torch.no_grad():
-        latent_representations, _ = model(dados_tensor_latente)
-        _, dados_reconstruidos_tensor = model(dados_tensor_reconstrucao)
+        # Reconstrução dos dados originais
+        _, dados_reconstruidos_tensor = model(dados_tensor)
+        
+        # Espaço latente do treino
+        latent_treino, _ = model(dados_tensor)
+        
+        # Espaço latente do teste (se existir)
+        latent_teste = None
+        if dados_tensor_latente_input is not None:
+            latent_teste, _ = model(dados_tensor_latente_input)
     
     # --- 5. Preparação dos Resultados ---
+    # Reconstrução
     df_reconstruido = df_original.copy()
     for i, col in enumerate(massflow_cols):
         df_reconstruido[col] = dados_reconstruidos_tensor.numpy()[:, i]
     
-    df_latent = pd.DataFrame(
-        latent_representations.numpy(),
-        columns=[f'latent_{i+1}' for i in range(latent_representations.shape[1])]
+    # Latente do treino
+    df_latent_treino = pd.DataFrame(
+        latent_treino.numpy(),
+        columns=[f'latent_{i+1}' for i in range(latent_treino.shape[1])]
     )
-    
-    # Adiciona coluna 'anomaly' se existir
     if 'anomaly' in df_original.columns:
-        anomaly_source = df_latente_input if df_latente_input is not None else df_original
-        df_latent['anomaly'] = anomaly_source['anomaly'].reset_index(drop=True)
+        df_latent_treino['anomaly'] = df_original['anomaly'].reset_index(drop=True)
+    
+    # Latente do teste (se existir)
+    df_latent_teste = None
+    if latent_teste is not None:
+        df_latent_teste = pd.DataFrame(
+            latent_teste.numpy(),
+            columns=[f'latent_{i+1}' for i in range(latent_teste.shape[1])]
+        )
+        if 'anomaly' in df_latente_input.columns:
+            df_latent_teste['anomaly'] = df_latente_input['anomaly'].reset_index(drop=True)
     
     # --- 6. Saída ---
-    print(f"Processamento completo! Dimensão latente: {latent_representations.shape[1]}")
-    return df_reconstruido, df_latent, latent_representations.shape[1]
+    print(f"Processamento completo! Dimensão latente: {latent_treino.shape[1]}")
+    
+    if return_both_latent and df_latent_teste is not None:
+        return df_reconstruido, df_latent_treino, df_latent_teste, latent_treino.shape[1]
+    else:
+        return df_reconstruido, df_latent_treino, latent_treino.shape[1]
 
 def plot_autoencoder_results(df_original, df_reconstruido, 
                            plot_individual=False, 
@@ -347,15 +370,17 @@ if __name__ == "__main__":
         "dropout": 0.0
     }
     
-    df_reconstruido, df_latente, dim_latente = processar_autoencoder(
-        df_original=df_original,          # DataFrame para treinamento (obrigatório)
-        params_autoencoder=params_autoencoder,  # Dicionário de configuração do modelo
-        learning_rate=0.02,               # Taxa de aprendizado
-        epochs=300,                       # Número de épocas
-        batch_size=32,                    # Tamanho do batch
-        train_size=0.75,                  # Proporção de treino/validação
-        df_latente_input=df_gera_latente  # Opcional: DataFrame para espaço latente
-)
+    # Chamada com retorno dos dois espaços latentes (treino e teste)
+    df_reconstruido, df_latente_treino, df_latente_teste, dim_latente = processar_autoencoder(
+        df_original=df_original,
+        params_autoencoder=params_autoencoder,
+        learning_rate=0.02,
+        epochs=300,
+        batch_size=32,
+        train_size=0.75,
+        df_latente_input=df_gera_latente,
+        return_both_latent=True  # Novo parâmetro para obter ambos
+    )
     
     plot_autoencoder_results(
         df_original=df_original,
@@ -365,5 +390,7 @@ if __name__ == "__main__":
         plot_agregado=False
     )
 
-    print(df_latente.head())
+    print(df_latente_teste.head())
+    print(df_latente_treino.head())
     print(df_reconstruido.head())
+    print(df_original.head())
