@@ -243,7 +243,7 @@ def busca_grade_completa(
 if __name__ == "__main__":
     resultados = busca_grade_completa(
         
-        input_csv='dataset_massflow.csv',
+        input_csv='dataset_A1_01_07.csv',
         lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)]],
         lista_grey_zones=[(18000, 54000)],
         lista_n_amostras=[8, 12, 16],

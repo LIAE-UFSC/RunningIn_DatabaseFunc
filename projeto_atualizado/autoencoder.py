@@ -187,23 +187,24 @@ class Autoencoder(BaseModel):
         return loss.item()
     
 
-def processar_autoencoder(df_original, params_autoencoder, learning_rate=0.02, epochs=200, batch_size=32, train_size=0.75):
+def processar_autoencoder(df_original, params_autoencoder, learning_rate=0.02, epochs=200, batch_size=32, train_size=0.75, df_latente_input=None):
     """
     Processa dados usando um autoencoder com divisão interna dos dados
     
     Args:
-        df_original (pd.DataFrame): DataFrame com os dados originais
+        df_original (pd.DataFrame): DataFrame com os dados originais para treinamento
         params_autoencoder (dict): Parâmetros para o autoencoder
         learning_rate (float): Taxa de aprendizado
         epochs (int): Número de épocas de treinamento
         batch_size (int): Tamanho do batch
+        train_size (float): Proporção dos dados para treinamento
+        df_latente_input (pd.DataFrame, optional): DataFrame para gerar o espaço latente. Se None, usa df_original.
         
     Returns:
         tuple: (df_reconstruido, df_latente, dimensao_latente)
     """
-    # --- 1. Divisão dos dados (incorporada diretamente) ---
-    # Identifica colunas massFlow automaticamente
-    massflow_cols = [col for col in df_original.columns if col.startswith != ('anomaly')]
+    # --- 1. Divisão dos dados ---
+    massflow_cols = [col for col in df_original.columns if col.startswith('massFlow_')]
     if 'anomaly' in massflow_cols:
         massflow_cols.remove('anomaly')
     
@@ -224,18 +225,23 @@ def processar_autoencoder(df_original, params_autoencoder, learning_rate=0.02, e
     
     # --- 3. Treinamento ---
     model.train_model(
-
         dataset=dataset,
         epochs=epochs,
         batch_size=batch_size,
         shuffle=False
-
     )
     
-    # --- 4. Reconstrução Completa ---
-    dados_tensor = torch.tensor(dados)  # Usa TODOS os dados originais
+    # --- 4. Reconstrução e Espaço Latente ---
+    # Usa df_latente_input se fornecido, senão usa df_original
+    dados_para_latente = df_latente_input[massflow_cols].values.astype(np.float32) if df_latente_input is not None else dados
+    dados_tensor_latente = torch.tensor(dados_para_latente)
+    
+    # Reconstrução sempre usa df_original
+    dados_tensor_reconstrucao = torch.tensor(dados)
+    
     with torch.no_grad():
-        latent_representations, dados_reconstruidos_tensor = model(dados_tensor)
+        latent_representations, _ = model(dados_tensor_latente)
+        _, dados_reconstruidos_tensor = model(dados_tensor_reconstrucao)
     
     # --- 5. Preparação dos Resultados ---
     df_reconstruido = df_original.copy()
@@ -247,8 +253,10 @@ def processar_autoencoder(df_original, params_autoencoder, learning_rate=0.02, e
         columns=[f'latent_{i+1}' for i in range(latent_representations.shape[1])]
     )
     
+    # Adiciona coluna 'anomaly' se existir
     if 'anomaly' in df_original.columns:
-        df_latent['anomaly'] = df_original['anomaly'].reset_index(drop=True)
+        anomaly_source = df_latente_input if df_latente_input is not None else df_original
+        df_latent['anomaly'] = anomaly_source['anomaly'].reset_index(drop=True)
     
     # --- 6. Saída ---
     print(f"Processamento completo! Dimensão latente: {latent_representations.shape[1]}")
@@ -328,6 +336,7 @@ def plot_autoencoder_results(df_original, df_reconstruido,
 if __name__ == "__main__":
 
     df_original = pd.read_csv("dataset_balanceado_pronto.csv")
+    df_gera_latente = pd.read_csv("dataset_para_teste_latente.csv")
     
     params_autoencoder = {
         
@@ -339,13 +348,14 @@ if __name__ == "__main__":
     }
     
     df_reconstruido, df_latente, dim_latente = processar_autoencoder(
-        df_original=df_original,
-        params_autoencoder=params_autoencoder,
-        learning_rate=0.02,
-        epochs=300,
-        batch_size=32,
-        train_size=0.75
-    )
+        df_original=df_original,          # DataFrame para treinamento (obrigatório)
+        params_autoencoder=params_autoencoder,  # Dicionário de configuração do modelo
+        learning_rate=0.02,               # Taxa de aprendizado
+        epochs=300,                       # Número de épocas
+        batch_size=32,                    # Tamanho do batch
+        train_size=0.75,                  # Proporção de treino/validação
+        df_latente_input=df_gera_latente  # Opcional: DataFrame para espaço latente
+)
     
     plot_autoencoder_results(
         df_original=df_original,

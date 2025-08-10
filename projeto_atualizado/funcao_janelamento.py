@@ -86,7 +86,8 @@ if __name__ == "__main__":
         caminho_arquivo='dataset_rotulado.csv',
         n_amostras=8,
         janelamento=True,
-        amostras_repetidas=4
+        salvar_csv=True, 
+        amostras_repetidas=6
     )
     
     # Opção nova com DataFrame

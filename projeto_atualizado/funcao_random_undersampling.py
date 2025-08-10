@@ -64,7 +64,7 @@ def balancear_csv_por_undersampling(
 if __name__ == "__main__":
     # Opção tradicional com arquivo
     balancear_csv_por_undersampling(
-        input_csv='dataset_janelado_n_amostras.csv',
+        input_csv='dataset_reorganizado.csv',
         output_csv='dataset_balanceado_pronto.csv',
         embaralhar=False
     )
