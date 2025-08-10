@@ -75,6 +75,7 @@ def avaliar_modelos(caminho_treino, caminho_teste, random_state=42):
 
 
 if __name__ == "__main__":
+    
     # Exemplo de uso
     resultados = avaliar_modelos(
         caminho_treino='dataset_balanceado_pronto.csv',
