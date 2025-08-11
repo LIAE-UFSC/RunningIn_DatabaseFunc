@@ -189,7 +189,7 @@ class Autoencoder(BaseModel):
 
 def processar_autoencoder(df_original, params_autoencoder, learning_rate=0.02, epochs=200, 
                          batch_size=32, train_size=0.75, df_latente_input=None,
-                         return_both_latent=False):
+                         return_both_latent=True):
     """
     Processa dados usando um autoencoder e gera representações latentes
     

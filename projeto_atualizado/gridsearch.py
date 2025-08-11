@@ -9,8 +9,8 @@ from autoencoder import BaseModel, Autoencoder, processar_autoencoder, plot_auto
 from funcao_rotulos import label_dataset_by_time
 from funcao_janelamento import reorganizar_dataset
 from funcao_random_undersampling import balancear_csv_por_undersampling
-from funcao_metodos import avaliar_metodos
-from classificadores import avaliar_classificadores
+from funcao_metodos import avaliar_modelos
+
 
 np.random.seed(42)
 
@@ -135,9 +135,19 @@ def busca_grade_completa(
                 janelamento=params['janelamento'],
                 amostras_repetidas=params['amostras_repetidas'] if params['janelamento'] else None,
                 salvar_csv=False
+
             )
+
+            df_test_balanceado = balancear_csv_por_undersampling(
+            df_dados=df_test_reorg,
+            output_csv=None,
+            embaralhar=False
+
+            )
+
         else:
-            df_test_reorg = None
+
+            df_test_balanceado = None
         
         # Balanceamento do dataset combinado
         df_balanceado = balancear_csv_por_undersampling(
@@ -147,7 +157,7 @@ def busca_grade_completa(
         )
         
         # Processamento do autoencoder
-        _, df_latente, _ = processar_autoencoder(
+        df_reconstruido, df_latente_treino, df_latente_teste, dim_lat = processar_autoencoder(
             df_original=df_balanceado,
             params_autoencoder={
                 'input_dim': params['n_amostras'],
@@ -158,19 +168,25 @@ def busca_grade_completa(
             epochs=params['epochs'],
             batch_size=params['batch_size'],
             train_size=params['train_size'],
-            df_latente_input=df_test_reorg  # Usa dados de teste para espaço latente se disponível
+            df_latente_input=df_test_balanceado  # Usa dados de teste para espaço latente se disponível
         )
         
-        # Avaliação usando arquivos temporários em memória
-        with StringIO() as buffer:
-            df_balanceado.to_csv(buffer, index=False)
-            buffer.seek(0)
-            resultados_balanceado = avaliar_metodos(buffer)
-        
-        with StringIO() as buffer:
-            df_latente.to_csv(buffer, index=False)
-            buffer.seek(0)
-            resultados_latente = avaliar_metodos(buffer)
+        # with StringIO() as buffer_train, StringIO() as buffer_test:
+        #     df_balanceado.to_csv(buffer_train, index=False)
+        #     df_test_balanceado.to_csv(buffer_test, index=False)
+        #     buffer_train.seek(0)
+        #     buffer_test.seek(0)
+        #     resultados_balanceado = avaliar_modelos(buffer_train, buffer_test)
+
+        # with StringIO() as buffer_train, StringIO() as buffer_test:
+        #     df_latente_treino.to_csv(buffer_train, index=False)
+        #     df_latente_teste.to_csv(buffer_test, index=False)
+        #     buffer_train.seek(0)
+        #     buffer_test.seek(0)
+        #     resultados_latente = avaliar_modelos(buffer_train, buffer_test)
+
+        resultados_balanceado = avaliar_modelos(df_balanceado, df_test_balanceado)
+        resultados_latente = avaliar_modelos(df_latente_treino, df_latente_teste)
 
         # [Restante do código de avaliação e salvamento permanece igual]
         melhor_classificador = max(resultados_balanceado.items(), 
@@ -268,5 +284,5 @@ if __name__ == "__main__":
         lista_epochs=[300],
         lista_batch_sizes=[32],
         lista_train_sizes=[0.7],
-        
+
     )
