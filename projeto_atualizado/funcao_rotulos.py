@@ -6,7 +6,7 @@ def label_dataset_by_time(
     df_dados=None,
     time_ranges=[
         (0, 18000, 0),
-        (54000, 100000, 1)
+        (54000, 500000, 1)
     ],
     grey_zone=(18000, 54000),
     exclude_grey=True,
