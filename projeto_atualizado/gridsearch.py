@@ -11,12 +11,11 @@ from funcao_janelamento import reorganizar_dataset
 from funcao_random_undersampling import balancear_csv_por_undersampling
 from funcao_metodos import avaliar_modelos
 
-
 np.random.seed(42)
 
 def busca_grade_completa(
-    input_csvs=['dataset_massflow.csv'],  # Agora aceita múltiplos arquivos de entrada
-    test_csv=None,  # Novo: dataset de teste separado
+    input_csvs=['dataset_massflow.csv'],  
+    test_csv=None,  
     lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)]],
     lista_grey_zones=[(18000, 54000)],
     lista_n_amostras=[5, 8, 10],
@@ -34,7 +33,6 @@ def busca_grade_completa(
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     pasta_resultados = f"{output_dir}_{timestamp}"
     
-    # Cria apenas as pastas para os resultados finais
     pasta_top5_balanceado = os.path.join(pasta_resultados, "top_5percent_balanceado")
     pasta_latente_melhor = os.path.join(pasta_resultados, "latente_melhor")
     pasta_top5_latente = os.path.join(pasta_resultados, "top_5percent_latente")
@@ -72,12 +70,11 @@ def busca_grade_completa(
         'train_size': lista_train_sizes
     }
 
-    # Geração de todas as combinações possíveis de parâmetros
     combinacoes = []
     for combo in itertools.product(*parametros_variados.values()):
         current = dict(zip(parametros_variados.keys(), combo))
         
-        # Restrições mantidas
+        # Restrições 
         condicao1 = current['janelamento'] and current['amostras_repetidas'] >= current['n_amostras']
         condicao2 = current['hidden_dim'] <= current['latent_dim']
         condicao3 = current['n_amostras'] <= current['latent_dim']
@@ -94,7 +91,6 @@ def busca_grade_completa(
         
         print(f"\n🔧 Execução {i}/{len(combinacoes)} - ID: {exec_id}")
         
-        # Processa cada dataset de treino individualmente até o janelamento
         dfs_processed = []
         for input_csv in input_csvs:
             df_rotulado, _ = label_dataset_by_time(
@@ -115,10 +111,8 @@ def busca_grade_completa(
             )
             dfs_processed.append(df_reorg)
         
-        # Concatena todos os datasets processados
         df_combined = pd.concat(dfs_processed, ignore_index=True)
         
-        # Processa dataset de teste separadamente (se fornecido)
         if test_csv:
             df_test_rotulado, _ = label_dataset_by_time(
                 input_csv=test_csv,
@@ -149,14 +143,12 @@ def busca_grade_completa(
 
             df_test_balanceado = None
         
-        # Balanceamento do dataset combinado
         df_balanceado = balancear_csv_por_undersampling(
             df_dados=df_combined,
             output_csv=None,
             embaralhar=False
         )
         
-        # Processamento do autoencoder
         df_reconstruido, df_latente_treino, df_latente_teste, dim_lat = processar_autoencoder(
             df_original=df_balanceado,
             params_autoencoder={
@@ -170,25 +162,10 @@ def busca_grade_completa(
             train_size=params['train_size'],
             df_latente_input=df_test_balanceado  # Usa dados de teste para espaço latente se disponível
         )
-        
-        # with StringIO() as buffer_train, StringIO() as buffer_test:
-        #     df_balanceado.to_csv(buffer_train, index=False)
-        #     df_test_balanceado.to_csv(buffer_test, index=False)
-        #     buffer_train.seek(0)
-        #     buffer_test.seek(0)
-        #     resultados_balanceado = avaliar_modelos(buffer_train, buffer_test)
-
-        # with StringIO() as buffer_train, StringIO() as buffer_test:
-        #     df_latente_treino.to_csv(buffer_train, index=False)
-        #     df_latente_teste.to_csv(buffer_test, index=False)
-        #     buffer_train.seek(0)
-        #     buffer_test.seek(0)
-        #     resultados_latente = avaliar_modelos(buffer_train, buffer_test)
 
         resultados_balanceado = avaliar_modelos(df_balanceado, df_test_balanceado)
         resultados_latente = avaliar_modelos(df_latente_treino, df_latente_teste)
 
-        # [Restante do código de avaliação e salvamento permanece igual]
         melhor_classificador = max(resultados_balanceado.items(), 
                                  key=lambda x: x[1]['Acuracia'])[0]
         melhor_acuracia = resultados_balanceado[melhor_classificador]['Acuracia']
@@ -231,17 +208,14 @@ def busca_grade_completa(
             'melhor_classificador_latente': melhor_classificador_latente
         }
 
-    # Processar top 5% para dados balanceados
     resultados_top5_balanceado.sort(key=lambda x: x['acuracia'], reverse=True)
     num_top5 = max(1, int(len(resultados_top5_balanceado) * 0.05))
     top5_final = resultados_top5_balanceado[:num_top5]
     
-    # Processar top 5% para dados latentes
     resultados_top5_latente.sort(key=lambda x: x['acuracia'], reverse=True)
     num_top5_latente = max(1, int(len(resultados_top5_latente) * 0.05))
     top5_latente_final = resultados_top5_latente[:num_top5_latente]
     
-    # Salvar resultados consolidados
     with open(os.path.join(pasta_top5_balanceado, 'resultados_top5.json'), 'w', encoding='utf-8') as f:
         json.dump(top5_final, f, indent=2, ensure_ascii=False)
     
@@ -251,7 +225,6 @@ def busca_grade_completa(
     with open(os.path.join(pasta_latente_melhor, 'resultados_latente_melhor.json'), 'w', encoding='utf-8') as f:
         json.dump(resultados_latente_melhor, f, indent=2, ensure_ascii=False)
     
-    # Salvar metadados completos
     with open(os.path.join(pasta_resultados, 'metadados_completos.json'), 'w', encoding='utf-8') as f:
         json.dump(metadados, f, indent=2, ensure_ascii=False)
     
