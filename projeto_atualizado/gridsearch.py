@@ -244,17 +244,33 @@ def busca_grade_completa(
 if __name__ == "__main__":
 
     resultados = busca_grade_completa(
-        input_csvs=['dataset_A1_01_07.csv', 'dataset_A2_02_10.csv'],  # Múltiplos datasets de treino
-        test_csv='dataset_A2_08_08.csv',  # Dataset de teste separado
-        lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)]],
+        input_csvs=[
+    "dataset_A1_01_07.csv",
+    "dataset_A2_02_10.csv",
+    "dataset_A2_08_08.csv",
+    "dataset_A2_09_07.csv",
+    "dataset_A2_12_08.csv",
+    "dataset_A2_14_10.csv",
+    "dataset_A2_28_08.csv",
+    "dataset_A3_04_12.csv",
+    "dataset_A3_09_12.csv",
+    "dataset_A3_11_12.csv",
+    "dataset_A4_06_01.csv",
+    "dataset_A4_13_01.csv",
+    "dataset_A4_16_12.csv",
+    "dataset_A4_19_12.csv",
+    "dataset_A5_22_01.csv",
+    "dataset_A5_27_01.csv"],      
+        test_csv='dataset_A5_28_01.csv',  # Dataset de teste separado
+        lista_time_ranges=[[(0, 18000, 0), (54000, 500000, 1)]],
         lista_grey_zones=[(18000, 54000)],
-        lista_n_amostras=[8, 12],
+        lista_n_amostras=[8, 10, 12, 16, 32],
         lista_janelamento=[True],
         lista_amostras_repetidas=[4, 6],
         lista_latent_dims=[4, 6],
-        lista_hidden_dims=[64],
+        lista_hidden_dims=[16, 32, 64],
         lista_learning_rates=[0.005],
-        lista_epochs=[300],
+        lista_epochs=[400],
         lista_batch_sizes=[32],
         lista_train_sizes=[0.7],
 

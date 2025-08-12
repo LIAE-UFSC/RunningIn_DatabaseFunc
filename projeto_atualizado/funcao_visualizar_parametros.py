@@ -163,6 +163,6 @@ def plot_accuracy_comparisons(json_path, output_dir='plots', metric='Acuracia'):
 
 if __name__ == "__main__":
 
-    caminho_json = r'resultados_personalizados_20250810_223948\metadados_completos.json'
+    caminho_json = r'resultados_personalizados_20250811_180930\metadados_completos.json'
 
     plot_accuracy_comparisons(caminho_json)
