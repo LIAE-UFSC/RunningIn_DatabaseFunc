@@ -91,19 +91,15 @@ def busca_grade_completa(
         
         print(f"\n🔧 Execução {i}/{len(combinacoes)} - ID: {exec_id}")
         
+        # Processa cada arquivo de input
         dfs_processed = []
-        for input_csv in input_csvs:
-            df_rotulado, _ = label_dataset_by_time(
-                input_csv=input_csv,
-                time_ranges=params['time_ranges'],
-                grey_zone=params['grey_zone'],
-                exclude_grey=True,
-                save_greyzone_csv=False,
-                save_csv=False
-            )
+        for csv_path in input_csvs:  # input_csvs é uma lista de caminhos
+            # Carrega o CSV já rotulado
+            df = pd.read_csv(csv_path)
             
+            # Reorganiza o dataset
             df_reorg = reorganizar_dataset(
-                df_dados=df_rotulado,
+                df_dados=df,
                 n_amostras=params['n_amostras'],
                 janelamento=params['janelamento'],
                 amostras_repetidas=params['amostras_repetidas'] if params['janelamento'] else None,
@@ -111,71 +107,68 @@ def busca_grade_completa(
             )
             dfs_processed.append(df_reorg)
         
+        # Combina todos os DataFrames processados
         df_combined = pd.concat(dfs_processed, ignore_index=True)
         
-        if test_csv:
-            df_test_rotulado, _ = label_dataset_by_time(
-                input_csv=test_csv,
-                time_ranges=params['time_ranges'],
-                grey_zone=params['grey_zone'],
-                exclude_grey=True,
-                save_greyzone_csv=False,
-                save_csv=False
-            )
-            
-            df_test_reorg = reorganizar_dataset(
-                df_dados=df_test_rotulado,
-                n_amostras=params['n_amostras'],
-                janelamento=params['janelamento'],
-                amostras_repetidas=params['amostras_repetidas'] if params['janelamento'] else None,
-                salvar_csv=False
-
-            )
-
-            df_test_balanceado = balancear_csv_por_undersampling(
-            df_dados=df_test_reorg,
-            output_csv=None,
-            embaralhar=False
-
-            )
-
-        else:
-
-            df_test_balanceado = None
+        # Processamento do arquivo de teste (se existir)
+        df_test_balanceado = None
         
+        if test_csv:
+            # Se test_csv for uma lista de arquivos
+            if isinstance(test_csv, list):
+                dfs_test = []
+                for test_path in test_csv:
+                    df_test = pd.read_csv(test_path)
+                    df_test_reorg = reorganizar_dataset(
+                        df_dados=df_test,
+                        n_amostras=params['n_amostras'],
+                        janelamento=params['janelamento'],
+                        amostras_repetidas=params['amostras_repetidas'] if params['janelamento'] else None,
+                        salvar_csv=False
+                    )
+                    dfs_test.append(df_test_reorg)
+                df_test_combined = pd.concat(dfs_test, ignore_index=True)
+                df_test_balanceado = balancear_csv_por_undersampling(
+                    df_dados=df_test_combined,
+                    output_csv=None,
+                    embaralhar=False
+                )
+            # Se test_csv for um único arquivo (string)
+            else:
+                df_test = pd.read_csv(test_csv)
+                df_test_reorg = reorganizar_dataset(
+                    df_dados=df_test,
+                    n_amostras=params['n_amostras'],
+                    janelamento=params['janelamento'],
+                    amostras_repetidas=params['amostras_repetidas'] if params['janelamento'] else None,
+                    salvar_csv=False
+                )
+                df_test_balanceado = balancear_csv_por_undersampling(
+                    df_dados=df_test_reorg,
+                    output_csv=None,
+                    embaralhar=False
+                )
+        
+        # Balanceia o dataset principal
         df_balanceado = balancear_csv_por_undersampling(
             df_dados=df_combined,
             output_csv=None,
             embaralhar=False
         )
-        if test_csv:
-            df_reconstruido, df_latente_treino, df_latente_teste, dim_lat = processar_autoencoder(
-                df_original=df_balanceado,
-                params_autoencoder={
-                    'input_dim': params['n_amostras'],
-                    'latent_dim': params['latent_dim'],
-                    'hidden_dim': params['hidden_dim']
-                },
-                learning_rate=params['learning_rate'],
-                epochs=params['epochs'],
-                batch_size=params['batch_size'],
-                train_size=params['train_size'],
-                df_latente_input=df_test_balanceado  # Usa dados de teste para espaço latente se disponível
-            )
-        else:
-            df_reconstruido, df_latente_treino, dim_lat = processar_autoencoder(
-                df_original=df_balanceado,
-                params_autoencoder={
-                    'input_dim': params['n_amostras'],
-                    'latent_dim': params['latent_dim'],
-                    'hidden_dim': params['hidden_dim']
-                },
-                learning_rate=params['learning_rate'],
-                epochs=params['epochs'],
-                batch_size=params['batch_size'],
-                train_size=params['train_size'],
-                df_latente_input=df_test_balanceado  # Usa dados de teste para espaço latente se disponível
-            )
+        
+        df_reconstruido, df_latente_treino, df_latente_teste, dim_lat = processar_autoencoder(
+            df_original=df_balanceado,
+            params_autoencoder={
+                'input_dim': params['n_amostras'],
+                'latent_dim': params['latent_dim'],
+                'hidden_dim': params['hidden_dim']
+            },
+            learning_rate=params['learning_rate'],
+            epochs=params['epochs'],
+            batch_size=params['batch_size'],
+            train_size=params['train_size'],
+            df_latente_input=df_test_balanceado  # Usa dados de teste para espaço latente se disponível
+        )
 
         resultados_balanceado = avaliar_modelos(df_balanceado, df_test_balanceado)
         resultados_latente = avaliar_modelos(df_latente_treino, df_latente_teste)
@@ -258,31 +251,34 @@ def busca_grade_completa(
 if __name__ == "__main__":
 
     resultados = busca_grade_completa(
-        input_csvs=[
-    "dataset_A1_01_07.csv",
-    "dataset_A2_02_10.csv",
-    "dataset_A2_08_08.csv",
-    "dataset_A2_09_07.csv",
-    "dataset_A2_12_08.csv",
-    "dataset_A2_14_10.csv",
-    "dataset_A2_28_08.csv",
-    "dataset_A3_04_12.csv",
-    "dataset_A3_09_12.csv",
-    "dataset_A3_11_12.csv",
-    "dataset_A4_06_01.csv",
-    "dataset_A4_13_01.csv",
-    "dataset_A4_16_12.csv",
-    "dataset_A4_19_12.csv",
-    "dataset_A5_22_01.csv",
-    "dataset_A5_27_01.csv"],      
-        test_csv='dataset_A5_28_01.csv',  # Dataset de teste separado
+
+        input_csvs = [
+    "processado_dataset_A1_01_07_NA.csv",
+    "processado_dataset_A2_02_10.csv",
+    "processado_dataset_A2_08_08.csv",
+    "processado_dataset_A2_09_07_NA.csv",
+    "processado_dataset_A2_12_08.csv",
+    "processado_dataset_A2_14_10.csv",
+    "processado_dataset_A2_28_08.csv",
+    "processado_dataset_A3_04_12_NA.csv",
+    "processado_dataset_A3_09_12.csv",
+    "processado_dataset_A3_11_12.csv",
+    "processado_dataset_A4_06_01.csv",
+    "processado_dataset_A4_13_01.csv",
+    "processado_dataset_A4_16_12_NA.csv",
+    "processado_dataset_A4_19_12.csv"],
+    test_csv = [
+    "processado_dataset_A5_22_01_NA.csv",
+    "processado_dataset_A5_27_01.csv",
+    "processado_dataset_A5_28_01.csv"
+],  
         lista_time_ranges=[[(0, 18000, 0), (54000, 500000, 1)]],
         lista_grey_zones=[(18000, 54000)],
         lista_n_amostras=[8, 32],
         lista_janelamento=[True],
         lista_amostras_repetidas=[4, 6],
         lista_latent_dims=[4, 6],
-        lista_hidden_dims=[16, 32, 64],
+        lista_hidden_dims=[64],
         lista_learning_rates=[0.005],
         lista_epochs=[400],
         lista_batch_sizes=[32],

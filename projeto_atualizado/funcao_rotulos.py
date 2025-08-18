@@ -106,10 +106,33 @@ def label_dataset_by_time(
     return df, df_grey
 
 if __name__ == "__main__":
-    # Exemplo de uso
+
     print("--- Executando Exemplo ---")
     df, grey = label_dataset_by_time(
-        input_csv='dataset_A1_01_07.csv'
+        input_csv='processado_dataset_A5_22_01_NA.csv',
+        output_csv='processado_dataset_A5_22_01_NA.csv'
     )
     print("Dataset processado:")
     print(df.head())
+
+    # pasta = "."
+
+    # arquivos_csv = [f for f in os.listdir(pasta) if f.startswith("dataset_A") and f.endswith(".csv")]
+
+    # for arquivo in arquivos_csv:
+    #     print(f"--- Executando para {arquivo} ---")
+    #     df, grey = label_dataset_by_time(
+    #     input_csv=arquivo,
+    #     time_ranges=[
+    #         (0, 18000, 0),
+    #         (0, 500000, 1)
+    #     ],
+    #     grey_zone=None,
+    #     )
+    
+    #     # salvar com prefixo
+    #     nome_saida = f"processado_{arquivo}"
+    #     df.to_csv(nome_saida, index=False)
+    
+    #     print(f"Dataset processado salvo em: {nome_saida}")
+    #     print(df.head())
