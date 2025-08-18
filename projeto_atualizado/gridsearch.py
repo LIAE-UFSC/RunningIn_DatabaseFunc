@@ -148,20 +148,34 @@ def busca_grade_completa(
             output_csv=None,
             embaralhar=False
         )
-        
-        df_reconstruido, df_latente_treino, df_latente_teste, dim_lat = processar_autoencoder(
-            df_original=df_balanceado,
-            params_autoencoder={
-                'input_dim': params['n_amostras'],
-                'latent_dim': params['latent_dim'],
-                'hidden_dim': params['hidden_dim']
-            },
-            learning_rate=params['learning_rate'],
-            epochs=params['epochs'],
-            batch_size=params['batch_size'],
-            train_size=params['train_size'],
-            df_latente_input=df_test_balanceado  # Usa dados de teste para espaço latente se disponível
-        )
+        if test_csv:
+            df_reconstruido, df_latente_treino, df_latente_teste, dim_lat = processar_autoencoder(
+                df_original=df_balanceado,
+                params_autoencoder={
+                    'input_dim': params['n_amostras'],
+                    'latent_dim': params['latent_dim'],
+                    'hidden_dim': params['hidden_dim']
+                },
+                learning_rate=params['learning_rate'],
+                epochs=params['epochs'],
+                batch_size=params['batch_size'],
+                train_size=params['train_size'],
+                df_latente_input=df_test_balanceado  # Usa dados de teste para espaço latente se disponível
+            )
+        else:
+            df_reconstruido, df_latente_treino, dim_lat = processar_autoencoder(
+                df_original=df_balanceado,
+                params_autoencoder={
+                    'input_dim': params['n_amostras'],
+                    'latent_dim': params['latent_dim'],
+                    'hidden_dim': params['hidden_dim']
+                },
+                learning_rate=params['learning_rate'],
+                epochs=params['epochs'],
+                batch_size=params['batch_size'],
+                train_size=params['train_size'],
+                df_latente_input=df_test_balanceado  # Usa dados de teste para espaço latente se disponível
+            )
 
         resultados_balanceado = avaliar_modelos(df_balanceado, df_test_balanceado)
         resultados_latente = avaliar_modelos(df_latente_treino, df_latente_teste)
@@ -264,7 +278,7 @@ if __name__ == "__main__":
         test_csv='dataset_A5_28_01.csv',  # Dataset de teste separado
         lista_time_ranges=[[(0, 18000, 0), (54000, 500000, 1)]],
         lista_grey_zones=[(18000, 54000)],
-        lista_n_amostras=[8, 10, 12, 16, 32],
+        lista_n_amostras=[8, 32],
         lista_janelamento=[True],
         lista_amostras_repetidas=[4, 6],
         lista_latent_dims=[4, 6],
