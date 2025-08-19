@@ -2,7 +2,7 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 
-caminho_json = r'resultados_personalizados_20250703_143321\metadados_completos.json'
+caminho_json = r'resultados_personalizados_20250818_162933\metadados_completos.json'
 
 def carregar_metadados(caminho_arquivo):
     """Carrega os metadados completos de um arquivo JSON."""

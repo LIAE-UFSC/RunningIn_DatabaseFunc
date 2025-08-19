@@ -107,10 +107,10 @@ def busca_grade_completa(
             )
             dfs_processed.append(df_reorg)
         
-        # Combina todos os DataFrames processados
+        
         df_combined = pd.concat(dfs_processed, ignore_index=True)
         
-        # Processamento do arquivo de teste (se existir)
+        
         df_test_balanceado = None
         
         if test_csv:
@@ -274,11 +274,11 @@ if __name__ == "__main__":
 ],  
         lista_time_ranges=[[(0, 18000, 0), (54000, 500000, 1)]],
         lista_grey_zones=[(18000, 54000)],
-        lista_n_amostras=[8, 32],
+        lista_n_amostras=[4,8,12,16,20,24,28,32],
         lista_janelamento=[True],
-        lista_amostras_repetidas=[4, 6],
-        lista_latent_dims=[4, 6],
-        lista_hidden_dims=[64],
+        lista_amostras_repetidas=[2, 4, 6, 8, 10],
+        lista_latent_dims=[1, 2, 4, 6, 8, 10],
+        lista_hidden_dims=[8, 16, 32, 64, 128],
         lista_learning_rates=[0.005],
         lista_epochs=[400],
         lista_batch_sizes=[32],

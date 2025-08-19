@@ -110,7 +110,7 @@ def plot_balanceado_heatmaps(json_path, output_dir='heatmaps', metric='Acuracia'
 
 # Exemplo de uso
 
-caminho_json = r'classificator_project\resultados_personalizados_20250703_010122\metadados_completos.json'
+caminho_json = r'resultados_personalizados_20250818_162933\metadados_completos.json'
 
 if __name__ == "__main__":
     plot_balanceado_heatmaps(
