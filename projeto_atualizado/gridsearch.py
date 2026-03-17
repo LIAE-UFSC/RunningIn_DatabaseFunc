@@ -198,7 +198,7 @@ def busca_grade_completa(
         })
 
         for classificador, metricas in resultados_balanceado.items():
-            if resultados_latente[classificador]['Acuracia'] > metricas['Acuracia']:
+            if metricas['Acuracia'] >= 0.5 and resultados_latente[classificador]['Acuracia'] > metricas['Acuracia']:
                 resultados_latente_melhor.append({
                     'exec_id': exec_id,
                     'classificador': classificador,
