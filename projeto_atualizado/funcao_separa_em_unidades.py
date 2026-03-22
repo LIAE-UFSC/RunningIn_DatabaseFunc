@@ -1,7 +1,8 @@
 import pandas as pd
+from paths import DATASETS_RAW
 
 # Load the dataset
-df = pd.read_csv('dataset_completo.csv')
+df = pd.read_csv(DATASETS_RAW / 'dataset_completo.csv')
 
 # Get unique values from the 'unit' column
 unique_units = df['unit'].unique()
@@ -18,7 +19,7 @@ def split_dataframe_by_unit(dataframe, column_name):
     """
     for unit_value in dataframe[column_name].unique():
         df_subset = dataframe[dataframe[column_name] == unit_value]
-        file_name = f'dataset_{unit_value}.csv'
+        file_name = DATASETS_RAW / f'dataset_{unit_value}.csv'
         df_subset.to_csv(file_name, index=False)
         print(f"Created file: {file_name}")
 

@@ -1,4 +1,5 @@
 import pandas as pd
+from paths import DATASETS_GER
 
 def reorganizar_dataset(
     caminho_arquivo=None,  # Modificado: tornamos opcional
@@ -7,7 +8,7 @@ def reorganizar_dataset(
     incluir_tempo=False,
     rotulo_ultimo=True,
     salvar_csv=False,
-    nome_saida='dataset_reorganizado.csv',
+    nome_saida=None,
     janelamento=False,
     amostras_repetidas=1
 ):
@@ -74,8 +75,9 @@ def reorganizar_dataset(
     new_df = pd.DataFrame(new_data, columns=colunas)
     
     if salvar_csv:
-        new_df.to_csv(nome_saida, index=False)
-        print(f"Dataset salvo como '{nome_saida}'")
+        caminho_saida = nome_saida if nome_saida is not None else str(DATASETS_GER / 'dataset_reorganizado.csv')
+        new_df.to_csv(caminho_saida, index=False)
+        print(f"Dataset salvo como '{caminho_saida}'")
     
     return new_df
 
@@ -83,15 +85,15 @@ def reorganizar_dataset(
 if __name__ == "__main__":
     # Opção tradicional com arquivo
     df_arquivo = reorganizar_dataset(
-        caminho_arquivo='dataset_rotulado.csv',
+        caminho_arquivo=str(DATASETS_GER / 'dataset_rotulado.csv'),
         n_amostras=8,
         janelamento=True,
-        salvar_csv=True, 
+        salvar_csv=True,
         amostras_repetidas=6
     )
-    
+
     # Opção nova com DataFrame
-    dados = pd.read_csv('dataset_rotulado.csv')  # Carrega antes
+    dados = pd.read_csv(DATASETS_GER / 'dataset_rotulado.csv')  # Carrega antes
     df_direto = reorganizar_dataset(
         df_dados=dados,  # Novo formato
         n_amostras=8,

@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+from paths import DATASETS_RAW
 
 def divisao_direta_por_unidade_e_data(caminho_arquivo_csv):
     """
@@ -44,12 +45,12 @@ def divisao_direta_por_unidade_e_data(caminho_arquivo_csv):
                 continue
 
             # Cria o nome do arquivo e o salva
-            nome_arquivo = f"dataset_{unidade}_{data_formatada}.csv"
+            nome_arquivo = DATASETS_RAW / f"dataset_{unidade}_{data_formatada}.csv"
             df_final.to_csv(nome_arquivo, index=False)
             print(f"Arquivo criado: {nome_arquivo}")
 
 # --- Exemplo de como usar a função ---
 # Basta chamar a função com o nome do seu arquivo.
 #
-divisao_direta_por_unidade_e_data('dataset_completo.csv')
+divisao_direta_por_unidade_e_data(str(DATASETS_RAW / 'dataset_completo.csv'))
 #

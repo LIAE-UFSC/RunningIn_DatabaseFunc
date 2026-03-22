@@ -6,6 +6,7 @@ import pandas as pd
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from pathlib import Path
+from paths import DATASETS_GER
 
 np.random.seed(42)  
 
@@ -358,8 +359,8 @@ def plot_autoencoder_results(df_original, df_reconstruido,
 
 if __name__ == "__main__":
 
-    df_original = pd.read_csv("dataset_balanceado_pronto.csv")
-    df_gera_latente = pd.read_csv("dataset_para_teste_latente.csv")
+    df_original = pd.read_csv(DATASETS_GER / "dataset_balanceado_pronto.csv")
+    df_gera_latente = pd.read_csv(DATASETS_GER / "dataset_para_teste_latente.csv")
     
     params_autoencoder = {
         

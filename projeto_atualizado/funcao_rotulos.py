@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+from paths import DATASETS_PROC
 
 def label_dataset_by_time(
     input_csv=None,
@@ -109,8 +110,8 @@ if __name__ == "__main__":
 
     print("--- Executando Exemplo ---")
     df, grey = label_dataset_by_time(
-        input_csv='processado_dataset_A5_22_01_NA.csv',
-        output_csv='processado_dataset_A5_22_01_NA.csv'
+        input_csv=str(DATASETS_PROC / 'processado_dataset_A5_22_01_NA.csv'),
+        output_csv=str(DATASETS_PROC / 'processado_dataset_A5_22_01_NA.csv')
     )
     print("Dataset processado:")
     print(df.head())

@@ -10,11 +10,12 @@ from funcao_rotulos import label_dataset_by_time
 from funcao_janelamento import reorganizar_dataset
 from funcao_random_undersampling import balancear_csv_por_undersampling
 from funcao_metodos import avaliar_modelos
+from paths import DATASETS_RAW, DATASETS_PROC
 
 np.random.seed(42)
 
 def busca_grade_completa(
-    input_csvs=['dataset_massflow.csv'],  
+    input_csvs=[str(DATASETS_RAW / 'dataset_massflow.csv')],
     test_csv=None,  
     lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)]],
     lista_grey_zones=[(18000, 54000)],
@@ -252,7 +253,7 @@ if __name__ == "__main__":
 
     resultados = busca_grade_completa(
 
-        input_csvs = [
+        input_csvs = [str(DATASETS_PROC / f) for f in [
     "processado_dataset_A1_01_07_NA.csv",
     "processado_dataset_A2_02_10.csv",
     "processado_dataset_A2_08_08.csv",
@@ -266,12 +267,13 @@ if __name__ == "__main__":
     "processado_dataset_A4_06_01.csv",
     "processado_dataset_A4_13_01.csv",
     "processado_dataset_A4_16_12_NA.csv",
-    "processado_dataset_A4_19_12.csv"],
-    test_csv = [
+    "processado_dataset_A4_19_12.csv",
+    ]],
+    test_csv = [str(DATASETS_PROC / f) for f in [
     "processado_dataset_A5_22_01_NA.csv",
     "processado_dataset_A5_27_01.csv",
-    "processado_dataset_A5_28_01.csv"
-],  
+    "processado_dataset_A5_28_01.csv",
+    ]],
         lista_time_ranges=[[(0, 18000, 0), (54000, 500000, 1)]],
         lista_grey_zones=[(18000, 54000)],
         lista_n_amostras=[4,8,12,16,20,24,28,32],
