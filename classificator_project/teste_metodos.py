@@ -1,4 +1,6 @@
 import pandas as pd
+from pathlib import Path
+from paths import DATASETS_GER
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
@@ -6,7 +8,7 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
-df = pd.read_csv("dataset_espaco_latente.csv")
+df = pd.read_csv(DATASETS_GER / "dataset_espaco_latente.csv")
 
 feature_cols = [col for col in df.columns if col != "anomaly"]
 X = df[feature_cols].values

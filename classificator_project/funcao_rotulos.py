@@ -1,4 +1,5 @@
 import pandas as pd
+from paths import DATASETS_RAW
 
 def label_dataset_by_time(
     input_csv=None,
@@ -100,7 +101,7 @@ if __name__ == "__main__":
     
     print("--- Executando Exemplo 1 (lendo do CSV) ---")
     df1, grey1 = label_dataset_by_time(
-        input_csv='dataset_A1_01_07.csv',
+        input_csv=str(DATASETS_RAW / 'dataset_A1_01_07.csv'),
         output_csv='dataset_rotulado_A1.csv'
     )
     print("Resultado do Exemplo 1 (colunas finais: time, massFlow, anomaly):")
@@ -108,7 +109,7 @@ if __name__ == "__main__":
     print("-" * 40)
 
     print("\n--- Executando Exemplo 2 (passando DataFrame) ---")
-    dados = pd.read_csv('dataset_A2_02_10.csv') 
+    dados = pd.read_csv(DATASETS_RAW / 'dataset_A2_02_10.csv')
     df2, grey2 = label_dataset_by_time(
         df_dados=dados,
         output_csv='dataset_rotulado_A2.csv'

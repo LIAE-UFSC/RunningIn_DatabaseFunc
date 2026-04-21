@@ -7,6 +7,7 @@ import json
 from io import StringIO
 
 RESULTS_DIR = Path(__file__).parent.parent / "resultados"
+from paths import DATASETS_RAW
 from autoencoderNNpy import BaseModel, Autoencoder, processar_autoencoder, plot_autoencoder_results
 from funcao_rotulos import label_dataset_by_time
 from funcao_janelamento import reorganizar_dataset
@@ -18,7 +19,7 @@ np.random.seed(42)
 
 
 def busca_grade_completa(
-    input_csv='dataset_massflow.csv',
+    input_csv=None,
     lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)]],
     lista_grey_zones=[(18000, 54000)],
     lista_n_amostras=[5, 8, 10],
@@ -32,6 +33,8 @@ def busca_grade_completa(
     lista_train_sizes=[0.7, 0.8],
     output_dir=None
 ):
+    if input_csv is None:
+        input_csv = str(DATASETS_RAW / 'dataset_massflow.csv')
     base = Path(output_dir) if output_dir else RESULTS_DIR / "resultados_personalizados"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     pasta_resultados = str(base.parent / f"{base.name}_{timestamp}")
@@ -246,7 +249,7 @@ def busca_grade_completa(
 if __name__ == "__main__":
     resultados = busca_grade_completa(
         
-        input_csv='dataset_massflow.csv',
+        input_csv=str(DATASETS_RAW / 'dataset_massflow.csv'),
         lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)]],
         lista_grey_zones=[(18000, 54000)],
         lista_n_amostras=[8, 12, 16],

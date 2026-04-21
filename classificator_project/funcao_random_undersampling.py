@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
+from paths import DATASETS_GER
 
-np.random.seed(42)  
+np.random.seed(42)
 
 def balancear_csv_por_undersampling(
     input_csv=None,      # Modificado: tornamos opcional
@@ -64,16 +65,16 @@ def balancear_csv_por_undersampling(
 if __name__ == "__main__":
     # Opção tradicional com arquivo
     balancear_csv_por_undersampling(
-        input_csv='dataset_janelado_n_amostras.csv',
-        output_csv='dataset_balanceado_pronto.csv',
+        input_csv=str(DATASETS_GER / 'dataset_janelado_n_amostras.csv'),
+        output_csv=str(DATASETS_GER / 'dataset_balanceado_pronto.csv'),
         embaralhar=False
     )
     
     # Opção nova com DataFrame
-    dados = pd.read_csv('dataset_janelado_n_amostras.csv')  # Carrega antes
+    dados = pd.read_csv(DATASETS_GER / 'dataset_janelado_n_amostras.csv')
     
     df_balanceado = balancear_csv_por_undersampling(
         df_dados=dados,  # Novo formato
-        output_csv='dataset_balanceado_pronto.csv',
+        output_csv=str(DATASETS_GER / 'dataset_balanceado_pronto.csv'),
         embaralhar=False
     )
