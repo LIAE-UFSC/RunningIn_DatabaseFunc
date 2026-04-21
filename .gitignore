@@ -2,3 +2,6 @@
 __pycache__/
 
 .vscode
+
+# Experiment results
+resultados/

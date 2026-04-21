@@ -3,8 +3,11 @@ import numpy as np
 import itertools
 import pandas as pd
 from datetime import datetime
+from pathlib import Path
 import json
 from io import StringIO
+
+RESULTS_DIR = Path(__file__).parent.parent / "resultados"
 from autoencoder import BaseModel, Autoencoder, processar_autoencoder, plot_autoencoder_results
 from funcao_rotulos import label_dataset_by_time
 from funcao_janelamento import reorganizar_dataset
@@ -28,11 +31,11 @@ def busca_grade_completa(
     lista_epochs=[100, 200],
     lista_batch_sizes=[32, 64],
     lista_train_sizes=[0.7, 0.8],
-    output_dir='resultados_personalizados'
+    output_dir=None
 ):
-    
+    base = Path(output_dir) if output_dir else RESULTS_DIR / "resultados_personalizados"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    pasta_resultados = f"{output_dir}_{timestamp}"
+    pasta_resultados = str(base.parent / f"{base.name}_{timestamp}")
     
     pasta_top5_balanceado = os.path.join(pasta_resultados, "top_5percent_balanceado")
     pasta_latente_melhor = os.path.join(pasta_resultados, "latente_melhor")
