@@ -4,8 +4,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 from matplotlib.colors import LinearSegmentedColormap
+from paths import HEATMAPS_DIR
 
-def plot_balanceado_heatmaps(json_path, output_dir='heatmaps', metric='Acuracia'):
+def plot_balanceado_heatmaps(json_path, output_dir=None, metric='Acuracia'):
+    if output_dir is None:
+        output_dir = str(HEATMAPS_DIR)
+        os.makedirs(output_dir, exist_ok=True)
     """
     Gera 3 heatmaps (um para cada método) mostrando a métrica para dados balanceados,
     com n_amostras no eixo X e amostras_repetidas no eixo Y.

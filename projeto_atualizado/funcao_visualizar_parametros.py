@@ -2,8 +2,12 @@ import json
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+from paths import PLOTS_DIR
 
-def plot_accuracy_comparisons(json_path, output_dir='plots', metric='Acuracia'):
+def plot_accuracy_comparisons(json_path, output_dir=None, metric='Acuracia'):
+    if output_dir is None:
+        output_dir = str(PLOTS_DIR)
+        os.makedirs(output_dir, exist_ok=True)
 
     # 1. Carregar dados
     try:
