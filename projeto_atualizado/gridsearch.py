@@ -8,11 +8,11 @@ import json
 from io import StringIO
 
 RESULTS_DIR = Path(__file__).parent.parent / "resultados"
-from autoencoder import BaseModel, Autoencoder, processar_autoencoder, plot_autoencoder_results
-from funcao_rotulos import label_dataset_by_time
-from funcao_janelamento import reorganizar_dataset
-from funcao_random_undersampling import balancear_csv_por_undersampling
-from funcao_metodos import avaliar_modelos
+from src.models.autoencoder import BaseModel, Autoencoder, processar_autoencoder, plot_autoencoder_results
+from src.preprocessing.funcao_rotulos import label_dataset_by_time
+from src.preprocessing.funcao_janelamento import reorganizar_dataset
+from src.preprocessing.funcao_random_undersampling import balancear_csv_por_undersampling
+from src.analysis.funcao_metodos import avaliar_modelos
 from paths import DATASETS_RAW, DATASETS_PROC
 
 np.random.seed(42)
@@ -25,12 +25,12 @@ def busca_grade_completa(
     lista_n_amostras=[5, 8, 10],
     lista_janelamento=[True, False],
     lista_amostras_repetidas=[1, 4],
-    lista_latent_dims=[2, 3, 5],
-    lista_hidden_dims=[32, 64, 128],
-    lista_learning_rates=[0.01, 0.02, 0.05],
+    lista_latent_dims=[5],
+    lista_hidden_dims=[32, 128],
+    lista_learning_rates=[0.01, 0.05],
     lista_epochs=[100, 200],
-    lista_batch_sizes=[32, 64],
-    lista_train_sizes=[0.7, 0.8],
+    lista_batch_sizes=[32],
+    lista_train_sizes=[0.7],
     output_dir=None
 ):
     base = Path(output_dir) if output_dir else RESULTS_DIR / "resultados_personalizados"
