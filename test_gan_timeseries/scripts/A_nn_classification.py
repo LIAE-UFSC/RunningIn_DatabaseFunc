@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 np.random.seed(100)
 
-dataset = 'classification2.csv'
+dataset = '../data/classification2.csv'
 #dataset = 'diabetes.csv'
 
 data = pd.read_csv(dataset, header=None)
@@ -57,15 +57,15 @@ nn = [X_train.shape[1], 3, 2 ,1]  # arquitetura da rede neural
 
 # Carregar os pesos treinados
 weights = [
-    np.load('pytorch_weights_layer0.npy'),  # Camada 1 (2→3)
-    np.load('pytorch_weights_layer1.npy'),  # Camada 2 (3→2)
-    np.load('pytorch_weights_layer2.npy')   # Camada 3 (2→1)
+    np.load('../models/pytorch_weights_layer0.npy'),  # Camada 1 (2→3)
+    np.load('../models/pytorch_weights_layer1.npy'),  # Camada 2 (3→2)
+    np.load('../models/pytorch_weights_layer2.npy')   # Camada 3 (2→1)
 ]
 
 biases = [
-    np.load('pytorch_bias_layer0.npy'),  # Bias camada 1
-    np.load('pytorch_bias_layer1.npy'),  # Bias camada 2
-    np.load('pytorch_bias_layer2.npy')   # Bias camada 3
+    np.load('../models/pytorch_bias_layer0.npy'),  # Bias camada 1
+    np.load('../models/pytorch_bias_layer1.npy'),  # Bias camada 2
+    np.load('../models/pytorch_bias_layer2.npy')   # Bias camada 3
 ]
 
 # Sua função predict() original continuará funcionando normalmente
@@ -274,7 +274,7 @@ print(f"Recall: {recall:.4f}")
 print(f"F1 Score: {f1_score:.4f}")
 
 
-if dataset == 'classification2.csv':
+if dataset == '../data/classification2.csv':
     plot_combined_decision_boundary_and_cost(X_train, y_train, losses)
 else:
     plot_cost(losses)

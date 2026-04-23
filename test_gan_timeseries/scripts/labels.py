@@ -41,7 +41,7 @@ def transformar_anomalias(input_file, output_file):
 
 # Exemplo de uso (substitua pelos seus caminhos reais)
 if __name__ == "__main__":
-    input_csv = caminho_arquivo = r'C:\Users\PC-1\Documents\GitHub\RunningIn_DatabaseFunc\test_gan_timeseries\dataset_massflow_A1_com_labels.csv'
-    output_csv = 'arquivo_transformadoss.csv'  # Nome do arquivo de saída
+    input_csv = caminho_arquivo = '../data/dataset_massflow_A1_com_labels'
+    output_csv = '../data/arquivo_transformadoss.csv'  # Nome do arquivo de saída
     
     transformar_anomalias(input_csv, output_csv)

@@ -12,8 +12,8 @@ from pathlib import Path
 # from sklearn.model_selection import train_test_split
 
 valor_amostras = 8
-dataset = "dataset_com_tempo_janelamento_teste_8.csv"
-df_original = pd.read_csv("dataset_com_tempo_janelamento_teste_8.csv")
+dataset = "../data/dataset_com_tempo_janelamento_teste_8.csv"
+df_original = pd.read_csv("../data/dataset_com_tempo_janelamento_teste_8.csv")
 
 def dividir_dados(caminho_arquivo, num_massflows=5):
     caminho_arquivo = Path(caminho_arquivo)
@@ -403,7 +403,7 @@ for i, col in enumerate(massflow_cols):
     df_reconstruido[col] = dados_reconstruidos[:, i]
 
 # 5. Salvar como novo arquivo CSV
-caminho_saida = "dados_reconstruidos.csv"
+caminho_saida = "../outputs/dados_reconstruidos.csv"
 df_reconstruido.to_csv(caminho_saida, index=False)
 
 print(f"Arquivo reconstruído salvo em: {caminho_saida}")
@@ -438,7 +438,7 @@ print(f"Dimensão do espaço latente: {dimensao_latente}")
 # df_latent = df_latent[colunas_ordenadas]
 
 # # Salvar para CSV
-# caminho_latente = "espaco_latente.csv"
+# caminho_latente = "../outputs/espaco_latente.csv"
 # df_latent.to_csv(caminho_latente, index=False)
 
 # print(f"\nArquivo do espaço latente salvo em: {caminho_latente}")
@@ -459,7 +459,7 @@ label_col = df_original['anomaly'].reset_index(drop=True)  # Ajustar se o nome d
 df_latent['anomaly'] = label_col
 
 # Salvar o DataFrame
-caminho_latente = "espaco_latente.csv"
+caminho_latente = "../outputs/espaco_latente.csv"
 df_latent.to_csv(caminho_latente, index=False)
 
 print(f"\nArquivo do espaço latente salvo em: {caminho_latente}")

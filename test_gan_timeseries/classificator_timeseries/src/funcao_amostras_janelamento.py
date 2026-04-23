@@ -6,10 +6,12 @@ def reorganizar_dataset(
     incluir_tempo=False,
     rotulo_ultimo=True,
     salvar_csv=False,
-    nome_saida='dataset_reorganizado.csv'
+    nome_saida='dataset_reorganizado.csv',
+    janelamento=False,
+    amostras_repetidas=1
 ):
     """
-    Reorganiza o dataset em grupos de 'n_amostras' consecutivas, com opção de incluir tempo como feature.
+    Reorganiza o dataset em grupos de 'n_amostras' consecutivas, com controle preciso de overlap.
 
     Parâmetros:
     - caminho_arquivo: str. Caminho do arquivo CSV original.
@@ -18,10 +20,16 @@ def reorganizar_dataset(
     - rotulo_ultimo: bool. Se True, usa o rótulo da última amostra; senão, usa o da primeira.
     - salvar_csv: bool. Se True, salva o DataFrame em um arquivo CSV.
     - nome_saida: str. Nome do arquivo de saída (se salvar_csv=True).
+    - janelamento: bool. Se True, cria janelas sobrepostas.
+    - amostras_repetidas: int. Quantas amostras devem se repetir da janela anterior (1 <= amostras_repetidas < n_amostras).
 
     Retorna:
     - DataFrame pandas com colunas: [massFlow_0 (opcional), massFlow_1, ..., massFlow_N, anomaly].
     """
+    # Validação dos parâmetros
+    if janelamento and (amostras_repetidas >= n_amostras or amostras_repetidas < 1):
+        raise ValueError("amostras_repetidas deve ser menor que n_amostras e maior ou igual a 1")
+    
     # Carrega o dataset
     df = pd.read_csv(caminho_arquivo)
     
@@ -32,7 +40,11 @@ def reorganizar_dataset(
 
     # Prepara lista de dados reorganizados
     new_data = []
-    for i in range(0, len(mass_flow) - (n_amostras - 1), n_amostras):
+    
+    # Define o passo para a iteração
+    passo = (n_amostras - amostras_repetidas) if janelamento else n_amostras
+    
+    for i in range(0, len(mass_flow) - (n_amostras - 1), passo):
         if i + (n_amostras - 1) < len(mass_flow):
             # Pega 'n_amostras' valores consecutivos de massFlow
             mass_flows = mass_flow[i:i + n_amostras]
@@ -66,14 +78,15 @@ def reorganizar_dataset(
     
     return new_df
 
-
+# Exemplo de uso:
 df_com_tempo = reorganizar_dataset(
 
-    caminho_arquivo='dataset_modificado.csv',
-    n_amostras=6,
+    caminho_arquivo='../data/dataset_modificado.csv',
+    n_amostras=16,
     incluir_tempo=False,
     salvar_csv=True,
-    nome_saida=f'dataset_6_amostras.csv'
-)
+    nome_saida='../data/dataset_sem_tempo_com_janelamento_16_amostras.csv',
+    janelamento=True,
+    amostras_repetidas=12
 
-# df_sem_tempo.to_csv('dataset_sem_tempo.csv', index=False)
+)

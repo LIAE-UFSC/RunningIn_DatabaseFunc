@@ -2,14 +2,29 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
+from torch.optim.lr_scheduler import StepLR
+from sklearn.neighbors import NearestNeighbors
+from sklearn.model_selection import train_test_split
+from pathlib import Path
 import pandas as pd
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
-from pathlib import Path
 
-# from torch.optim.lr_scheduler import StepLR
-# from sklearn.neighbors import NearestNeighbors
-# from sklearn.model_selection import train_test_split
+# def dividir_dados(caminho_arquivo):
+#     caminho_arquivo = Path(caminho_arquivo)
+    
+#     if not caminho_arquivo.exists():
+#         raise FileNotFoundError(f"Arquivo não encontrado: {caminho_arquivo}")
+
+#     df = pd.read_csv(caminho_arquivo, skiprows=1, header=None)
+#     dados = df.iloc[:, 1].values.astype(np.float32)
+#     treino, validacao = train_test_split(dados, test_size=0.25, random_state=42)
+    
+#     # Convertendo para tensores do PyTorch e ajustando o formato
+#     treino = torch.tensor(treino).unsqueeze(1)  # Formato (n, 1)
+#     validacao = torch.tensor(validacao).unsqueeze(1)  # Formato (n, 1)
+    
+#     return {"x_train": treino, "x_val": validacao}
 
 def dividir_dados(caminho_arquivo):
     caminho_arquivo = Path(caminho_arquivo)
@@ -18,28 +33,18 @@ def dividir_dados(caminho_arquivo):
         raise FileNotFoundError(f"Arquivo não encontrado: {caminho_arquivo}")
 
     df = pd.read_csv(caminho_arquivo, skiprows=1, header=None)
-    tempo = df.iloc[:, 0].values.astype(np.float32)  # Extraindo a coluna de tempo
     dados = df.iloc[:, 1].values.astype(np.float32)
     
     # Dividindo os dados de forma sequencial
     tamanho_treino = int(len(dados) * 0.75)
-    treino_tempo = tempo[:tamanho_treino]
-    treino_dados = dados[:tamanho_treino]
-    validacao_tempo = tempo[tamanho_treino:]
-    validacao_dados = dados[tamanho_treino:]
+    treino = dados[:tamanho_treino]
+    validacao = dados[tamanho_treino:]
     
     # Convertendo para tensores do PyTorch e ajustando o formato
-    treino_tempo = torch.tensor(treino_tempo).unsqueeze(1)  # Formato (n, 1)
-    treino_dados = torch.tensor(treino_dados).unsqueeze(1)  # Formato (n, 1)
-    validacao_tempo = torch.tensor(validacao_tempo).unsqueeze(1)  # Formato (n, 1)
-    validacao_dados = torch.tensor(validacao_dados).unsqueeze(1)  # Formato (n, 1)
+    treino = torch.tensor(treino).unsqueeze(1)  # Formato (n, 1)
+    validacao = torch.tensor(validacao).unsqueeze(1)  # Formato (n, 1)
     
-    return {
-        "x_train": treino_dados,
-        "t_train": treino_tempo,
-        "x_val": validacao_dados,
-        "t_val": validacao_tempo
-    }
+    return {"x_train": treino, "x_val": validacao}
 
 class BaseModel(nn.Module):
     def __init__(self, **kwargs):
@@ -224,27 +229,26 @@ class Autoencoder(BaseModel):
 
 params = {
     "input_dim": 1,
-    "hidden_dim": 64,
+    "hidden_dim": 32,
     "activation_fn": nn.ReLU,
-    "dropout": 0.2
+    "dropout": 0.0
         }
 
 model = Autoencoder(**params)
 
 lr = 0.02
 model.compile_autoencoder(learning_rate=lr)
-dataset = dividir_dados("meu_arquivo_massflow_A1_csv.csv")
+dataset = dividir_dados("../data/meu_arquivo_massflow_A1_csv.csv")
 epochs = 200
 batch_size = 32
 x_train = dataset["x_train"]  
-t_train = dataset["t_train"]  # Extraindo os tempos de treino
 
 # Mantendo uma cópia dos dados originais
 x_train_original = x_train.clone()
-t_train_original = t_train.clone()
 
 # Treinando o modelo
 model.train_model(
+
     dataset=dataset,
     epochs=epochs,
     batch_size=batch_size,
@@ -263,10 +267,8 @@ pca = PCA(n_components=2)
 
 latent_2d = pca.fit_transform(latent_representation)
 
-# Plot da representação latente com mapa de cores
 plt.figure(figsize=(8, 6))
-plt.scatter(latent_2d[:, 0], latent_2d[:, 1], c=t_train_original.numpy(), cmap='viridis', alpha=0.6)
-plt.colorbar(label='Tempo')
+plt.scatter(latent_2d[:, 0], latent_2d[:, 1], alpha=0.6)
 plt.title("Representação 2D do Espaço Latente (PCA)")
 plt.xlabel("Componente Principal 1")
 plt.ylabel("Componente Principal 2")
@@ -279,14 +281,15 @@ with torch.no_grad():
 
 reconstruido = reconstruido.numpy()
 
-# Gráfico de comparação com mapa de cores
-# plt.figure(figsize=(10, 6))
-# plt.scatter(range(len(x_train_original)), x_train_original.numpy(), c=t_train_original.numpy(), cmap='viridis', label="Original", alpha=0.7)
-# plt.scatter(range(len(reconstruido)), reconstruido, c=t_train_original.numpy(), cmap='viridis', label="Reconstruído", alpha=0.7)
-# plt.colorbar(label='Tempo')
-# plt.title("Comparação entre Dados Originais e Reconstruídos")
-# plt.xlabel("Índice")
-# plt.ylabel("Valor")
-# plt.legend()
-# plt.grid(True)
-# plt.show()
+# Gráfico de comparação
+plt.figure(figsize=(10, 6))
+plt.plot(x_train_original.numpy(), label="Original", alpha=0.7)
+plt.plot(reconstruido, label="Reconstruído", alpha=0.7)
+plt.title("Comparação entre Dados Originais e Reconstruídos")
+plt.xlabel("Índice")
+plt.ylabel("Valor")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+

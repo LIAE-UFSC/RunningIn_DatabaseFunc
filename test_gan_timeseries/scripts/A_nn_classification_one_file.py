@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 np.random.seed(100)
 
-dataset = 'classification2.csv'
+dataset = '../data/classification2.csv'
 #dataset = 'diabetes.csv'
 
 data = pd.read_csv(dataset, header=None)
@@ -57,7 +57,7 @@ nn = [X_train.shape[1], 3, 2 ,1]  # arquitetura da rede neural
 
 # Carregar os pesos treinados
 
-weights_data = np.load('model_weights.npz')
+weights_data = np.load('../models/model_weights.npz')
 
 weights = [
     weights_data['w1'],  # Camada 1 (2→3)
@@ -277,7 +277,7 @@ print(f"Recall: {recall:.4f}")
 print(f"F1 Score: {f1_score:.4f}")
 
 
-if dataset == 'classification2.csv':
+if dataset == '../data/classification2.csv':
     plot_combined_decision_boundary_and_cost(X_train, y_train, losses)
 else:
     plot_cost(losses)

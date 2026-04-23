@@ -59,10 +59,10 @@ time_ranges = [
 grey_zone = (18000, 54000)
 
 label_dataset_by_time(
-    input_csv='dataset_modificado.csv',
+    input_csv='../data/dataset_modificado.csv',
     time_ranges=time_ranges,
     grey_zone=grey_zone,
     exclude_grey=True,
-    output_csv='dataset_rotulado.csv'
+    output_csv='../data/dataset_rotulado.csv'
 )
 

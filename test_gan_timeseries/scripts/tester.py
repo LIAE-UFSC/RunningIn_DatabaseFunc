@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Carregar o dataset
-df = pd.read_csv('arquivo_transformado.csv')
+df = pd.read_csv('../data/arquivo_transformado.csv')
 
 # Excluir as colunas 'signal' e 'unit'
 df = df.drop(columns=['signal', 'unit'])
@@ -18,7 +18,7 @@ df.loc[(df['time_hours'] > 5) & (df['time_hours'] <= 15), 'anomaly'] = 'n_sab'
 df = df.drop(columns=['time_hours'])
 
 # Salvar o dataset modificado (opcional)
-df.to_csv('dataset_modificado.csv', index=False)
+df.to_csv('../data/dataset_modificado.csv', index=False)
 
 # Exibir as primeiras linhas para verificação
 print(df.head())

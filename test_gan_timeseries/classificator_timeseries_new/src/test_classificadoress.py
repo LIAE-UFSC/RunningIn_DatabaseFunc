@@ -7,7 +7,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
 
 # carregar o dataset
-df = pd.read_csv("dataset_balanceado.csv")
+df = pd.read_csv("../data/dataset_balanceado.csv")
 
 # selecionar automaticamente colunas que começam com 'massFlow'
 feature_cols = [col for col in df.columns if col.startswith('massFlow')]

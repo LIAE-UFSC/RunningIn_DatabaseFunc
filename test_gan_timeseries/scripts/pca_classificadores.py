@@ -214,7 +214,7 @@ def plotar_curvas(historico):
 # Pipeline completo
 def pipeline_classificacao():
     # 1. Carregar e preparar dados
-    caminho_arquivo = r'C:\Users\PC-1\Documents\GitHub\RunningIn_DatabaseFunc\test_gan_timeseries\meu_arquivo_massflow_A1_teste.csv'
+    caminho_arquivo = '../data/meu_arquivo_massflow_A1_teste.csv'
     treino_dataset, val_dataset = carregar_dados(caminho_arquivo)
     
     # 2. Treinar modelo
