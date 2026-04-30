@@ -186,11 +186,35 @@ class Autoencoder(BaseModel):
             _, decoded = self(x)
             loss = self.loss_function(x, decoded)
         return loss.item()
+
+    def plot_loss_curve(self, save_path=None):
+        """Plot train and validation loss over epochs."""
+        if not hasattr(self, 'train_losses') or not self.train_losses:
+            raise RuntimeError("No training history found. Train the model first.")
+
+        epochs = range(1, len(self.train_losses) + 1)
+
+        plt.figure(figsize=(10, 4))
+        plt.plot(epochs, self.train_losses, label='Train Loss', color='steelblue')
+        if self.val_losses:
+            plt.plot(epochs, self.val_losses, label='Val Loss', color='tomato', linestyle='--')
+        plt.xlabel('Época')
+        plt.ylabel('MSE Loss')
+        plt.title('Loss do Autoencoder por Época')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+
+        if save_path:
+            plt.savefig(save_path, dpi=150)
+            print(f"Gráfico salvo em: {save_path}")
+        else:
+            plt.show()
     
 
-def processar_autoencoder(df_original, params_autoencoder, learning_rate=0.02, epochs=200, 
+def processar_autoencoder(df_original, params_autoencoder, learning_rate=0.02, epochs=200,
                          batch_size=32, train_size=0.75, df_latente_input=None,
-                         return_both_latent=True):
+                         return_both_latent=True, return_losses=False):
     """
     Processa dados usando um autoencoder e gera representações latentes
     
@@ -280,11 +304,15 @@ def processar_autoencoder(df_original, params_autoencoder, learning_rate=0.02, e
     
     # --- 6. Saída ---
     print(f"Processamento completo! Dimensão latente: {latent_treino.shape[1]}")
-    
+
+    loss_history = {"train": model.train_losses, "val": model.val_losses} if return_losses else None
+
     if return_both_latent and df_latent_teste is not None:
-        return df_reconstruido, df_latent_treino, df_latent_teste, latent_treino.shape[1]
+        base = (df_reconstruido, df_latent_treino, df_latent_teste, latent_treino.shape[1])
     else:
-        return df_reconstruido, df_latent_treino, latent_treino.shape[1]
+        base = (df_reconstruido, df_latent_treino, latent_treino.shape[1])
+
+    return base + (loss_history,) if return_losses else base
 
 def plot_autoencoder_results(df_original, df_reconstruido, 
                            plot_individual=False, 

@@ -160,7 +160,7 @@ def busca_grade_completa(
             embaralhar=False
         )
         
-        df_reconstruido, df_latente_treino, df_latente_teste, dim_lat = processar_autoencoder(
+        df_reconstruido, df_latente_treino, df_latente_teste, dim_lat, loss_history = processar_autoencoder(
             df_original=df_balanceado,
             params_autoencoder={
                 'input_dim': params['n_amostras'],
@@ -171,7 +171,8 @@ def busca_grade_completa(
             epochs=params['epochs'],
             batch_size=params['batch_size'],
             train_size=params['train_size'],
-            df_latente_input=df_test_balanceado  # Usa dados de teste para espaço latente se disponível
+            df_latente_input=df_test_balanceado,
+            return_losses=True
         )
 
         resultados_balanceado = avaliar_modelos(df_balanceado, df_test_balanceado)
@@ -216,7 +217,8 @@ def busca_grade_completa(
             'resultados_balanceado': resultados_balanceado,
             'resultados_latente': resultados_latente,
             'melhor_classificador': melhor_classificador,
-            'melhor_classificador_latente': melhor_classificador_latente
+            'melhor_classificador_latente': melhor_classificador_latente,
+            'loss_history': loss_history
         }
 
     resultados_top5_balanceado.sort(key=lambda x: x['acuracia'], reverse=True)
