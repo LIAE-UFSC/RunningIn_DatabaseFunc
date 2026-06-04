@@ -68,7 +68,7 @@ HIPERPARAMETROS = {
 SEEDS = [42, 7, 123, 2024, 99]
 
 # --- Saídas ------------------------------------------------------------------
-PAPER_OUTPUT_DIR = OUTPUTS_DIR / "paper"
+EXPERIMENTS_OUTPUT_DIR = OUTPUTS_DIR / "experiments"
 
 
 if __name__ == "__main__":
@@ -76,4 +76,4 @@ if __name__ == "__main__":
     for unit, arquivos in UNIDADES.items():
         print(f"  {unit}: {len(arquivos)} arquivo(s)")
     print(f"\nGrey zone: {GREY_ZONE}")
-    print(f"Saída do estudo: {PAPER_OUTPUT_DIR}")
+    print(f"Saída do estudo: {EXPERIMENTS_OUTPUT_DIR}")
