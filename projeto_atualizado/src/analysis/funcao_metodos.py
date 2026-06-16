@@ -101,7 +101,8 @@ def avaliar_modelos(df_treino, df_teste=None, test_size=0.3, random_state=42):
     return resultados
 
 
-def avaliar_modelos_completo(df_treino, df_teste=None, test_size=0.3, random_state=42):
+def avaliar_modelos_completo(df_treino, df_teste=None, test_size=0.3, random_state=42,
+                             retornar_modelos=False):
     """Avalia os mesmos classificadores com métricas adequadas a classes desbalanceadas.
 
     Igual a ``avaliar_modelos`` no preparo dos dados, mas reporta, além de
@@ -109,12 +110,21 @@ def avaliar_modelos_completo(df_treino, df_teste=None, test_size=0.3, random_sta
     balanced accuracy, MCC, ROC-AUC e PR-AUC (average precision). Mantida como
     função separada para não alterar ``avaliar_modelos`` (usada pelo ``gridsearch.py``).
 
-    Parâmetros e formato de entrada são idênticos a ``avaliar_modelos``.
+    Parâmetros e formato de entrada são idênticos a ``avaliar_modelos``, com:
+    - retornar_modelos (bool): se True, também devolve os artefatos treinados
+      (classificadores, scaler e feature_cols) para inferência fora-da-amostra,
+      ex.: aplicar ``predict_proba`` na grey zone. Default False (comportamento
+      idêntico ao anterior).
+
     Foca no caso binário (não amaciado × amaciado); AUC é calculado apenas quando
     o problema é binário e há score de probabilidade disponível.
 
     Retorna:
-    - Dicionário {nome_do_modelo: {métricas}}.
+    - Se retornar_modelos=False: dicionário {nome_do_modelo: {métricas}}.
+    - Se retornar_modelos=True: tupla (resultados, artefatos), onde artefatos é
+      {"modelos": {nome: classificador_treinado}, "scaler": StandardScaler,
+       "feature_cols": [...]}. Os classificadores expõem ``predict_proba`` e os
+      dados novos devem ser escalados com ``scaler`` antes da predição.
     """
     if 'anomaly' not in df_treino.columns:
         raise ValueError("O dataset deve conter a coluna 'anomaly'")
@@ -156,10 +166,12 @@ def avaliar_modelos_completo(df_treino, df_teste=None, test_size=0.3, random_sta
     is_binary = len(classes) == 2
 
     resultados = {}
+    modelos_treinados = {}
 
     for nome, modelo in modelos.items():
         try:
             modelo.fit(X_train_scaled, y_train)
+            modelos_treinados[nome] = modelo
             y_pred = modelo.predict(X_test_scaled)
 
             # Score de probabilidade para a classe positiva (necessário para AUC)
@@ -200,5 +212,13 @@ def avaliar_modelos_completo(df_treino, df_teste=None, test_size=0.3, random_sta
         except Exception as e:
             print(f"Erro ao avaliar {nome}: {str(e)}")
             resultados[nome] = {"erro": str(e)}
+
+    if retornar_modelos:
+        artefatos = {
+            "modelos": modelos_treinados,
+            "scaler": scaler,
+            "feature_cols": feature_cols,
+        }
+        return resultados, artefatos
 
     return resultados
