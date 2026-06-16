@@ -15,6 +15,7 @@ Não altera nenhum módulo de ``src/``.
 """
 
 import io
+import json
 import sys
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -23,7 +24,7 @@ import numpy as np
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from experiments.config import HIPERPARAMETROS  # noqa: E402
+from experiments.config import HIPERPARAMETROS, EXPERIMENTS_OUTPUT_DIR  # noqa: E402
 from experiments.janelamento import janelar, iter_split_por_unidade  # noqa: E402
 from src.analysis.funcao_metodos import avaliar_modelos_completo  # noqa: E402
 from src.models.autoencoder import processar_autoencoder  # noqa: E402
@@ -36,7 +37,8 @@ def _fixar_seed(seed: int) -> None:
 
 
 def rodar_validacao_por_unidade(df_janelado=None, hiperparametros=None,
-                                balancear_treino=True, seed=42, verbose=True):
+                                balancear_treino=True, seed=42, verbose=True,
+                                retornar_artefatos=False):
     """Roda a validação cruzada deixando-uma-unidade-de-fora sobre o latente do AE.
 
     Args:
@@ -46,9 +48,15 @@ def rodar_validacao_por_unidade(df_janelado=None, hiperparametros=None,
         balancear_treino: se True, undersampling do treino antes de treinar o AE.
         seed: semente fixada por dobra (numpy + torch).
         verbose: imprime um resumo por dobra.
+        retornar_artefatos: se True, também devolve, por dobra, os latentes
+            (treino/teste) e os classificadores treinados + scaler, para reuso
+            nas figuras (UMAP) e na inferência da grey zone.
 
     Returns:
-        dict {unit_teste: {classificador: {métricas}}}.
+        - Se retornar_artefatos=False: dict {unit_teste: {classificador: {métricas}}}.
+        - Se retornar_artefatos=True: tupla (resultados, artefatos), com
+          artefatos[unit_teste] = {"latente_treino", "latente_teste",
+          "classificadores", "scaler"}.
     """
     hp = {**HIPERPARAMETROS, **(hiperparametros or {})}
 
@@ -66,6 +74,7 @@ def rodar_validacao_por_unidade(df_janelado=None, hiperparametros=None,
     }
 
     resultados = {}
+    artefatos = {}
     for unit_teste, df_treino, df_teste in iter_split_por_unidade(df_janelado):
         _fixar_seed(seed)
 
@@ -88,7 +97,18 @@ def rodar_validacao_por_unidade(df_janelado=None, hiperparametros=None,
                 return_both_latent=True,
             )
 
-        metricas = avaliar_modelos_completo(df_lat_treino, df_lat_teste)
+        if retornar_artefatos:
+            metricas, art = avaliar_modelos_completo(
+                df_lat_treino, df_lat_teste, retornar_modelos=True
+            )
+            artefatos[unit_teste] = {
+                "latente_treino": df_lat_treino,
+                "latente_teste": df_lat_teste,
+                "classificadores": art["modelos"],
+                "scaler": art["scaler"],
+            }
+        else:
+            metricas = avaliar_modelos_completo(df_lat_treino, df_lat_teste)
         resultados[unit_teste] = metricas
 
         if verbose:
@@ -102,8 +122,21 @@ def rodar_validacao_por_unidade(df_janelado=None, hiperparametros=None,
                     f"MCC={m.get('MCC', float('nan')):.3f} AUC={auc_str}"
                 )
 
+    if retornar_artefatos:
+        return resultados, artefatos
     return resultados
 
 
+def salvar_metricas(resultados, caminho=None):
+    """Serializa as métricas por dobra em JSON. Default: outputs/experiments/."""
+    caminho = Path(caminho) if caminho else EXPERIMENTS_OUTPUT_DIR / "metricas_validacao_por_unidade.json"
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    with open(caminho, "w", encoding="utf-8") as f:
+        json.dump(resultados, f, indent=2, ensure_ascii=False)
+    return caminho
+
+
 if __name__ == "__main__":
-    rodar_validacao_por_unidade()
+    resultados = rodar_validacao_por_unidade()
+    destino = salvar_metricas(resultados)
+    print(f"\nMétricas salvas em: {destino}")
