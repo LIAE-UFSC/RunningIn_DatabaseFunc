@@ -15,6 +15,8 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
+from sklearn.decomposition import PCA
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from experiments.config import HIPERPARAMETROS  # noqa: E402
@@ -27,6 +29,25 @@ def representar_cru(df_treino, df_teste):
     """Representação crua: usa as janelas de ``massFlow`` diretamente (identidade)."""
     cols = [c for c in df_treino.columns if c.startswith("massFlow_")] + ["anomaly"]
     return df_treino[cols].reset_index(drop=True), df_teste[cols].reset_index(drop=True)
+
+
+def representar_pca(df_treino, df_teste, n_componentes):
+    """Projeção linear via PCA, ajustada só no treino e aplicada ao teste.
+
+    Comparação justa com o autoencoder: mesma entrada (janelas de ``massFlow``) e
+    mesma dimensão de saída (``n_componentes`` = ``latent_dim``).
+    """
+    feat = [c for c in df_treino.columns if c.startswith("massFlow_")]
+    pca = PCA(n_components=n_componentes)
+    X_treino = pca.fit_transform(df_treino[feat].values)
+    X_teste = pca.transform(df_teste[feat].values)
+
+    cols = [f"pca_{i + 1}" for i in range(n_componentes)]
+    rep_treino = pd.DataFrame(X_treino, columns=cols)
+    rep_treino["anomaly"] = df_treino["anomaly"].values
+    rep_teste = pd.DataFrame(X_teste, columns=cols)
+    rep_teste["anomaly"] = df_teste["anomaly"].values
+    return rep_treino, rep_teste
 
 
 def rodar_baseline(representar, df_janelado=None, hiperparametros=None,
@@ -84,5 +105,20 @@ def rodar_baseline_cru(**kwargs):
     return rodar_baseline(representar_cru, nome="cru", **kwargs)
 
 
+def rodar_baseline_pca(hiperparametros=None, **kwargs):
+    """Baseline com PCA na mesma dimensão do latente (``latent_dim``)."""
+    hp = {**HIPERPARAMETROS, **(hiperparametros or {})}
+    n_componentes = hp["latent_dim"]
+    return rodar_baseline(
+        lambda df_tr, df_te: representar_pca(df_tr, df_te, n_componentes),
+        hiperparametros=hiperparametros,
+        nome=f"pca{n_componentes}",
+        **kwargs,
+    )
+
+
 if __name__ == "__main__":
+    print("=== Baseline: features cruas ===")
     rodar_baseline_cru()
+    print("\n=== Baseline: PCA (latent_dim) ===")
+    rodar_baseline_pca()
