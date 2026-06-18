@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from experiments.config import HIPERPARAMETROS, SEEDS  # noqa: E402
+from experiments.config import HIPERPARAMETROS, SEEDS, EXPERIMENTS_OUTPUT_DIR  # noqa: E402
 from experiments.janelamento import janelar  # noqa: E402
 from experiments.baselines import rodar_baseline_cru, rodar_baseline_pca  # noqa: E402
 from experiments.runner import rodar_validacao_por_unidade  # noqa: E402
@@ -92,9 +92,57 @@ def agregar(df_registros, metricas=METRICAS_TABELA):
     return agregado
 
 
+def _formatar_celula(media, desvio):
+    if pd.isna(media):
+        return "-"
+    if pd.isna(desvio):
+        return f"{media:.3f}"
+    return f"{media:.3f} ± {desvio:.3f}"
+
+
+def montar_tabela(agregado, metricas=METRICAS_TABELA):
+    """Pivota o agregado: linhas = condição×classificador, colunas = métricas.
+
+    Cada célula é ``média ± desvio`` (entre as dobras).
+    """
+    df = agregado.copy()
+    df["celula"] = [_formatar_celula(m, d) for m, d in zip(df["media"], df["desvio"])]
+    pivot = df.pivot(index=["condicao", "classificador"], columns="metrica", values="celula")
+    colunas = [m for m in metricas if m in pivot.columns]
+    return pivot[colunas]
+
+
+def _para_markdown(pivot):
+    df = pivot.reset_index()
+    headers = [str(c) for c in df.columns]
+    linhas = [
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join("---" for _ in headers) + " |",
+    ]
+    for _, row in df.iterrows():
+        linhas.append("| " + " | ".join(str(v) for v in row.values) + " |")
+    return "\n".join(linhas) + "\n"
+
+
+def exportar_tabela(agregado, caminho_base=None, metricas=METRICAS_TABELA):
+    """Exporta a Tabela 1 em CSV e markdown. Default: outputs/experiments/tabela1.*"""
+    pivot = montar_tabela(agregado, metricas)
+    base = Path(caminho_base) if caminho_base else EXPERIMENTS_OUTPUT_DIR / "tabela1"
+    base.parent.mkdir(parents=True, exist_ok=True)
+
+    caminho_csv = base.with_suffix(".csv")
+    caminho_md = base.with_suffix(".md")
+    pivot.to_csv(caminho_csv)
+    caminho_md.write_text(_para_markdown(pivot), encoding="utf-8")
+    return caminho_csv, caminho_md
+
+
 if __name__ == "__main__":
     registros = rodar_multi_seed()
     agregado = agregar(registros)
     pd.set_option("display.width", 120)
     print("\nAgregado (média ± desvio entre as dobras):")
     print(agregado.to_string(index=False))
+
+    caminho_csv, caminho_md = exportar_tabela(agregado)
+    print(f"\nTabela 1 salva em:\n  {caminho_csv}\n  {caminho_md}")
