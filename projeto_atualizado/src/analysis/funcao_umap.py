@@ -1,3 +1,5 @@
+from math import ceil
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -82,6 +84,83 @@ def plot_umap_latente(
     if save_path:
         plt.savefig(save_path, dpi=150)
         print(f"UMAP salvo em: {save_path}")
+    else:
+        plt.show()
+
+    plt.close(fig)
+
+
+def plot_umap_latente_por_unidade(
+    latentes_por_unidade,
+    title=None,
+    save_path=None,
+    n_neighbors=15,
+    min_dist=0.1,
+    random_state=42,
+    n_cols=3,
+):
+    """Plota, num grid, o UMAP 2D do espaço latente de cada unidade, colorido por tempo.
+
+    Cada subplot é uma unidade; a cor é o índice sequencial (proxy de tempo), como
+    em ``plot_umap_latente``. O UMAP é ajustado por unidade — a leitura é qualitativa
+    (a forma/coerência da trajetória de amaciamento), não a posição absoluta entre
+    subplots.
+
+    Args:
+        latentes_por_unidade: dict {unit_id: DataFrame com colunas ``latent_*``}.
+        title, save_path, n_neighbors, min_dist, random_state: como em ``plot_umap_latente``.
+        n_cols: número de colunas do grid.
+    """
+    unidades = list(latentes_por_unidade.keys())
+    n = len(unidades)
+    if n == 0:
+        raise ValueError("Nenhuma unidade fornecida.")
+
+    n_cols = min(n_cols, n)
+    n_rows = ceil(n / n_cols)
+    fig, axes = plt.subplots(
+        n_rows, n_cols, figsize=(5 * n_cols, 4.2 * n_rows), squeeze=False
+    )
+
+    sc = None
+    for idx, unit in enumerate(unidades):
+        ax = axes[idx // n_cols][idx % n_cols]
+        df = latentes_por_unidade[unit]
+        latent_cols = [c for c in df.columns if c.startswith("latent_")]
+        if not latent_cols:
+            raise ValueError(f"Unidade {unit}: nenhuma coluna latent_* encontrada.")
+
+        X = df[latent_cols].values.astype(np.float32)
+        reducer = umap.UMAP(
+            n_components=2,
+            n_neighbors=min(n_neighbors, max(2, len(X) - 1)),
+            min_dist=min_dist,
+            random_state=random_state,
+        )
+        embedding = reducer.fit_transform(X)
+        tempo = np.arange(len(X)) / max(1, len(X) - 1)
+
+        sc = ax.scatter(
+            embedding[:, 0], embedding[:, 1], c=tempo, cmap="plasma",
+            s=40, alpha=0.9, vmin=0, vmax=1, linewidths=0,
+        )
+        ax.set_title(f"Unidade {unit} (n={len(X)})", fontsize=11)
+        ax.set_xlabel("UMAP 1", fontsize=10)
+        ax.set_ylabel("UMAP 2", fontsize=10)
+        ax.grid(True, color="#dddddd", linewidth=0.6)
+
+    for j in range(n, n_rows * n_cols):
+        axes[j // n_cols][j % n_cols].axis("off")
+
+    if sc is not None:
+        cbar = fig.colorbar(sc, ax=axes.ravel().tolist(), pad=0.02)
+        cbar.set_label("Índice temporal (normalizado)", fontsize=10)
+
+    fig.suptitle(title or "Espaço latente por unidade — UMAP 2D (cor = tempo)", fontsize=13)
+
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+        print(f"UMAP por unidade salvo em: {save_path}")
     else:
         plt.show()
 
