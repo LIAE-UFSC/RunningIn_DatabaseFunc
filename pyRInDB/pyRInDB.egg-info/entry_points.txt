@@ -1,2 +1,0 @@
-[console_scripts]
-pyRInDB = pyRInDB.main_class:main
