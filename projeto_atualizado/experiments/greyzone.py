@@ -160,8 +160,30 @@ def probabilidade_por_unidade(hiperparametros=None, seed=42,
     return curvas
 
 
+def estimar_instante_amaciamento(curva, limiar=0.5):
+    """Instante estimado = primeiro tempo em que P suavizado cruza e se mantém acima do limiar.
+
+    Returns:
+        float (tempo) ou None se a probabilidade nunca se mantém acima do limiar.
+    """
+    p = curva["proba_suave"].values
+    t = curva["time"].values
+    for i in range(len(p)):
+        if np.all(p[i:] >= limiar):
+            return float(t[i])
+    return None
+
+
+def estimar_instantes(curvas, limiar=0.5):
+    """Aplica ``estimar_instante_amaciamento`` a todas as unidades."""
+    return {unit: estimar_instante_amaciamento(curva, limiar) for unit, curva in curvas.items()}
+
+
 if __name__ == "__main__":
     curvas = probabilidade_por_unidade()
+    instantes = estimar_instantes(curvas)
     for unit, curva in curvas.items():
+        inst = instantes[unit]
+        inst_str = f"{inst:.0f}" if inst is not None else "—"
         print(f"{unit}: {len(curva)} janelas | tempo [{curva['time'].min():.0f}, {curva['time'].max():.0f}] "
-              f"| P inicial~{curva['proba_suave'].iloc[:20].mean():.2f} final~{curva['proba_suave'].iloc[-20:].mean():.2f}")
+              f"| instante estimado~{inst_str}")
