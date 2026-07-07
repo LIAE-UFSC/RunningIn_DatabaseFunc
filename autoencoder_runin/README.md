@@ -1,4 +1,4 @@
-# projeto_atualizado — Detecção de amaciamento de compressores
+# autoencoder_runin — Detecção de amaciamento de compressores
 
 Pipeline para **detecção de amaciamento (run-in)** de compressores herméticos a
 partir de séries temporais de vazão mássica (`massFlow`), usando um **autoencoder**
@@ -11,7 +11,7 @@ A avaliação usa **validação cruzada por unidade** (deixa-uma-unidade-de-fora
 ## Estrutura
 
 ```
-projeto_atualizado/
+autoencoder_runin/
   paths.py            # caminhos centrais (datasets, outputs)
   gridsearch.py       # busca exploratória de hiperparâmetros (uso original)
   requirements.txt    # dependências fixadas
@@ -47,7 +47,7 @@ projeto_atualizado/
 ## Como rodar
 
 Requer as dependências de `requirements.txt` (ambiente com `torch`, `scikit-learn`,
-`umap-learn`, `pandas`, `matplotlib`). A partir de `projeto_atualizado/`:
+`umap-learn`, `pandas`, `matplotlib`). A partir de `autoencoder_runin/`:
 
 ```bash
 # verificações rápidas

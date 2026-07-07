@@ -1,4 +1,4 @@
-# Data Card — projeto_atualizado
+# Data Card — autoencoder_runin
 
 Descrição do conjunto de dados usado no estudo de detecção de amaciamento.
 

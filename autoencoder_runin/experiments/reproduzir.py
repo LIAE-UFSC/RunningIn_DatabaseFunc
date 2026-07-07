@@ -7,7 +7,7 @@ Produz, em ``outputs/experiments/``:
 - Figura 4: probabilidade de amaciamento ao longo do tempo (grey zone) + sobreposição.
 
 Reusa ``tabela`` e ``figuras``; não altera ``src/``. Rode a partir de
-``projeto_atualizado/`` com o ambiente de ``requirements.txt``.
+``autoencoder_runin/`` com o ambiente de ``requirements.txt``.
 """
 
 import shutil
