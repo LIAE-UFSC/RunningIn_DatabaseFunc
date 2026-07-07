@@ -5,3 +5,10 @@ __pycache__/
 
 # Experiment results
 resultados/
+
+# Local notes (não versionados)
+*.local.md
+
+# Generated study outputs (keep the folder, ignore the assets)
+projeto_atualizado/outputs/experiments/*
+!projeto_atualizado/outputs/experiments/.gitkeep
