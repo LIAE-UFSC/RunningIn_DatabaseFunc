@@ -84,6 +84,7 @@ def janelar_com_tempo(df, n_amostras, janelamento, amostras_repetidas):
 
 
 def _fixar_seed(seed):
+    """Fixa as sementes de numpy e torch para reprodutibilidade da dobra."""
     np.random.seed(seed)
     torch.manual_seed(seed)
 

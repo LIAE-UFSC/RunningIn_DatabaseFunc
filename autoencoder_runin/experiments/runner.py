@@ -32,6 +32,7 @@ from src.preprocessing.funcao_random_undersampling import balancear_csv_por_unde
 
 
 def _fixar_seed(seed: int) -> None:
+    """Fixa as sementes de numpy e torch para reprodutibilidade da dobra."""
     np.random.seed(seed)
     torch.manual_seed(seed)
 

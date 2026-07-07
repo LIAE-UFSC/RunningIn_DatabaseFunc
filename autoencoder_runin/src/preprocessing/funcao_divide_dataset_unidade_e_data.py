@@ -1,3 +1,5 @@
+"""Divisão do dataset completo em arquivos por unidade e data de ensaio."""
+
 import pandas as pd
 import os
 from paths import DATASETS_RAW

@@ -1,3 +1,10 @@
+"""Visualização (legado) da métrica por hiperparâmetro (balanceado × latente).
+
+Script exploratório que lê um ``metadados_completos.json`` do grid search e salva, por
+método e por hiperparâmetro, gráficos comparando balanceado e latente. Não é importado
+pela pipeline atual.
+"""
+
 import json
 import matplotlib.pyplot as plt
 import os
@@ -5,6 +12,8 @@ import numpy as np
 from paths import PLOTS_DIR
 
 def plot_accuracy_comparisons(json_path, output_dir=None, metric='Acuracia'):
+    """Gera e salva, para cada método e hiperparâmetro alvo, gráficos da métrica
+    (balanceado × latente) com estatísticas resumo, em ``output_dir``."""
     if output_dir is None:
         output_dir = str(PLOTS_DIR)
         os.makedirs(output_dir, exist_ok=True)

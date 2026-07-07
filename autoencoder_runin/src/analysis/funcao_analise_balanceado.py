@@ -1,3 +1,9 @@
+"""Geração (legado) de heatmaps da métrica por n_amostras × amostras_repetidas.
+
+Script exploratório que lê um ``metadados_completos.json`` do grid search e salva um
+heatmap por método (dados balanceados). Não é importado pela pipeline atual.
+"""
+
 import json
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,14 +13,12 @@ from matplotlib.colors import LinearSegmentedColormap
 from paths import HEATMAPS_DIR
 
 def plot_balanceado_heatmaps(json_path, output_dir=None, metric='Acuracia'):
+    """Gera 3 heatmaps (um por método) da métrica para dados balanceados,
+    com n_amostras no eixo X e amostras_repetidas no eixo Y."""
     if output_dir is None:
         output_dir = str(HEATMAPS_DIR)
         os.makedirs(output_dir, exist_ok=True)
-    """
-    Gera 3 heatmaps (um para cada método) mostrando a métrica para dados balanceados,
-    com n_amostras no eixo X e amostras_repetidas no eixo Y.
-    """
-    
+
     # 1. Carregar dados
     try:
         with open(json_path, 'r', encoding='utf-8') as f:

@@ -1,3 +1,5 @@
+"""Separação do dataset completo em arquivos por unidade (coluna ``unit``)."""
+
 import pandas as pd
 from paths import DATASETS_RAW
 

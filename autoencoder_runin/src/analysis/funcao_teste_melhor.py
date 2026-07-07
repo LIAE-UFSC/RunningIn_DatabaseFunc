@@ -1,3 +1,9 @@
+"""Análise (legado) das médias de acurácia por método e tipo de dataset.
+
+Script exploratório executado à mão sobre um ``metadados_completos.json`` do grid search.
+Não é importado pela pipeline atual.
+"""
+
 import json
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,6 +41,7 @@ def plot_acuracia_medias(metadados):
     
     # Adiciona valores nas barras
     def autolabel(rects):
+        """Anota o valor (altura) acima de cada barra."""
         for rect in rects:
             height = rect.get_height()
             ax.annotate(f'{height:.3f}',
@@ -54,6 +61,7 @@ def plot_acuracia_medias(metadados):
 
 # Função para calcular médias (igual à anterior)
 def calcular_media_acuracia(metadados):
+    """Calcula a acurácia média por método, para os datasets balanceado e latente."""
     balanceado = {
         "regressao_logistica": {"soma": 0, "contagem": 0},
         "SVM(RBF)": {"soma": 0, "contagem": 0},

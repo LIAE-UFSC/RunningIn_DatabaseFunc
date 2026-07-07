@@ -1,3 +1,10 @@
+"""Busca exploratória de hiperparâmetros (grid search) do pipeline autoencoder + classificadores.
+
+Uso original do projeto: varre combinações de janelamento e do autoencoder, avalia
+classificadores sobre os dados balanceados e sobre o espaço latente, e serializa os
+resultados (top 5%, casos onde o latente supera, metadados completos).
+"""
+
 import os
 import numpy as np
 import itertools
@@ -33,6 +40,14 @@ def busca_grade_completa(
     lista_train_sizes=[0.7],
     output_dir=None
 ):
+    """Executa a busca em grade sobre as listas de hiperparâmetros fornecidas.
+
+    Para cada combinação válida (com restrições de janelamento e dimensões), processa
+    os CSVs de entrada, treina o autoencoder, avalia os classificadores nos dados
+    balanceados e no espaço latente, e acumula os resultados. Ao final, salva em
+    ``output_dir`` os top 5% (balanceado e latente), os casos em que o latente supera
+    o balanceado e os metadados completos. Retorna os caminhos das pastas de saída.
+    """
     base = Path(output_dir) if output_dir else RESULTS_DIR / "resultados_personalizados"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     pasta_resultados = str(base.parent / f"{base.name}_{timestamp}")

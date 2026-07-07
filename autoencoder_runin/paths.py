@@ -1,3 +1,5 @@
+"""Caminhos centrais do projeto (datasets, outputs), derivados da raiz do pacote."""
+
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent

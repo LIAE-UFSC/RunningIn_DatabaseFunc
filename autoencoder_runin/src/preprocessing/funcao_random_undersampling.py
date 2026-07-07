@@ -1,3 +1,5 @@
+"""Balanceamento de classes por random undersampling (iguala à menor classe)."""
+
 import pandas as pd
 import numpy as np
 from paths import DATASETS_GER

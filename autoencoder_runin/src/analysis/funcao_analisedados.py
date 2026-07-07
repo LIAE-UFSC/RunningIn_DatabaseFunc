@@ -1,3 +1,9 @@
+"""Análise (legado) da acurácia balanceado × latente a partir dos metadados do grid search.
+
+Script exploratório executado à mão sobre um ``metadados_completos.json`` gerado pelo
+``gridsearch.py``. Não é importado pela pipeline atual.
+"""
+
 import json
 import matplotlib.pyplot as plt
 import numpy as np
@@ -37,6 +43,7 @@ def analisar_acuracia_comparativa(metadados_completos):
     return percentagens
 
 def plot_acuracia_crescente(metadados_completos):
+    """Plota a acurácia ordenada (crescente) por método e tipo de dataset (balanceado/latente)."""
     metodos = ["regressao_logistica", "SVM(RBF)", "arvore_de_decisao"]
     tipos_dataset = ["balanceado", "latente"]
     

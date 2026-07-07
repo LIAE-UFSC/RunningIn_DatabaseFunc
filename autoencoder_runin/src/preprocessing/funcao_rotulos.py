@@ -1,3 +1,5 @@
+"""Rotulagem das séries por faixas de tempo (não amaciado × amaciado) e grey zone."""
+
 import pandas as pd
 import os
 from paths import DATASETS_PROC

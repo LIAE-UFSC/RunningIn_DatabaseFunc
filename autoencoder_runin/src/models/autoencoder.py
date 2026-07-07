@@ -1,3 +1,5 @@
+"""Modelo autoencoder e utilitários de treino, reconstrução e projeção no espaço latente."""
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -11,6 +13,9 @@ from paths import DATASETS_GER
 np.random.seed(42)  
 
 class BaseModel(nn.Module):
+    """Classe base para modelos PyTorch, com utilitários de compilação, treino,
+    avaliação, predição e persistência (salvar/carregar) compartilhados."""
+
     def __init__(self, **kwargs):
         super(BaseModel, self).__init__()
         self.model = None  # Placeholder for model architecture in subclasses
@@ -84,6 +89,10 @@ class BaseModel(nn.Module):
         print(f"Model loaded from {file_path}")
 
 class Autoencoder(BaseModel):
+    """Autoencoder totalmente conectado (encoder/decoder simétricos) com gargalo
+    de dimensão ``latent_dim``, treinado por reconstrução (MSE). O encoder produz a
+    representação latente usada pelos classificadores."""
+
     def __init__(self, **kwargs):
         super(Autoencoder, self).__init__(**kwargs)
         

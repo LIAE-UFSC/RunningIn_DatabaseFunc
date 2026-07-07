@@ -1,3 +1,5 @@
+"""Visualização 2D (UMAP) do espaço latente, colorida pelo índice temporal."""
+
 from math import ceil
 
 import numpy as np

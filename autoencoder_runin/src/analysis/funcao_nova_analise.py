@@ -1,9 +1,17 @@
+"""Análise (legado) dos casos em que o espaço latente supera o balanceado.
+
+Script exploratório executado à mão sobre um ``resultados_latente_melhor.json``.
+Não é importado pela pipeline atual.
+"""
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import json
 
 def analise_simples(json_path):
+    """Lê o JSON de resultados e plota a diferença de acurácia (latente − balanceado)
+    por classificador e por dimensão latente, para os casos em que o latente foi melhor."""
     # Carrega os dados
     with open(json_path, 'r', encoding='utf-8') as f:
         dados = json.load(f)

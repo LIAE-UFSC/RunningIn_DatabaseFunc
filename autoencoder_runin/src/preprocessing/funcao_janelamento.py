@@ -1,3 +1,5 @@
+"""Reorganização das séries em janelas de N amostras (com opção de sobreposição)."""
+
 import pandas as pd
 from paths import DATASETS_GER
 

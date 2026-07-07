@@ -93,6 +93,7 @@ def agregar(df_registros, metricas=METRICAS_TABELA):
 
 
 def _formatar_celula(media, desvio):
+    """Formata uma célula da tabela como ``média ± desvio`` (ou ``-`` se ausente)."""
     if pd.isna(media):
         return "-"
     if pd.isna(desvio):
@@ -113,6 +114,7 @@ def montar_tabela(agregado, metricas=METRICAS_TABELA):
 
 
 def _para_markdown(pivot):
+    """Converte a tabela pivotada em texto de tabela markdown."""
     df = pivot.reset_index()
     headers = [str(c) for c in df.columns]
     linhas = [
