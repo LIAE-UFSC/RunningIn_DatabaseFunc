@@ -6,6 +6,8 @@ The main functionalities provided are:
 * Converting LabVIEW waveform files to hdf5 dataset;
 * Extract data from hdf5 dataset to pandas dataframe and to dict.
 
+> **Projeto de pesquisa (ML):** este repositório também contém o estudo de **detecção de amaciamento com autoencoder**, em [`autoencoder_runin/`](autoencoder_runin/README.md). Dados de amaciamento são proprietários e não distribuídos.
+
 ## Installation
 
 In order to build and install this library, run the following command:

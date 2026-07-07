@@ -62,5 +62,9 @@ Os hiperparâmetros ficam em `experiments/config.py` (`HIPERPARAMETROS`).
 
 ## Dados
 
+> ⚠️ **Dados proprietários.** O conjunto de amaciamento pertence ao LIAE-UFSC e
+> **não é distribuído**. Não pode ser publicado nem incluído em qualquer versão
+> pública deste repositório.
+
 Ver [DATA_CARD.md](DATA_CARD.md) para a descrição do conjunto (unidades, contagens
 por classe, aquisição e definição dos rótulos).
