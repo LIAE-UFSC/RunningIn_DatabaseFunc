@@ -4,3 +4,4 @@ pandas==2.2.2
 scikit-learn==1.7.1
 matplotlib==3.10.8
 umap-learn==0.5.12
+seaborn==0.13.2
