@@ -9,14 +9,17 @@ Reusa ``runner`` e ``funcao_umap``; não altera ``src/``. Usa backend headless.
 """
 
 import sys
+from math import ceil
 from pathlib import Path
 
 import matplotlib
 
 matplotlib.use("Agg")  # geração de arquivo sem display
+import matplotlib.pyplot as plt  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from experiments.config import EXPERIMENTS_OUTPUT_DIR  # noqa: E402
+from experiments.config import EXPERIMENTS_OUTPUT_DIR, GREY_ZONE  # noqa: E402
+from experiments.greyzone import probabilidade_por_unidade  # noqa: E402
 from experiments.runner import rodar_validacao_por_unidade  # noqa: E402
 from src.analysis.funcao_umap import plot_umap_latente_por_unidade  # noqa: E402
 
@@ -49,6 +52,58 @@ def gerar_umap_por_unidade(hiperparametros=None, seed=42, save_path=None,
     return caminho
 
 
+def gerar_figura_greyzone(hiperparametros=None, seed=42, classificador="regressao_logistica",
+                          suavizacao=15, save_path=None, n_cols=3):
+    """Gera a figura da probabilidade de amaciamento ao longo do tempo, por unidade.
+
+    Cada subplot mostra P(amaciado) (bruto e suavizado) na série NA da unidade, com a
+    grey zone sombreada. Usa o modelo que não viu a unidade.
+
+    Returns:
+        (caminho da figura, curvas por unidade).
+    """
+    curvas = probabilidade_por_unidade(
+        hiperparametros=hiperparametros, seed=seed,
+        classificador=classificador, suavizacao=suavizacao,
+    )
+
+    unidades = list(curvas.keys())
+    n = len(unidades)
+    n_cols = min(n_cols, n)
+    n_rows = ceil(n / n_cols)
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(5 * n_cols, 3.6 * n_rows), squeeze=False)
+
+    for idx, unit in enumerate(unidades):
+        ax = axes[idx // n_cols][idx % n_cols]
+        curva = curvas[unit]
+        ax.axvspan(GREY_ZONE[0], GREY_ZONE[1], color="#bbbbbb", alpha=0.35, label="grey zone")
+        ax.axhline(0.5, color="#888888", linewidth=0.8, linestyle=":")
+        ax.plot(curva["time"], curva["proba"], color="#c9c2e8", linewidth=0.8, alpha=0.7)
+        ax.plot(curva["time"], curva["proba_suave"], color="#5b3fa8", linewidth=1.8, label="P suavizado")
+        ax.set_ylim(-0.02, 1.02)
+        ax.set_title(f"Unidade {unit}", fontsize=11)
+        ax.set_xlabel("Tempo", fontsize=10)
+        ax.set_ylabel("P(amaciado)", fontsize=10)
+        ax.grid(True, color="#eeeeee", linewidth=0.6)
+        if idx == 0:
+            ax.legend(fontsize=8, loc="lower right")
+
+    for j in range(n, n_rows * n_cols):
+        axes[j // n_cols][j % n_cols].axis("off")
+
+    fig.suptitle("Probabilidade de amaciamento ao longo do tempo (modelo não viu a unidade)", fontsize=13)
+    fig.tight_layout()
+
+    caminho = Path(save_path) if save_path else EXPERIMENTS_OUTPUT_DIR / "greyzone_probabilidade.png"
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(caminho, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Figura da grey zone salva em: {caminho}")
+    return caminho, curvas
+
+
 if __name__ == "__main__":
     destino = gerar_umap_por_unidade()
-    print(f"Figura salva em: {destino}")
+    print(f"Figura UMAP salva em: {destino}")
+    destino_gz, _ = gerar_figura_greyzone()
+    print(f"Figura grey zone salva em: {destino_gz}")
