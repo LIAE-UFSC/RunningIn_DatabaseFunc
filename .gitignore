@@ -1,7 +1,32 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
 
-.vscode
+# Environments
+.venv/
+venv/
+env/
+.env
+
+# Build artifacts
+build/
+dist/
+
+# Editors / OS
+.vscode/
+.claude/
+.DS_Store
+Thumbs.db
+
+# Trained models / large binaries
+*.pkl
+*.pt
+*.pth
+*.h5
+*.hdf5
 
 # Experiment results
 resultados/
