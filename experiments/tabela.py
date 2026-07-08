@@ -1,12 +1,12 @@
-"""Execução multi-seed das três condições e agregação dos resultados.
+"""Multi-seed run of the three conditions and aggregation of the results.
 
-Roda {cru, PCA, autoencoder} na validação cruzada por unidade, repetindo em
-várias seeds para reduzir o ruído de estimativa (sobretudo do autoencoder), e
-agrega média ± desvio **entre as dobras** (variabilidade de generalização entre
-compressores).
+Runs {cru, PCA, autoencoder} in the per-unit cross-validation, repeating over
+several seeds to reduce estimation noise (mostly from the autoencoder), and
+aggregates mean ± std **across folds** (generalization variability across
+compressors).
 
-O janelamento é feito uma única vez e reutilizado em todas as execuções.
-Reusa ``runner`` e ``baselines``; não altera ``src/``.
+Windowing is done once and reused across all runs.
+Reuses ``runner`` and ``baselines``; does not modify ``src/``.
 """
 
 import sys
@@ -31,9 +31,9 @@ CONDICOES_PADRAO = {
 
 
 def rodar_multi_seed(seeds=None, hiperparametros=None, condicoes=None, verbose=True):
-    """Roda cada condição em cada seed e devolve um DataFrame tidy de registros.
+    """Run each condition on each seed and return a tidy DataFrame of records.
 
-    Colunas: condicao, seed, unit, classificador, metrica, valor.
+    Columns: condicao, seed, unit, classificador, metrica, valor.
     """
     seeds = list(seeds) if seeds is not None else list(SEEDS)
     condicoes = condicoes if condicoes is not None else CONDICOES_PADRAO
@@ -49,7 +49,7 @@ def rodar_multi_seed(seeds=None, hiperparametros=None, condicoes=None, verbose=T
     for nome_cond, funcao in condicoes.items():
         for seed in seeds:
             if verbose:
-                print(f"-> condição={nome_cond} | seed={seed}")
+                print(f"-> condition={nome_cond} | seed={seed}")
             resultados = funcao(
                 df_janelado=df_janelado,
                 hiperparametros=hiperparametros,
@@ -73,10 +73,10 @@ def rodar_multi_seed(seeds=None, hiperparametros=None, condicoes=None, verbose=T
 
 
 def agregar(df_registros, metricas=METRICAS_TABELA):
-    """Agrega média ± desvio entre as dobras (média sobre seeds por dobra primeiro).
+    """Aggregate mean ± std across folds (averaging over seeds per fold first).
 
     Returns:
-        DataFrame com colunas: condicao, classificador, metrica, media, desvio.
+        DataFrame with columns: condicao, classificador, metrica, media, desvio.
     """
     df = df_registros[df_registros["metrica"].isin(metricas)].copy()
     por_fold = (
@@ -93,7 +93,7 @@ def agregar(df_registros, metricas=METRICAS_TABELA):
 
 
 def _formatar_celula(media, desvio):
-    """Formata uma célula da tabela como ``média ± desvio`` (ou ``-`` se ausente)."""
+    """Format a table cell as ``mean ± std`` (or ``-`` if missing)."""
     if pd.isna(media):
         return "-"
     if pd.isna(desvio):
@@ -102,9 +102,9 @@ def _formatar_celula(media, desvio):
 
 
 def montar_tabela(agregado, metricas=METRICAS_TABELA):
-    """Pivota o agregado: linhas = condição×classificador, colunas = métricas.
+    """Pivot the aggregate: rows = condition×classifier, columns = metrics.
 
-    Cada célula é ``média ± desvio`` (entre as dobras).
+    Each cell is ``mean ± std`` (across folds).
     """
     df = agregado.copy()
     df["celula"] = [_formatar_celula(m, d) for m, d in zip(df["media"], df["desvio"])]
@@ -114,7 +114,7 @@ def montar_tabela(agregado, metricas=METRICAS_TABELA):
 
 
 def _para_markdown(pivot):
-    """Converte a tabela pivotada em texto de tabela markdown."""
+    """Convert the pivoted table into markdown table text."""
     df = pivot.reset_index()
     headers = [str(c) for c in df.columns]
     linhas = [
@@ -127,7 +127,7 @@ def _para_markdown(pivot):
 
 
 def exportar_tabela(agregado, caminho_base=None, metricas=METRICAS_TABELA):
-    """Exporta a Tabela 1 em CSV e markdown. Default: outputs/experiments/tabela1.*"""
+    """Export Table 1 as CSV and markdown. Default: outputs/experiments/tabela1.*"""
     pivot = montar_tabela(agregado, metricas)
     base = Path(caminho_base) if caminho_base else EXPERIMENTS_OUTPUT_DIR / "tabela1"
     base.parent.mkdir(parents=True, exist_ok=True)
@@ -143,8 +143,8 @@ if __name__ == "__main__":
     registros = rodar_multi_seed()
     agregado = agregar(registros)
     pd.set_option("display.width", 120)
-    print("\nAgregado (média ± desvio entre as dobras):")
+    print("\nAggregated (mean ± std across folds):")
     print(agregado.to_string(index=False))
 
     caminho_csv, caminho_md = exportar_tabela(agregado)
-    print(f"\nTabela 1 salva em:\n  {caminho_csv}\n  {caminho_md}")
+    print(f"\nTable 1 saved to:\n  {caminho_csv}\n  {caminho_md}")

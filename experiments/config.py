@@ -1,34 +1,34 @@
-"""Configuração central dos experimentos de detecção de amaciamento (run-in).
+"""Central configuration for the run-in detection experiments.
 
-Centraliza, em um único lugar:
-- descoberta das unidades de compressor (A1..A5) e seus arquivos de teste;
-- definição dos intervalos de tempo usados na rotulagem e da grey zone;
-- hiperparâmetros fixos do estudo;
-- diretórios de saída.
+Centralizes, in a single place:
+- discovery of the compressor units (A1..A5) and their test files;
+- definition of the time ranges used for labeling and of the grey zone;
+- the study's fixed hyperparameters;
+- output directories.
 
-Nada aqui é hardcoded de forma redundante: as unidades são descobertas a partir
-dos arquivos em ``datasets/processados/``. Os demais valores são as configurações
-de trabalho do estudo (ajustáveis num único ponto).
+Nothing here is redundantly hardcoded: the units are discovered from the files in
+``datasets/processados/``. The remaining values are the study's working configuration
+(adjustable in a single point).
 """
 
 import re
 import sys
 from pathlib import Path
 
-# Permite ``from paths import ...`` ao rodar de qualquer lugar.
+# Allows ``from paths import ...`` when running from anywhere.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from paths import DATASETS_PROC, OUTPUTS_DIR  # noqa: E402
 
-# --- Descoberta das unidades -------------------------------------------------
-# Cada arquivo processado tem o padrão: processado_dataset_A<N>_<data>[_NA].csv
-# A unidade é o modelo do compressor (A1..A5); cada unidade pode ter vários testes.
+# --- Unit discovery ----------------------------------------------------------
+# Each processed file follows the pattern: processado_dataset_A<N>_<date>[_NA].csv
+# The unit is the compressor model (A1..A5); each unit may have several tests.
 _UNIT_FILE_RE = re.compile(r"^processado_dataset_(A\d+)_.*\.csv$")
 
 
 def descobrir_unidades(diretorio: Path = DATASETS_PROC) -> dict[str, list[Path]]:
-    """Agrupa os CSVs processados por unidade (A1..A5).
+    """Group the processed CSVs by unit (A1..A5).
 
-    Retorna um dict ordenado {unit_id: [caminhos dos arquivos de teste]}.
+    Returns an ordered dict {unit_id: [paths of the test files]}.
     """
     unidades: dict[str, list[Path]] = {}
     for caminho in sorted(diretorio.glob("processado_dataset_A*.csv")):
@@ -38,20 +38,20 @@ def descobrir_unidades(diretorio: Path = DATASETS_PROC) -> dict[str, list[Path]]
     return dict(sorted(unidades.items()))
 
 
-# Mapa unidade -> arquivos, resolvido na importação.
+# Unit -> files map, resolved at import time.
 UNIDADES = descobrir_unidades()
 
-# --- Rotulagem temporal ------------------------------------------------------
-# (start, end, label): 0 = não amaciado, 1 = amaciado.
+# --- Time-based labeling -----------------------------------------------------
+# (start, end, label): 0 = not run-in, 1 = run-in.
 TIME_RANGES = [(0, 18000, 0), (54000, 500000, 1)]
-# Região de transição, sem rótulo confiável; excluída do treino/avaliação.
+# Transition region, without a reliable label; excluded from training/evaluation.
 GREY_ZONE = (18000, 54000)
 
-# --- Hiperparâmetros do estudo ----------------------------------------------
-# Configuração de trabalho única (a ser confirmada a partir dos resultados do
-# grid search já executado). Centralizada aqui para reprodutibilidade.
+# --- Study hyperparameters ---------------------------------------------------
+# Single working configuration (to be confirmed from the already-executed grid
+# search results). Centralized here for reproducibility.
 HIPERPARAMETROS = {
-    # Pré-processamento / janelamento
+    # Preprocessing / windowing
     "n_amostras": 8,
     "janelamento": True,
     "amostras_repetidas": 4,
@@ -64,16 +64,16 @@ HIPERPARAMETROS = {
     "train_size": 0.7,
 }
 
-# Seeds para as execuções multi-seed (avaliação estatística).
+# Seeds for the multi-seed runs (statistical evaluation).
 SEEDS = [42, 7, 123, 2024, 99]
 
-# --- Saídas ------------------------------------------------------------------
+# --- Outputs -----------------------------------------------------------------
 EXPERIMENTS_OUTPUT_DIR = OUTPUTS_DIR / "experiments"
 
 
 if __name__ == "__main__":
-    print("Unidades descobertas:")
+    print("Discovered units:")
     for unit, arquivos in UNIDADES.items():
-        print(f"  {unit}: {len(arquivos)} arquivo(s)")
+        print(f"  {unit}: {len(arquivos)} file(s)")
     print(f"\nGrey zone: {GREY_ZONE}")
-    print(f"Saída do estudo: {EXPERIMENTS_OUTPUT_DIR}")
+    print(f"Study output: {EXPERIMENTS_OUTPUT_DIR}")

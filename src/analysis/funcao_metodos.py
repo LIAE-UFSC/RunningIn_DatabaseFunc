@@ -1,4 +1,4 @@
-"""Avaliação de classificadores clássicos (regressão logística, SVM, árvore) e métricas."""
+"""Evaluation of classic classifiers (logistic regression, SVM, decision tree) and metrics."""
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -12,28 +12,28 @@ import numpy as np
 
 def avaliar_modelos(df_treino, df_teste=None, test_size=0.3, random_state=42):
     """
-    Avalia modelos de classificação com tratamento robusto para dimensionalidade
-    
-    Parâmetros:
-    - df_treino: DataFrame com dados de treino (deve conter coluna 'anomaly')
-    - df_teste: Opcional - DataFrame com dados de teste (mesmas colunas do treino)
-    - test_size: Proporção para teste caso df_teste não seja fornecido
-    - random_state: Seed para reproducibilidade
-    
-    Retorna:
-    - Dicionário com métricas para cada modelo
+    Evaluate classification models with robust handling of dimensionality.
+
+    Parameters:
+    - df_treino: DataFrame with training data (must contain the 'anomaly' column)
+    - df_teste: Optional - DataFrame with test data (same columns as training)
+    - test_size: Test proportion when df_teste is not provided
+    - random_state: Seed for reproducibility
+
+    Returns:
+    - Dictionary with metrics for each model
     """
-    
+
     if 'anomaly' not in df_treino.columns:
-        raise ValueError("O dataset deve conter a coluna 'anomaly'")
-    
+        raise ValueError("The dataset must contain the 'anomaly' column")
+
     feature_cols = [col for col in df_treino.columns if col != 'anomaly']
     if len(feature_cols) == 0:
-        raise ValueError("Nenhuma feature encontrada (apenas coluna 'anomaly')")
-    
+        raise ValueError("No features found (only the 'anomaly' column)")
+
     if df_teste is not None:
         if set(df_teste.columns) != set(df_treino.columns):
-            raise ValueError("Colunas do dataset de teste diferentes do treino")
+            raise ValueError("Test dataset columns differ from the training set")
     else:
         df_treino, df_teste = train_test_split(
             df_treino,
@@ -41,36 +41,36 @@ def avaliar_modelos(df_treino, df_teste=None, test_size=0.3, random_state=42):
             random_state=random_state,
             stratify=df_treino['anomaly']
         )
-    
+
     X_train = df_treino[feature_cols].values
     y_train = df_treino['anomaly'].values
     X_test = df_teste[feature_cols].values
     y_test = df_teste['anomaly'].values
-    
+
     if X_train.shape[1] != X_test.shape[1]:
-        raise ValueError(f"Mismatch de features: Treino tem {X_train.shape[1]}, Teste tem {X_test.shape[1]}")
-    
+        raise ValueError(f"Feature mismatch: train has {X_train.shape[1]}, test has {X_test.shape[1]}")
+
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
-    
+
     modelos = {
         "regressao_logistica": LogisticRegression(max_iter=1000),
         "SVM(RBF)": SVC(probability=True),
         "arvore_de_decisao": DecisionTreeClassifier()
     }
-    
+
     resultados = {}
-    
+
     for nome, modelo in modelos.items():
         try:
             modelo.fit(X_train_scaled, y_train)
             y_pred = modelo.predict(X_test_scaled)
             cm = confusion_matrix(y_test, y_pred)
-            
+
             classes = np.unique(y_test)
             is_binary = len(classes) == 2
-            
+
             if is_binary:
                 tn, fp, fn, tp = cm.ravel()
                 metricas = {
@@ -94,10 +94,10 @@ def avaliar_modelos(df_treino, df_teste=None, test_size=0.3, random_state=42):
                     "matriz_de_confusao": cm.tolist(),
                     "classes": classes.tolist()
                 }
-            
+
             resultados[nome] = metricas
         except Exception as e:
-            print(f"Erro ao avaliar {nome}: {str(e)}")
+            print(f"Error evaluating {nome}: {str(e)}")
             resultados[nome] = {"erro": str(e)}
 
     return resultados
@@ -105,39 +105,39 @@ def avaliar_modelos(df_treino, df_teste=None, test_size=0.3, random_state=42):
 
 def avaliar_modelos_completo(df_treino, df_teste=None, test_size=0.3, random_state=42,
                              retornar_modelos=False):
-    """Avalia os mesmos classificadores com métricas adequadas a classes desbalanceadas.
+    """Evaluate the same classifiers with metrics suited to imbalanced classes.
 
-    Igual a ``avaliar_modelos`` no preparo dos dados, mas reporta, além de
-    acurácia/precisão/recall/F1, as métricas mais honestas para desbalanceamento:
-    balanced accuracy, MCC, ROC-AUC e PR-AUC (average precision). Mantida como
-    função separada para não alterar ``avaliar_modelos`` (usada pelo ``gridsearch.py``).
+    Same data preparation as ``avaliar_modelos``, but reports, in addition to
+    accuracy/precision/recall/F1, the more honest metrics for imbalance:
+    balanced accuracy, MCC, ROC-AUC and PR-AUC (average precision). Kept as a
+    separate function so as not to change ``avaliar_modelos`` (used by ``gridsearch.py``).
 
-    Parâmetros e formato de entrada são idênticos a ``avaliar_modelos``, com:
-    - retornar_modelos (bool): se True, também devolve os artefatos treinados
-      (classificadores, scaler e feature_cols) para inferência fora-da-amostra,
-      ex.: aplicar ``predict_proba`` na grey zone. Default False (comportamento
-      idêntico ao anterior).
+    Parameters and input format are identical to ``avaliar_modelos``, with:
+    - retornar_modelos (bool): if True, also returns the trained artifacts
+      (classifiers, scaler and feature_cols) for out-of-sample inference,
+      e.g. applying ``predict_proba`` on the grey zone. Default False (behavior
+      identical to before).
 
-    Foca no caso binário (não amaciado × amaciado); AUC é calculado apenas quando
-    o problema é binário e há score de probabilidade disponível.
+    Focuses on the binary case (not run-in × run-in); AUC is computed only when the
+    problem is binary and a probability score is available.
 
-    Retorna:
-    - Se retornar_modelos=False: dicionário {nome_do_modelo: {métricas}}.
-    - Se retornar_modelos=True: tupla (resultados, artefatos), onde artefatos é
-      {"modelos": {nome: classificador_treinado}, "scaler": StandardScaler,
-       "feature_cols": [...]}. Os classificadores expõem ``predict_proba`` e os
-      dados novos devem ser escalados com ``scaler`` antes da predição.
+    Returns:
+    - If retornar_modelos=False: dictionary {model_name: {metrics}}.
+    - If retornar_modelos=True: tuple (resultados, artefatos), where artefatos is
+      {"modelos": {name: trained_classifier}, "scaler": StandardScaler,
+       "feature_cols": [...]}. The classifiers expose ``predict_proba`` and new data
+      must be scaled with ``scaler`` before prediction.
     """
     if 'anomaly' not in df_treino.columns:
-        raise ValueError("O dataset deve conter a coluna 'anomaly'")
+        raise ValueError("The dataset must contain the 'anomaly' column")
 
     feature_cols = [col for col in df_treino.columns if col != 'anomaly']
     if len(feature_cols) == 0:
-        raise ValueError("Nenhuma feature encontrada (apenas coluna 'anomaly')")
+        raise ValueError("No features found (only the 'anomaly' column)")
 
     if df_teste is not None:
         if set(df_teste.columns) != set(df_treino.columns):
-            raise ValueError("Colunas do dataset de teste diferentes do treino")
+            raise ValueError("Test dataset columns differ from the training set")
     else:
         df_treino, df_teste = train_test_split(
             df_treino,
@@ -152,7 +152,7 @@ def avaliar_modelos_completo(df_treino, df_teste=None, test_size=0.3, random_sta
     y_test = df_teste['anomaly'].values
 
     if X_train.shape[1] != X_test.shape[1]:
-        raise ValueError(f"Mismatch de features: Treino tem {X_train.shape[1]}, Teste tem {X_test.shape[1]}")
+        raise ValueError(f"Feature mismatch: train has {X_train.shape[1]}, test has {X_test.shape[1]}")
 
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
@@ -176,7 +176,7 @@ def avaliar_modelos_completo(df_treino, df_teste=None, test_size=0.3, random_sta
             modelos_treinados[nome] = modelo
             y_pred = modelo.predict(X_test_scaled)
 
-            # Score de probabilidade para a classe positiva (necessário para AUC)
+            # Probability score for the positive class (needed for AUC)
             y_score = None
             if hasattr(modelo, "predict_proba"):
                 y_score = modelo.predict_proba(X_test_scaled)[:, 1]
@@ -212,7 +212,7 @@ def avaliar_modelos_completo(df_treino, df_teste=None, test_size=0.3, random_sta
 
             resultados[nome] = metricas
         except Exception as e:
-            print(f"Erro ao avaliar {nome}: {str(e)}")
+            print(f"Error evaluating {nome}: {str(e)}")
             resultados[nome] = {"erro": str(e)}
 
     if retornar_modelos:

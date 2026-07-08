@@ -1,7 +1,7 @@
-"""Análise (legado) da acurácia balanceado × latente a partir dos metadados do grid search.
+"""Analysis (legacy) of balanced × latent accuracy from the grid search metadata.
 
-Script exploratório executado à mão sobre um ``metadados_completos.json`` gerado pelo
-``gridsearch.py``. Não é importado pela pipeline atual.
+Exploratory script run by hand on a ``metadados_completos.json`` produced by
+``gridsearch.py``. Not imported by the current pipeline.
 """
 
 import json
@@ -11,14 +11,14 @@ import numpy as np
 caminho_json = r'resultados_personalizados_20250818_162933\metadados_completos.json'
 
 def carregar_metadados(caminho_arquivo):
-    """Carrega os metadados completos de um arquivo JSON."""
+    """Load the complete metadata from a JSON file."""
     with open(caminho_arquivo, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 def analisar_acuracia_comparativa(metadados_completos):
     """
-    Analisa e compara a acurácia dos classificadores em datasets balanceados
-    e no espaço latente para cada método de classificação.
+    Analyze and compare the classifiers' accuracy on the balanced datasets
+    and on the latent space for each classification method.
     """
     metodos_classificacao = ["regressao_logistica", "SVM(RBF)", "arvore_de_decisao"]
     resultados_comparativos = {metodo: {"melhor_latente": 0, "total_ensaios": 0} for metodo in metodos_classificacao}
@@ -43,49 +43,49 @@ def analisar_acuracia_comparativa(metadados_completos):
     return percentagens
 
 def plot_acuracia_crescente(metadados_completos):
-    """Plota a acurácia ordenada (crescente) por método e tipo de dataset (balanceado/latente)."""
+    """Plot the accuracy sorted (increasing) by method and dataset type (balanced/latent)."""
     metodos = ["regressao_logistica", "SVM(RBF)", "arvore_de_decisao"]
     tipos_dataset = ["balanceado", "latente"]
-    
-    # Cores distintas para cada combinação método-tipo
+
+    # Distinct colors for each method-type combination
     cores = {
-        "regressao_logistica_balanceado": "#1f77b4",  # azul
-        "regressao_logistica_latente": "#ff7f0e",     # laranja
-        "SVM(RBF)_balanceado": "#2ca02c",            # verde
-        "SVM(RBF)_latente": "#d62728",               # vermelho
-        "arvore_de_decisao_balanceado": "#9467bd",   # roxo
-        "arvore_de_decisao_latente": "#8c564b"       # marrom
+        "regressao_logistica_balanceado": "#1f77b4",  # blue
+        "regressao_logistica_latente": "#ff7f0e",     # orange
+        "SVM(RBF)_balanceado": "#2ca02c",            # green
+        "SVM(RBF)_latente": "#d62728",               # red
+        "arvore_de_decisao_balanceado": "#9467bd",   # purple
+        "arvore_de_decisao_latente": "#8c564b"       # brown
     }
-    
-    # Preparar os dados
+
+    # Prepare the data
     dados = {metodo: {tipo: [] for tipo in tipos_dataset} for metodo in metodos}
-    
+
     for execucao in metadados_completos["execucoes"].values():
         for metodo in metodos:
             for tipo in tipos_dataset:
                 acuracia = execucao[f"resultados_{tipo}"][metodo]["Acuracia"]
                 dados[metodo][tipo].append(acuracia)
-    
-    # Ordenar os dados (crescente) e plotar
+
+    # Sort the data (increasing) and plot
     fig, ax = plt.subplots(figsize=(12, 6))
-    
+
     for metodo in metodos:
         for tipo in tipos_dataset:
             chave_cor = f"{metodo}_{tipo}"
             acuracias_ordenadas = sorted(dados[metodo][tipo])
             x = range(1, len(acuracias_ordenadas) + 1)
             ax.plot(
-                x, 
-                acuracias_ordenadas, 
+                x,
+                acuracias_ordenadas,
                 label=f"{metodo} ({tipo})",
                 color=cores[chave_cor],
                 linestyle='--' if tipo == 'balanceado' else '-',
                 marker='o' if metodo == 'regressao_logistica' else ('s' if metodo == 'SVM(RBF)' else '^')
             )
-    
-    ax.set_title("Acurácia Crescente por Método e Tipo de Dataset")
-    ax.set_xlabel("Execuções Ordenadas (Menor para Maior Acurácia)")
-    ax.set_ylabel("Acurácia")
+
+    ax.set_title("Increasing accuracy by method and dataset type")
+    ax.set_xlabel("Ordered runs (lowest to highest accuracy)")
+    ax.set_ylabel("Accuracy")
     ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     ax.grid(True, linestyle='--', alpha=0.6)
     plt.tight_layout()
@@ -93,17 +93,17 @@ def plot_acuracia_crescente(metadados_completos):
 
 try:
     metadados_completos = carregar_metadados(caminho_json)
-    
+
     percentagens_melhor_latente = analisar_acuracia_comparativa(metadados_completos)
 
     for metodo, percentagem in percentagens_melhor_latente.items():
-        print(f"O dataset latente teve melhor acurácia em {percentagem:.2f}% dos ensaios para o método '{metodo}'.")
+        print(f"The latent dataset had better accuracy in {percentagem:.2f}% of the runs for the '{metodo}' method.")
 
     plot_acuracia_crescente(metadados_completos)
 
 except FileNotFoundError:
-    print(f"Erro: Arquivo não encontrado no caminho {caminho_json}")
+    print(f"Error: file not found at path {caminho_json}")
 except json.JSONDecodeError:
-    print(f"Erro: O arquivo {caminho_json} não é um JSON válido")
+    print(f"Error: file {caminho_json} is not valid JSON")
 except Exception as e:
-    print(f"Ocorreu um erro inesperado: {str(e)}")
+    print(f"An unexpected error occurred: {str(e)}")

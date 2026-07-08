@@ -1,4 +1,4 @@
-"""Rotulagem das séries por faixas de tempo (não amaciado × amaciado) e grey zone."""
+"""Labeling of the series by time ranges (not run-in × run-in) and grey zone."""
 
 import pandas as pd
 import os
@@ -19,50 +19,49 @@ def label_dataset_by_time(
     output_csv=None
 ):
     """
-    Processa um dataset: rotula os dados com base no tempo, renomeia a coluna
-    'test' para 'anomaly' e remove a coluna 'unit'.
+    Process a dataset: label the data based on time, rename the 'test' column to
+    'anomaly' and drop the 'unit' column.
 
-    A função realiza os seguintes passos:
-    1. Carrega os dados de um arquivo CSV ou de um DataFrame existente.
-    2. Converte TODAS as colunas numéricas (com vírgulas) para float com pontos.
-    3. Renomeia a coluna 'test' para 'anomaly'.
-    4. Remove a coluna 'unit'.
-    5. Aplica os rótulos (ex: 0 para normal, 1 para anomalia) na coluna 'anomaly'
-       com base nos intervalos de tempo definidos em 'time_ranges'.
-    6. Trata uma "zona cinzenta" (grey_zone), que pode ser excluída ou salva
-       separadamente.
-    7. Salva o DataFrame processado em um novo arquivo CSV.
+    The function performs the following steps:
+    1. Loads the data from a CSV file or an existing DataFrame.
+    2. Converts ALL numeric columns (with commas) to float with dots.
+    3. Renames the 'test' column to 'anomaly'.
+    4. Drops the 'unit' column.
+    5. Applies the labels (e.g. 0 for normal, 1 for anomaly) to the 'anomaly' column
+       based on the time ranges defined in 'time_ranges'.
+    6. Handles a "grey zone" (grey_zone), which can be excluded or saved separately.
+    7. Saves the processed DataFrame to a new CSV file.
 
-    Parâmetros:
-    - input_csv (str, opcional): Caminho para o arquivo CSV de entrada.
-    - df_dados (DataFrame, opcional): DataFrame para processar diretamente.
-    - time_ranges (list of tuples): Lista de tuplas (start_time, end_time, label).
-    - grey_zone (tuple, opcional): Tupla (start_time, end_time) para zona cinzenta.
-    - exclude_grey (bool): Se True, remove os dados da zona cinzenta.
-    - save_greyzone_csv (bool): Se True, salva a zona cinzenta separadamente.
-    - save_csv (bool): Se True, salva o dataset rotulado em um arquivo.
-    - greyzone_csv (str): Nome do arquivo para a zona cinzenta.
-    - output_csv (str, opcional): Nome do arquivo de saída.
+    Parameters:
+    - input_csv (str, optional): Path to the input CSV file.
+    - df_dados (DataFrame, optional): DataFrame to process directly.
+    - time_ranges (list of tuples): List of tuples (start_time, end_time, label).
+    - grey_zone (tuple, optional): Tuple (start_time, end_time) for the grey zone.
+    - exclude_grey (bool): If True, removes the grey-zone data.
+    - save_greyzone_csv (bool): If True, saves the grey zone separately.
+    - save_csv (bool): If True, saves the labeled dataset to a file.
+    - greyzone_csv (str): File name for the grey zone.
+    - output_csv (str, optional): Output file name.
     """
     df = None
     df_grey = pd.DataFrame()
 
-    # Carrega os dados
+    # Load the data
     if input_csv:
         df = pd.read_csv(input_csv)
     elif df_dados is not None:
         df = df_dados.copy()
     else:
-        raise ValueError("É necessário fornecer 'input_csv' ou 'df_dados'.")
+        raise ValueError("You must provide 'input_csv' or 'df_dados'.")
 
-    # CORREÇÃO PRINCIPAL: Converte todas as colunas numéricas com vírgulas
+    # MAIN FIX: convert all numeric columns with commas
     for col in df.select_dtypes(include=['object']).columns:
         try:
             df[col] = df[col].astype(str).str.replace(',', '.').astype(float)
         except (ValueError, AttributeError):
-            continue  # Mantém colunas não numéricas inalteradas
+            continue  # Keep non-numeric columns unchanged
 
-    # Processamento padrão
+    # Standard processing
     df['time'] = df['time'].astype(str).str.replace(',', '.').astype(float)
 
     if 'test' in df.columns:
@@ -70,11 +69,11 @@ def label_dataset_by_time(
     else:
         if 'anomaly' not in df.columns:
             df['anomaly'] = None
-    
+
     if 'unit' in df.columns:
         df = df.drop(columns=['unit'])
 
-    # Gera nome do arquivo de saída se não especificado
+    # Generate the output file name if not specified
     if save_csv and output_csv is None:
         if input_csv:
             base_name = os.path.splitext(os.path.basename(input_csv))[0]
@@ -82,12 +81,12 @@ def label_dataset_by_time(
         else:
             output_csv = 'dataset_rotulado_default.csv'
 
-    # Aplica os rótulos
+    # Apply the labels
     for start_time, end_time, label in time_ranges:
         mask = (df['time'] >= start_time) & (df['time'] <= end_time)
         df.loc[mask, 'anomaly'] = label
 
-    # Trata zona cinzenta
+    # Handle the grey zone
     if grey_zone:
         grey_start, grey_end = grey_zone
         grey_mask = (df['time'] >= grey_start) & (df['time'] <= grey_end)
@@ -96,13 +95,13 @@ def label_dataset_by_time(
             df_grey = df[grey_mask].copy()
             df_grey['anomaly'] = 'grey_zone'
             df_grey.to_csv(greyzone_csv, index=False)
-        
+
         if exclude_grey:
             df = df[~grey_mask]
         else:
             df.loc[grey_mask, 'anomaly'] = 'grey_zone'
-    
-    # Salva o resultado
+
+    # Save the result
     if save_csv and output_csv:
         df.to_csv(output_csv, index=False)
 
@@ -110,12 +109,12 @@ def label_dataset_by_time(
 
 if __name__ == "__main__":
 
-    print("--- Executando Exemplo ---")
+    print("--- Running Example ---")
     df, grey = label_dataset_by_time(
         input_csv=str(DATASETS_PROC / 'processado_dataset_A5_22_01_NA.csv'),
         output_csv=str(DATASETS_PROC / 'processado_dataset_A5_22_01_NA.csv')
     )
-    print("Dataset processado:")
+    print("Processed dataset:")
     print(df.head())
 
     # pasta = "."
@@ -123,7 +122,7 @@ if __name__ == "__main__":
     # arquivos_csv = [f for f in os.listdir(pasta) if f.startswith("dataset_A") and f.endswith(".csv")]
 
     # for arquivo in arquivos_csv:
-    #     print(f"--- Executando para {arquivo} ---")
+    #     print(f"--- Running for {arquivo} ---")
     #     df, grey = label_dataset_by_time(
     #     input_csv=arquivo,
     #     time_ranges=[
@@ -132,10 +131,10 @@ if __name__ == "__main__":
     #     ],
     #     grey_zone=None,
     #     )
-    
-    #     # salvar com prefixo
+
+    #     # save with a prefix
     #     nome_saida = f"processado_{arquivo}"
     #     df.to_csv(nome_saida, index=False)
-    
-    #     print(f"Dataset processado salvo em: {nome_saida}")
+
+    #     print(f"Processed dataset saved to: {nome_saida}")
     #     print(df.head())

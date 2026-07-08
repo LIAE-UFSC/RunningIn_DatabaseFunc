@@ -1,17 +1,17 @@
-"""Validação cruzada por unidade do espaço latente do autoencoder.
+"""Per-unit cross-validation of the autoencoder latent space.
 
-Para cada dobra (uma unidade de fora por vez, ver ``janelamento.py``):
+For each fold (one unit left out at a time, see ``janelamento.py``):
 
-1. balanceia o **treino** por undersampling (reusa ``balancear_csv_por_undersampling``);
-2. treina o autoencoder no treino e projeta treino e teste no espaço latente
-   (reusa ``processar_autoencoder``);
-3. treina os classificadores no latente do treino e avalia na unidade de teste,
-   em sua distribuição real — sem balancear o teste (reusa ``avaliar_modelos_completo``).
+1. balances the **training set** by undersampling (reuses ``balancear_csv_por_undersampling``);
+2. trains the autoencoder on the training set and projects train and test into the
+   latent space (reuses ``processar_autoencoder``);
+3. trains the classifiers on the training latent and evaluates on the test unit, in
+   its real distribution — without balancing the test set (reuses ``avaliar_modelos_completo``).
 
-Treino balanceado + teste natural: as métricas (balanced accuracy, MCC, AUC) já
-tratam o desbalanceamento, então o teste não é falseado.
+Balanced training + natural test: the metrics (balanced accuracy, MCC, AUC) already
+handle the imbalance, so the test set is not skewed.
 
-Não altera nenhum módulo de ``src/``.
+Does not modify any module under ``src/``.
 """
 
 import io
@@ -32,7 +32,7 @@ from src.preprocessing.funcao_random_undersampling import balancear_csv_por_unde
 
 
 def _fixar_seed(seed: int) -> None:
-    """Fixa as sementes de numpy e torch para reprodutibilidade da dobra."""
+    """Fix the numpy and torch seeds for fold reproducibility."""
     np.random.seed(seed)
     torch.manual_seed(seed)
 
@@ -40,22 +40,22 @@ def _fixar_seed(seed: int) -> None:
 def rodar_validacao_por_unidade(df_janelado=None, hiperparametros=None,
                                 balancear_treino=True, seed=42, verbose=True,
                                 retornar_artefatos=False):
-    """Roda a validação cruzada deixando-uma-unidade-de-fora sobre o latente do AE.
+    """Run the leave-one-unit-out cross-validation over the AE latent space.
 
     Args:
-        df_janelado: DataFrame já janelado (de ``janelar``); se None, janela com
-            os hiperparâmetros efetivos.
-        hiperparametros: dict para sobrepor ``config.HIPERPARAMETROS``.
-        balancear_treino: se True, undersampling do treino antes de treinar o AE.
-        seed: semente fixada por dobra (numpy + torch).
-        verbose: imprime um resumo por dobra.
-        retornar_artefatos: se True, também devolve, por dobra, os latentes
-            (treino/teste) e os classificadores treinados + scaler, para reuso
-            nas figuras (UMAP) e na inferência da grey zone.
+        df_janelado: already-windowed DataFrame (from ``janelar``); if None, windows
+            with the effective hyperparameters.
+        hiperparametros: dict to override ``config.HIPERPARAMETROS``.
+        balancear_treino: if True, undersample the training set before training the AE.
+        seed: seed fixed per fold (numpy + torch).
+        verbose: prints a per-fold summary.
+        retornar_artefatos: if True, also returns, per fold, the latents
+            (train/test) and the trained classifiers + scaler, for reuse in the
+            figures (UMAP) and in the grey-zone inference.
 
     Returns:
-        - Se retornar_artefatos=False: dict {unit_teste: {classificador: {métricas}}}.
-        - Se retornar_artefatos=True: tupla (resultados, artefatos), com
+        - If retornar_artefatos=False: dict {unit_teste: {classifier: {metrics}}}.
+        - If retornar_artefatos=True: tuple (resultados, artefatos), with
           artefatos[unit_teste] = {"latente_treino", "latente_teste",
           "classificadores", "scaler"}.
     """
@@ -85,7 +85,7 @@ def rodar_validacao_por_unidade(df_janelado=None, hiperparametros=None,
                 df_dados=df_treino, save_csv=False, embaralhar=True
             )
 
-        # Treina o AE e projeta treino/teste no latente (silencia logs de época).
+        # Train the AE and project train/test into the latent (silence epoch logs).
         with redirect_stdout(io.StringIO()):
             _, df_lat_treino, df_lat_teste, _ = processar_autoencoder(
                 df_original=df_treino_ae,
@@ -113,7 +113,7 @@ def rodar_validacao_por_unidade(df_janelado=None, hiperparametros=None,
         resultados[unit_teste] = metricas
 
         if verbose:
-            print(f"[teste={unit_teste}]")
+            print(f"[test={unit_teste}]")
             for nome, m in metricas.items():
                 auc = m.get("ROC_AUC")
                 auc_str = f"{auc:.3f}" if isinstance(auc, float) else str(auc)
@@ -129,7 +129,7 @@ def rodar_validacao_por_unidade(df_janelado=None, hiperparametros=None,
 
 
 def salvar_metricas(resultados, caminho=None):
-    """Serializa as métricas por dobra em JSON. Default: outputs/experiments/."""
+    """Serialize the per-fold metrics to JSON. Default: outputs/experiments/."""
     caminho = Path(caminho) if caminho else EXPERIMENTS_OUTPUT_DIR / "metricas_validacao_por_unidade.json"
     caminho.parent.mkdir(parents=True, exist_ok=True)
     with open(caminho, "w", encoding="utf-8") as f:
@@ -140,4 +140,4 @@ def salvar_metricas(resultados, caminho=None):
 if __name__ == "__main__":
     resultados = rodar_validacao_por_unidade()
     destino = salvar_metricas(resultados)
-    print(f"\nMétricas salvas em: {destino}")
+    print(f"\nMetrics saved to: {destino}")

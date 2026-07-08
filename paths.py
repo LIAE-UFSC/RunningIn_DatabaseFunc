@@ -1,4 +1,4 @@
-"""Caminhos centrais do projeto (datasets, outputs), derivados da raiz do pacote."""
+"""Central project paths (datasets, outputs), derived from the package root."""
 
 from pathlib import Path
 

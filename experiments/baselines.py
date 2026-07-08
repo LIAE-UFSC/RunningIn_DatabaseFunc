@@ -1,14 +1,14 @@
-"""Baselines de comparação para a representação do autoencoder.
+"""Comparison baselines for the autoencoder representation.
 
-Roda a mesma validação cruzada por unidade do ``runner.py``, mas trocando o
-espaço latente do autoencoder por representações de referência:
+Runs the same per-unit cross-validation as ``runner.py``, but replacing the
+autoencoder latent space with reference representations:
 
-- **cru**: as próprias janelas de ``massFlow`` (sem nenhuma projeção);
-- **PCA**: projeção linear na mesma dimensão do latente (adicionado depois).
+- **cru** (raw): the ``massFlow`` windows themselves (no projection);
+- **PCA**: linear projection to the same dimension as the latent (added later).
 
-O autoencoder só se justifica se superar esses baselines. Reusa os mesmos blocos
-(``janelar``, ``iter_split_por_unidade``, ``balancear_csv_por_undersampling``,
-``avaliar_modelos_completo``); não altera ``src/`` nem o ``runner.py``.
+The autoencoder is only justified if it beats these baselines. Reuses the same
+building blocks (``janelar``, ``iter_split_por_unidade``, ``balancear_csv_por_undersampling``,
+``avaliar_modelos_completo``); does not modify ``src/`` nor ``runner.py``.
 """
 
 import sys
@@ -26,16 +26,16 @@ from src.preprocessing.funcao_random_undersampling import balancear_csv_por_unde
 
 
 def representar_cru(df_treino, df_teste):
-    """Representação crua: usa as janelas de ``massFlow`` diretamente (identidade)."""
+    """Raw representation: uses the ``massFlow`` windows directly (identity)."""
     cols = [c for c in df_treino.columns if c.startswith("massFlow_")] + ["anomaly"]
     return df_treino[cols].reset_index(drop=True), df_teste[cols].reset_index(drop=True)
 
 
 def representar_pca(df_treino, df_teste, n_componentes):
-    """Projeção linear via PCA, ajustada só no treino e aplicada ao teste.
+    """Linear PCA projection, fit on the training set only and applied to the test.
 
-    Comparação justa com o autoencoder: mesma entrada (janelas de ``massFlow``) e
-    mesma dimensão de saída (``n_componentes`` = ``latent_dim``).
+    Fair comparison with the autoencoder: same input (``massFlow`` windows) and same
+    output dimension (``n_componentes`` = ``latent_dim``).
     """
     feat = [c for c in df_treino.columns if c.startswith("massFlow_")]
     pca = PCA(n_components=n_componentes)
@@ -52,16 +52,16 @@ def representar_pca(df_treino, df_teste, n_componentes):
 
 def rodar_baseline(representar, df_janelado=None, hiperparametros=None,
                    balancear_treino=True, seed=42, verbose=True, nome="baseline"):
-    """Validação cruzada por unidade usando uma representação arbitrária.
+    """Per-unit cross-validation using an arbitrary representation.
 
     Args:
         representar: callable ``(df_treino_bal, df_teste) -> (rep_treino, rep_teste)``,
-            cada saída com features + coluna ``anomaly``. Deve ser ajustada apenas
-            no treino e aplicada ao teste (sem vazamento).
-        demais args: como em ``runner.rodar_validacao_por_unidade``.
+            each output with features + an ``anomaly`` column. Must be fit only on the
+            training set and applied to the test set (no leakage).
+        other args: as in ``runner.rodar_validacao_por_unidade``.
 
     Returns:
-        dict {unit_teste: {classificador: {métricas}}}.
+        dict {unit_teste: {classifier: {metrics}}}.
     """
     hp = {**HIPERPARAMETROS, **(hiperparametros or {})}
 
@@ -87,7 +87,7 @@ def rodar_baseline(representar, df_janelado=None, hiperparametros=None,
         resultados[unit_teste] = metricas
 
         if verbose:
-            print(f"[{nome} | teste={unit_teste}]")
+            print(f"[{nome} | test={unit_teste}]")
             for nome_clf, m in metricas.items():
                 auc = m.get("ROC_AUC")
                 auc_str = f"{auc:.3f}" if isinstance(auc, float) else str(auc)
@@ -101,12 +101,12 @@ def rodar_baseline(representar, df_janelado=None, hiperparametros=None,
 
 
 def rodar_baseline_cru(**kwargs):
-    """Baseline com as janelas de ``massFlow`` cruas."""
+    """Baseline with the raw ``massFlow`` windows."""
     return rodar_baseline(representar_cru, nome="cru", **kwargs)
 
 
 def rodar_baseline_pca(hiperparametros=None, **kwargs):
-    """Baseline com PCA na mesma dimensão do latente (``latent_dim``)."""
+    """Baseline with PCA at the same dimension as the latent (``latent_dim``)."""
     hp = {**HIPERPARAMETROS, **(hiperparametros or {})}
     n_componentes = hp["latent_dim"]
     return rodar_baseline(
@@ -118,7 +118,7 @@ def rodar_baseline_pca(hiperparametros=None, **kwargs):
 
 
 if __name__ == "__main__":
-    print("=== Baseline: features cruas ===")
+    print("=== Baseline: raw features ===")
     rodar_baseline_cru()
     print("\n=== Baseline: PCA (latent_dim) ===")
     rodar_baseline_pca()

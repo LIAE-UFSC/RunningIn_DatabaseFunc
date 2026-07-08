@@ -1,45 +1,45 @@
-"""Balanceamento de classes por random undersampling (iguala à menor classe)."""
+"""Class balancing by random undersampling (matches the smallest class)."""
 
 import pandas as pd
 import numpy as np
 from paths import DATASETS_GER
 
-np.random.seed(42)  
+np.random.seed(42)
 
 def balancear_csv_por_undersampling(
-    input_csv=None,      # Modificado: tornamos opcional
-    df_dados=None,       # Novo parâmetro para receber DataFrame diretamente
-    save_csv=True, 
-    coluna_classe='anomaly', 
+    input_csv=None,      # Changed: made optional
+    df_dados=None,       # New parameter to receive a DataFrame directly
+    save_csv=True,
+    coluna_classe='anomaly',
     output_csv=None,
     embaralhar=True
 ):
     """
-    Realiza random undersampling, balanceando as classes com base na menor classe.
-    Agora aceita:
-    - input_csv (str): Caminho para o arquivo CSV de entrada OU
-    - df_dados (DataFrame): DataFrame diretamente
+    Performs random undersampling, balancing the classes based on the smallest class.
+    Now accepts:
+    - input_csv (str): Path to the input CSV file OR
+    - df_dados (DataFrame): DataFrame directly
 
-    Parâmetros:
-    - input_csv (opcional): str. Caminho para o arquivo CSV de entrada.
-    - df_dados (opcional): DataFrame. DataFrame diretamente (alternativa a input_csv).
-    - save_csv (bool): Se True, salva o dataset balanceado em um arquivo CSV.
-    - coluna_classe (str): Nome da coluna com os rótulos das classes.
-    - output_csv (str): Caminho para salvar o arquivo CSV balanceado.
-    - embaralhar (bool): Se True, embaralha as amostras após o balanceamento.
+    Parameters:
+    - input_csv (optional): str. Path to the input CSV file.
+    - df_dados (optional): DataFrame. DataFrame directly (alternative to input_csv).
+    - save_csv (bool): If True, saves the balanced dataset to a CSV file.
+    - coluna_classe (str): Name of the column with the class labels.
+    - output_csv (str): Path to save the balanced CSV file.
+    - embaralhar (bool): If True, shuffles the samples after balancing.
 
-    Retorna:
-    - df_balanceado (pd.DataFrame): Dataset balanceado.
+    Returns:
+    - df_balanceado (pd.DataFrame): Balanced dataset.
     """
-    # NOVO BLOCO: Seleção da fonte de dados
+    # NEW BLOCK: data source selection
     if df_dados is not None:
         df = df_dados.copy()
     elif input_csv is not None:
         df = pd.read_csv(input_csv)
     else:
-        raise ValueError("Forneça input_csv ou df_dados")
+        raise ValueError("Provide input_csv or df_dados")
 
-    # Restante da função ORIGINAL (inalterado)
+    # Rest of the ORIGINAL function (unchanged)
     menor_classe_tamanho = df[coluna_classe].value_counts().min()
     classes = df[coluna_classe].unique()
 
@@ -60,24 +60,24 @@ def balancear_csv_por_undersampling(
     if save_csv:
         caminho_saida = output_csv if output_csv is not None else str(DATASETS_GER / 'dataset_balanceado.csv')
         df_balanceado.to_csv(caminho_saida, index=False)
-        print(f"Dataset balanceado salvo em {caminho_saida}")
+        print(f"Balanced dataset saved to {caminho_saida}")
 
     return df_balanceado
 
-# Exemplo de uso com DataFrame (novo)
+# Usage example with a DataFrame (new)
 if __name__ == "__main__":
-    # Opção tradicional com arquivo
+    # Traditional option with a file
     balancear_csv_por_undersampling(
         input_csv=str(DATASETS_GER / 'dataset_reorganizado.csv'),
         output_csv=str(DATASETS_GER / 'dataset_balanceado_pronto.csv'),
         embaralhar=False
     )
 
-    # Opção nova com DataFrame
-    dados = pd.read_csv(DATASETS_GER / 'dataset_janelado_n_amostras.csv')  # Carrega antes
+    # New option with a DataFrame
+    dados = pd.read_csv(DATASETS_GER / 'dataset_janelado_n_amostras.csv')  # Load first
 
     df_balanceado = balancear_csv_por_undersampling(
-        df_dados=dados,  # Novo formato
+        df_dados=dados,  # New format
         output_csv=str(DATASETS_GER / 'dataset_balanceado_pronto.csv'),
         embaralhar=False
     )

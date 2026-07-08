@@ -1,7 +1,7 @@
-"""Geração (legado) de heatmaps da métrica por n_amostras × amostras_repetidas.
+"""Generation (legacy) of metric heatmaps by n_amostras × amostras_repetidas.
 
-Script exploratório que lê um ``metadados_completos.json`` do grid search e salva um
-heatmap por método (dados balanceados). Não é importado pela pipeline atual.
+Exploratory script that reads a ``metadados_completos.json`` from the grid search and
+saves one heatmap per method (balanced data). Not imported by the current pipeline.
 """
 
 import json
@@ -13,57 +13,57 @@ from matplotlib.colors import LinearSegmentedColormap
 from paths import HEATMAPS_DIR
 
 def plot_balanceado_heatmaps(json_path, output_dir=None, metric='Acuracia'):
-    """Gera 3 heatmaps (um por método) da métrica para dados balanceados,
-    com n_amostras no eixo X e amostras_repetidas no eixo Y."""
+    """Generate 3 heatmaps (one per method) of the metric for balanced data,
+    with n_amostras on the X axis and amostras_repetidas on the Y axis."""
     if output_dir is None:
         output_dir = str(HEATMAPS_DIR)
         os.makedirs(output_dir, exist_ok=True)
 
-    # 1. Carregar dados
+    # 1. Load data
     try:
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
     except Exception as e:
-        print(f"Erro ao carregar JSON: {e}")
+        print(f"Error loading JSON: {e}")
         return
 
     os.makedirs(output_dir, exist_ok=True)
 
-    # 2. Extrair todos os valores únicos encontrados nos dados para os eixos
+    # 2. Extract all unique values found in the data for the axes
     n_amostras = sorted(set(
         exec_data['params']['n_amostras']
         for exec_data in data['execucoes'].values()
         if 'n_amostras' in exec_data['params']
     ))
-    
+
     amostras_repetidas = sorted(set(
         exec_data['params']['amostras_repetidas']
         for exec_data in data['execucoes'].values()
         if 'amostras_repetidas' in exec_data['params']
     ))
 
-    # 3. Métodos de classificação
+    # 3. Classification methods
     metodos = ['regressao_logistica', 'SVM(RBF)', 'arvore_de_decisao']
     metodo_names = {
-        'regressao_logistica': 'Regressão Logística',
+        'regressao_logistica': 'Logistic Regression',
         'SVM(RBF)': 'SVM (RBF)',
-        'arvore_de_decisao': 'Árvore de Decisão'
+        'arvore_de_decisao': 'Decision Tree'
     }
 
-    # 4. Configuração do heatmap
+    # 4. Heatmap configuration
     cmap = LinearSegmentedColormap.from_list('custom', ['#e74c3c', '#f1c40f', '#2ecc71'])
     plt.style.use('seaborn-v0_8')
 
-    # 5. Gerar heatmap para cada método
+    # 5. Generate a heatmap for each method
     for metodo in metodos:
-        # Criar matriz de NaNs
+        # Create a matrix of NaNs
         heatmap_data = np.full((len(amostras_repetidas), len(n_amostras)), np.nan)
-        
-        # Mapear índices
+
+        # Map indices
         x_index = {val: idx for idx, val in enumerate(n_amostras)}
         y_index = {val: idx for idx, val in enumerate(amostras_repetidas)}
-        
-        # Preencher matriz com os valores
+
+        # Fill the matrix with the values
         for exec_data in data['execucoes'].values():
             params = exec_data.get('params', {})
             resultados = exec_data.get('resultados_balanceado', {})
@@ -76,14 +76,14 @@ def plot_balanceado_heatmaps(json_path, output_dir=None, metric='Acuracia'):
                     y = y_index[y_val]
                     try:
                         valor = resultados[metodo][metric]
-                        heatmap_data[y, x] = valor  # preenche mesmo que seja zero
+                        heatmap_data[y, x] = valor  # fill even if it is zero
                     except KeyError:
-                        print(f"Aviso: Sem dados para {metodo}, métrica '{metric}' em (n={x_val}, r={y_val})")
+                        print(f"Warning: no data for {metodo}, metric '{metric}' at (n={x_val}, r={y_val})")
 
-        # Máscara para os valores que continuam NaN (não computados)
+        # Mask for the values that remain NaN (not computed)
         mask = np.isnan(heatmap_data)
 
-        # Criar o heatmap
+        # Create the heatmap
         plt.figure(figsize=(12, 8))
         ax = sns.heatmap(
             heatmap_data,
@@ -99,24 +99,24 @@ def plot_balanceado_heatmaps(json_path, output_dir=None, metric='Acuracia'):
             mask=mask,
             annot_kws={"fontsize": 9}
         )
-        
-        # Configurações visuais
-        plt.title(f'{metodo_names[metodo]} - {metric} (Balanceado)', pad=20)
-        plt.xlabel('Número de Amostras', labelpad=10)
-        plt.ylabel('Amostras Repetidas', labelpad=10)
+
+        # Visual settings
+        plt.title(f'{metodo_names[metodo]} - {metric} (Balanced)', pad=20)
+        plt.xlabel('Number of samples', labelpad=10)
+        plt.ylabel('Repeated samples', labelpad=10)
         plt.xticks(rotation=45, ha='right')
         plt.yticks(rotation=0)
         plt.tight_layout()
 
-        # Salvar o gráfico
+        # Save the plot
         filename = os.path.join(output_dir, f'heatmap_{metodo}_{metric}.png')
         plt.savefig(filename, dpi=300, bbox_inches='tight')
         plt.close()
-        print(f"Heatmap salvo: {filename}")
+        print(f"Heatmap saved: {filename}")
 
-    print(f"\nTodos os heatmaps foram salvos em: {os.path.abspath(output_dir)}")
+    print(f"\nAll heatmaps saved to: {os.path.abspath(output_dir)}")
 
-# Exemplo de uso
+# Usage example
 
 caminho_json = r'resultados_personalizados_20250818_162933\metadados_completos.json'
 

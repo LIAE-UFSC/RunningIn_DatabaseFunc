@@ -1,17 +1,17 @@
-"""Inferência na grey zone: probabilidade de amaciamento ao longo do tempo.
+"""Grey-zone inference: probability of run-in over time.
 
-Para cada unidade, usa o modelo **fora-da-amostra** (autoencoder + classificador
-treinados nas outras 4 unidades) e projeta a série NA completa do compressor —
-incluindo a grey zone (18000–54000), que foi excluída do treino/avaliação. A
-saída é a probabilidade P(amaciado) por janela ao longo do tempo, evidenciando a
-transição do amaciamento sem que o modelo tenha sido informado dela.
+For each unit, uses the **out-of-sample** model (autoencoder + classifier trained
+on the other 4 units) and projects the unit's full NA series — including the grey
+zone (18000–54000), which was excluded from training/evaluation. The output is the
+probability P(run-in) per window over time, revealing the run-in transition without
+the model having been told about it.
 
-Fonte dos dados: os arquivos raw do teste NA (não amaciado) de cada unidade,
-descobertos dinamicamente a partir dos ``processado_*_NA``. Como a grey zone não
-tem rótulo confiável, a análise é qualitativa (ver docs/ENTENDIMENTO_DADOS.local.md).
+Data source: the raw files of each unit's NA (not run-in) test, discovered
+dynamically from the ``processado_*_NA`` files. Since the grey zone has no reliable
+label, the analysis is qualitative (see docs/ENTENDIMENTO_DADOS.local.md).
 
-Reusa ``janelar``, ``processar_autoencoder``, ``balancear_csv_por_undersampling`` e
-``avaliar_modelos_completo``; não altera ``src/``.
+Reuses ``janelar``, ``processar_autoencoder``, ``balancear_csv_por_undersampling`` and
+``avaliar_modelos_completo``; does not modify ``src/``.
 """
 
 import io
@@ -36,10 +36,10 @@ CLASSIFICADOR_PADRAO = "regressao_logistica"
 
 
 def descobrir_arquivos_na_raw(proc_dir=DATASETS_PROC, raw_dir=DATASETS_RAW):
-    """Mapeia unidade -> arquivo raw do teste NA, a partir dos ``processado_*_NA``.
+    """Map unit -> raw file of the NA test, from the ``processado_*_NA`` files.
 
-    Para cada ``processado_dataset_<A?>_<data>_NA.csv``, procura o raw correspondente
-    (``dataset_<A?>_<data>.csv`` ou ``..._NA.csv``).
+    For each ``processado_dataset_<A?>_<date>_NA.csv``, looks for the matching raw
+    file (``dataset_<A?>_<date>.csv`` or ``..._NA.csv``).
     """
     mapa = {}
     for p in sorted(proc_dir.glob("processado_dataset_A*_NA.csv")):
@@ -55,7 +55,7 @@ def descobrir_arquivos_na_raw(proc_dir=DATASETS_PROC, raw_dir=DATASETS_RAW):
 
 
 def carregar_teste_na(caminho):
-    """Carrega um raw NA (série completa), convertendo vírgula decimal e ordenando por tempo."""
+    """Load a raw NA file (full series), converting the decimal comma and sorting by time."""
     df = pd.read_csv(caminho)
     for col in ("time", "massFlow"):
         df[col] = df[col].astype(str).str.replace(",", ".").astype(float)
@@ -63,10 +63,10 @@ def carregar_teste_na(caminho):
 
 
 def janelar_com_tempo(df, n_amostras, janelamento, amostras_repetidas):
-    """Janela ``massFlow`` preservando o tempo da última amostra de cada janela.
+    """Window ``massFlow`` preserving the time of the last sample of each window.
 
-    Mesma lógica de passo do ``reorganizar_dataset``, mas mantém a coluna ``time``
-    (necessária para plotar a probabilidade ao longo do tempo).
+    Same stepping logic as ``reorganizar_dataset``, but keeps the ``time`` column
+    (needed to plot the probability over time).
     """
     mass = df["massFlow"].values
     tempo = df["time"].values
@@ -84,13 +84,13 @@ def janelar_com_tempo(df, n_amostras, janelamento, amostras_repetidas):
 
 
 def _fixar_seed(seed):
-    """Fixa as sementes de numpy e torch para reprodutibilidade da dobra."""
+    """Fix the numpy and torch seeds for fold reproducibility."""
     np.random.seed(seed)
     torch.manual_seed(seed)
 
 
 def _suavizar(valores, janela):
-    """Média móvel centrada (mantém o comprimento)."""
+    """Centered moving average (keeps the length)."""
     if janela <= 1:
         return np.asarray(valores, dtype=float)
     s = pd.Series(valores, dtype=float)
@@ -99,10 +99,10 @@ def _suavizar(valores, janela):
 
 def probabilidade_por_unidade(hiperparametros=None, seed=42,
                               classificador=CLASSIFICADOR_PADRAO, suavizacao=15):
-    """Calcula P(amaciado) ao longo do tempo na série NA de cada unidade.
+    """Compute P(run-in) over time on each unit's NA series.
 
     Returns:
-        dict {unit: DataFrame[time, proba, proba_suave]}, ordenado por tempo.
+        dict {unit: DataFrame[time, proba, proba_suave]}, sorted by time.
     """
     hp = {**HIPERPARAMETROS, **(hiperparametros or {})}
     arquivos_na = descobrir_arquivos_na_raw()
@@ -122,19 +122,19 @@ def probabilidade_por_unidade(hiperparametros=None, seed=42,
     for unit, caminho_raw in arquivos_na.items():
         _fixar_seed(seed)
 
-        # Treino = as outras 4 unidades, balanceado.
+        # Training set = the other 4 units, balanced.
         df_treino = df_janelado[df_janelado["unit_id"] != unit]
         df_treino_bal = balancear_csv_por_undersampling(
             df_dados=df_treino, save_csv=False, embaralhar=True
         )
 
-        # Série NA completa da unidade, janelada com tempo.
+        # The unit's full NA series, windowed with time.
         df_na = carregar_teste_na(caminho_raw)
         janelas_na = janelar_com_tempo(
             df_na, hp["n_amostras"], hp["janelamento"], hp["amostras_repetidas"]
         )
 
-        # Treina o AE no treino e projeta as janelas NA no latente.
+        # Train the AE on the training set and project the NA windows into the latent.
         with redirect_stdout(io.StringIO()):
             _, df_lat_treino, df_lat_na, _ = processar_autoencoder(
                 df_original=df_treino_bal,
@@ -147,7 +147,7 @@ def probabilidade_por_unidade(hiperparametros=None, seed=42,
                 return_both_latent=True,
             )
 
-        # Classificador treinado no latente do treino (test dummy = treino).
+        # Classifier trained on the training latent (dummy test = train).
         _, art = avaliar_modelos_completo(df_lat_treino, df_lat_treino, retornar_modelos=True)
         modelo = art["modelos"][classificador]
         cols = art["feature_cols"]
@@ -162,10 +162,10 @@ def probabilidade_por_unidade(hiperparametros=None, seed=42,
 
 
 def estimar_instante_amaciamento(curva, limiar=0.5):
-    """Instante estimado = primeiro tempo em que P suavizado cruza e se mantém acima do limiar.
+    """Estimated instant = first time the smoothed P crosses and stays above the threshold.
 
     Returns:
-        float (tempo) ou None se a probabilidade nunca se mantém acima do limiar.
+        float (time) or None if the probability never stays above the threshold.
     """
     p = curva["proba_suave"].values
     t = curva["time"].values
@@ -176,7 +176,7 @@ def estimar_instante_amaciamento(curva, limiar=0.5):
 
 
 def estimar_instantes(curvas, limiar=0.5):
-    """Aplica ``estimar_instante_amaciamento`` a todas as unidades."""
+    """Apply ``estimar_instante_amaciamento`` to all units."""
     return {unit: estimar_instante_amaciamento(curva, limiar) for unit, curva in curvas.items()}
 
 
@@ -186,5 +186,5 @@ if __name__ == "__main__":
     for unit, curva in curvas.items():
         inst = instantes[unit]
         inst_str = f"{inst:.0f}" if inst is not None else "—"
-        print(f"{unit}: {len(curva)} janelas | tempo [{curva['time'].min():.0f}, {curva['time'].max():.0f}] "
-              f"| instante estimado~{inst_str}")
+        print(f"{unit}: {len(curva)} windows | time [{curva['time'].min():.0f}, {curva['time'].max():.0f}] "
+              f"| estimated instant~{inst_str}")

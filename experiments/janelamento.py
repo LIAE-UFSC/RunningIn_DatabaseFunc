@@ -1,18 +1,17 @@
-"""Janelamento sem vazamento e split por unidade (grupo).
+"""Leakage-free windowing and per-unit (group) split.
 
-Duas responsabilidades, ambas voltadas a evitar *data leakage*:
+Two responsibilities, both aimed at avoiding *data leakage*:
 
-1. ``janelar`` — aplica o janelamento **por ensaio** (``source``), reusando
-   ``reorganizar_dataset``. Como cada ensaio é janelado isoladamente, nenhuma
-   janela cruza a fronteira entre dois ensaios (ver docs/ENTENDIMENTO_DADOS.local.md).
-   Cada janela resultante carrega ``unit_id`` e ``source``.
+1. ``janelar`` — applies the windowing **per trial** (``source``), reusing
+   ``reorganizar_dataset``. Since each trial is windowed in isolation, no window
+   crosses the boundary between two trials (see docs/ENTENDIMENTO_DADOS.local.md).
+   Each resulting window carries ``unit_id`` and ``source``.
 
-2. ``iter_split_por_unidade`` — gera os splits treino/teste com a unidade do
-   compressor como grupo (``LeaveOneGroupOut`` do scikit-learn). Assim a unidade
-   inteira fica de um único lado, e janelas sobrepostas nunca se dividem entre
-   treino e teste.
+2. ``iter_split_por_unidade`` — yields the train/test splits with the compressor
+   unit as the group (scikit-learn's ``LeaveOneGroupOut``). This keeps a whole unit
+   on a single side, and overlapping windows never split between train and test.
 
-Não altera ``src/preprocessing/funcao_janelamento.py``.
+Does not modify ``src/preprocessing/funcao_janelamento.py``.
 """
 
 import sys
@@ -31,17 +30,17 @@ COLUNAS_META = ["unit_id", "source"]
 
 
 def janelar(dados=None, n_amostras=None, janelamento=None, amostras_repetidas=None):
-    """Janela os dados por ensaio, preservando ``unit_id`` e ``source``.
+    """Window the data per trial, preserving ``unit_id`` and ``source``.
 
     Args:
-        dados: dict {unit_id: DataFrame}, DataFrame combinado (com ``unit_id`` e
-            ``source``) ou None (carrega via ``carregar_combinado``).
-        n_amostras, janelamento, amostras_repetidas: parâmetros do janelamento;
-            se None, usam os valores de ``config.HIPERPARAMETROS``.
+        dados: dict {unit_id: DataFrame}, a combined DataFrame (with ``unit_id`` and
+            ``source``) or None (loads via ``carregar_combinado``).
+        n_amostras, janelamento, amostras_repetidas: windowing parameters; if None,
+            use the values from ``config.HIPERPARAMETROS``.
 
     Returns:
-        DataFrame com colunas ``massFlow_1..N``, ``anomaly``, ``unit_id``, ``source``.
-        Nenhuma janela mistura ensaios diferentes.
+        DataFrame with columns ``massFlow_1..N``, ``anomaly``, ``unit_id``, ``source``.
+        No window mixes different trials.
     """
     n_amostras = HIPERPARAMETROS["n_amostras"] if n_amostras is None else n_amostras
     janelamento = HIPERPARAMETROS["janelamento"] if janelamento is None else janelamento
@@ -71,13 +70,13 @@ def janelar(dados=None, n_amostras=None, janelamento=None, amostras_repetidas=No
 
 
 def iter_split_por_unidade(df_janelado):
-    """Gera os splits treino/teste deixando uma unidade de fora por vez.
+    """Yield the train/test splits leaving one unit out at a time.
 
-    Usa ``LeaveOneGroupOut`` com ``unit_id`` como grupo: a unidade de teste nunca
-    aparece no treino, eliminando o vazamento por janelas sobrepostas.
+    Uses ``LeaveOneGroupOut`` with ``unit_id`` as the group: the test unit never
+    appears in the training set, eliminating leakage from overlapping windows.
 
     Yields:
-        (unit_teste, df_treino, df_teste) — DataFrames com índice reiniciado.
+        (unit_teste, df_treino, df_teste) — DataFrames with a reset index.
     """
     grupos = df_janelado["unit_id"].values
     logo = LeaveOneGroupOut()
@@ -93,12 +92,12 @@ def iter_split_por_unidade(df_janelado):
 if __name__ == "__main__":
     df_jan = janelar()
     feature_cols = [c for c in df_jan.columns if c.startswith("massFlow_")]
-    print(f"Janelas: {len(df_jan)} | features por janela: {len(feature_cols)}")
-    print("Por unidade:")
+    print(f"Windows: {len(df_jan)} | features per window: {len(feature_cols)}")
+    print("Per unit:")
     for unit_id, grupo in df_jan.groupby("unit_id"):
-        print(f"  {unit_id}: {len(grupo):5d} janelas | classes {grupo['anomaly'].value_counts().sort_index().to_dict()}")
+        print(f"  {unit_id}: {len(grupo):5d} windows | classes {grupo['anomaly'].value_counts().sort_index().to_dict()}")
 
-    print("\nSplits por unidade (deixa-uma-de-fora):")
+    print("\nSplits per unit (leave-one-out):")
     for unit_teste, df_treino, df_teste in iter_split_por_unidade(df_jan):
         treino_units = sorted(df_treino["unit_id"].unique())
-        print(f"  teste={unit_teste} | treino={treino_units} | n_treino={len(df_treino)} n_teste={len(df_teste)}")
+        print(f"  test={unit_teste} | train={treino_units} | n_train={len(df_treino)} n_test={len(df_teste)}")

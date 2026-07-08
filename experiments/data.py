@@ -1,14 +1,14 @@
-"""Carregamento dos datasets processados, ciente de unidade e ensaio.
+"""Loading of the processed datasets, aware of unit and trial.
 
-Cada arquivo em ``datasets/processados/`` é um ensaio de uma unidade (A1..A5),
-já rotulado (``anomaly``: 0 = não amaciado, 1 = amaciado). Esta camada:
+Each file in ``datasets/processados/`` is a trial of a unit (A1..A5), already
+labeled (``anomaly``: 0 = not run-in, 1 = run-in). This layer:
 
-- lê cada ensaio preservando a ordem temporal;
-- anexa ``unit_id`` (modelo do compressor) e ``source`` (ensaio de origem);
-- agrupa os ensaios por unidade.
+- reads each trial preserving the temporal order;
+- attaches ``unit_id`` (compressor model) and ``source`` (originating trial);
+- groups the trials by unit.
 
-O ``source`` é essencial para o janelamento sem vazamento (Etapa 4): janelas não
-podem cruzar a fronteira entre dois ensaios. Ver docs/ENTENDIMENTO_DADOS.local.md.
+The ``source`` is essential for leakage-free windowing (Stage 4): windows must not
+cross the boundary between two trials. See docs/ENTENDIMENTO_DADOS.local.md.
 """
 
 import sys
@@ -21,7 +21,7 @@ from experiments.config import UNIDADES  # noqa: E402
 
 
 def carregar_ensaio(caminho: Path, unit_id: str) -> pd.DataFrame:
-    """Carrega um único ensaio, ordenado por tempo, com ``unit_id`` e ``source``."""
+    """Load a single trial, sorted by time, with ``unit_id`` and ``source``."""
     df = pd.read_csv(caminho).sort_values("time").reset_index(drop=True)
     df["unit_id"] = unit_id
     df["source"] = caminho.stem
@@ -29,10 +29,10 @@ def carregar_ensaio(caminho: Path, unit_id: str) -> pd.DataFrame:
 
 
 def carregar_unidades(unidades: dict = UNIDADES) -> dict[str, pd.DataFrame]:
-    """Retorna ``{unit_id: DataFrame}`` com os ensaios de cada unidade concatenados.
+    """Return ``{unit_id: DataFrame}`` with each unit's trials concatenated.
 
-    A ordem temporal é preservada dentro de cada ensaio; ensaios distintos são
-    empilhados em sequência (sem intercalar), mantendo ``source`` para distingui-los.
+    The temporal order is preserved within each trial; distinct trials are stacked
+    in sequence (without interleaving), keeping ``source`` to tell them apart.
     """
     return {
         unit_id: pd.concat(
@@ -43,16 +43,16 @@ def carregar_unidades(unidades: dict = UNIDADES) -> dict[str, pd.DataFrame]:
 
 
 def carregar_combinado(unidades: dict = UNIDADES) -> pd.DataFrame:
-    """Retorna um único DataFrame com todas as unidades (coluna ``unit_id``)."""
+    """Return a single DataFrame with all units (``unit_id`` column)."""
     return pd.concat(carregar_unidades(unidades).values(), ignore_index=True)
 
 
 if __name__ == "__main__":
     dados = carregar_unidades()
-    print("Unidades carregadas:")
+    print("Loaded units:")
     for unit_id, df in dados.items():
         classes = df["anomaly"].value_counts().sort_index().to_dict()
         n_ensaios = df["source"].nunique()
-        print(f"  {unit_id}: {len(df):5d} amostras | {n_ensaios} ensaio(s) | classes {classes}")
+        print(f"  {unit_id}: {len(df):5d} samples | {n_ensaios} trial(s) | classes {classes}")
     total = sum(len(df) for df in dados.values())
-    print(f"\nTotal: {total} amostras em {len(dados)} unidades")
+    print(f"\nTotal: {total} samples across {len(dados)} units")

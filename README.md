@@ -1,70 +1,70 @@
-# autoencoder_runin — Detecção de amaciamento de compressores
+# autoencoder_runin — Compressor run-in detection
 
-Pipeline para **detecção de amaciamento (run-in)** de compressores herméticos a
-partir de séries temporais de vazão mássica (`massFlow`), usando um **autoencoder**
-para aprender uma representação latente e **classificadores clássicos** (regressão
-logística, SVM-RBF, árvore de decisão) para separar *não amaciado (0)* × *amaciado (1)*.
+Pipeline for **run-in detection** of hermetic compressors from mass-flow (`massFlow`)
+time series, using an **autoencoder** to learn a latent representation and **classic
+classifiers** (logistic regression, SVM-RBF, decision tree) to separate
+*not run-in (0)* × *run-in (1)*.
 
-A avaliação usa **validação cruzada por unidade** (deixa-uma-unidade-de-fora): o modelo
-é sempre testado em um compressor que **não** participou do treino, medindo generalização.
+Evaluation uses **per-unit cross-validation** (leave-one-unit-out): the model is always
+tested on a compressor that did **not** take part in training, measuring generalization.
 
-## Estrutura
+## Structure
 
 ```
-.                     # raiz do repositório
-  paths.py            # caminhos centrais (datasets, outputs)
-  gridsearch.py       # busca exploratória de hiperparâmetros (uso original)
-  requirements.txt    # dependências fixadas
+.                     # repository root
+  paths.py            # central paths (datasets, outputs)
+  gridsearch.py       # exploratory hyperparameter search (original use)
+  requirements.txt    # pinned dependencies
   datasets/
-    raw/              # séries brutas por unidade/ensaio
-    processados/      # séries rotuladas (não amaciado × amaciado)
-    gerados/          # intermediários
+    raw/              # raw series per unit/trial
+    processados/      # labeled series (not run-in × run-in)
+    gerados/          # intermediates
   src/
-    preprocessing/    # rotulagem por tempo, janelamento, undersampling
+    preprocessing/    # time labeling, windowing, undersampling
     models/           # autoencoder
-    analysis/         # avaliação de classificadores, UMAP
-  experiments/        # estudo de avaliação (ver abaixo)
+    analysis/         # classifier evaluation, UMAP
+  experiments/        # evaluation study (see below)
   outputs/
-    plots/, heatmaps/ # ablações e curvas
-    experiments/      # tabelas e figuras do estudo
+    plots/, heatmaps/ # ablations and curves
+    experiments/      # study tables and figures
 ```
 
-## Módulos do estudo (`experiments/`)
+## Study modules (`experiments/`)
 
-| Módulo | Papel |
+| Module | Role |
 |---|---|
-| `config.py` | unidades (A1–A5), hiperparâmetros, grey zone, seeds, caminhos |
-| `data.py` | carrega os dados por unidade (`unit_id`, `source`) |
-| `verificar_dados.py` | valida invariantes (toda unidade tem as duas classes) |
-| `janelamento.py` | janelamento por ensaio + split por unidade (sem vazamento) |
-| `verificar_janelamento.py` | valida ausência de vazamento treino/teste |
-| `runner.py` | validação cruzada por unidade sobre o latente do autoencoder |
-| `baselines.py` | baselines de comparação: features cruas e PCA |
-| `tabela.py` | execução multi-seed, agregação e exportação da tabela de resultados |
-| `figuras.py` | figuras UMAP por unidade e da grey zone |
-| `greyzone.py` | probabilidade de amaciamento ao longo do tempo (grey zone) |
+| `config.py` | units (A1–A5), hyperparameters, grey zone, seeds, paths |
+| `data.py` | loads the data per unit (`unit_id`, `source`) |
+| `verificar_dados.py` | validates invariants (every unit has both classes) |
+| `janelamento.py` | per-trial windowing + per-unit split (leakage-free) |
+| `verificar_janelamento.py` | validates no train/test leakage |
+| `runner.py` | per-unit cross-validation over the autoencoder latent |
+| `baselines.py` | comparison baselines: raw features and PCA |
+| `tabela.py` | multi-seed run, aggregation and export of the results table |
+| `figuras.py` | per-unit UMAP and grey-zone figures |
+| `greyzone.py` | run-in probability over time (grey zone) |
 
-## Como rodar
+## How to run
 
-Requer as dependências de `requirements.txt` (ambiente com `torch`, `scikit-learn`,
-`umap-learn`, `pandas`, `matplotlib`). A partir da raiz do repositório:
+Requires the dependencies in `requirements.txt` (an environment with `torch`,
+`scikit-learn`, `umap-learn`, `pandas`, `matplotlib`). From the repository root:
 
 ```bash
-# verificações rápidas
+# quick checks
 python experiments/verificar_dados.py
 python experiments/verificar_janelamento.py
 
-# reproduzir tabelas e figuras do estudo
+# reproduce the study tables and figures
 python experiments/reproduzir.py
 ```
 
-Os hiperparâmetros ficam em `experiments/config.py` (`HIPERPARAMETROS`).
+The hyperparameters live in `experiments/config.py` (`HIPERPARAMETROS`).
 
-## Dados
+## Data
 
-> ⚠️ **Dados proprietários.** O conjunto de amaciamento pertence ao LIAE-UFSC e
-> **não é distribuído**. Não pode ser publicado nem incluído em qualquer versão
-> pública deste repositório.
+> ⚠️ **Proprietary data.** The run-in dataset belongs to LIAE-UFSC and is
+> **not distributed**. It must not be published nor included in any public version
+> of this repository.
 
-Ver [DATA_CARD.md](DATA_CARD.md) para a descrição do conjunto (unidades, contagens
-por classe, aquisição e definição dos rótulos).
+See [DATA_CARD.md](DATA_CARD.md) for the dataset description (units, per-class counts,
+acquisition and label definition).

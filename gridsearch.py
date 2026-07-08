@@ -1,8 +1,8 @@
-"""Busca exploratória de hiperparâmetros (grid search) do pipeline autoencoder + classificadores.
+"""Exploratory hyperparameter search (grid search) of the autoencoder + classifiers pipeline.
 
-Uso original do projeto: varre combinações de janelamento e do autoencoder, avalia
-classificadores sobre os dados balanceados e sobre o espaço latente, e serializa os
-resultados (top 5%, casos onde o latente supera, metadados completos).
+Original use of the project: sweeps combinations of windowing and of the autoencoder,
+evaluates classifiers on the balanced data and on the latent space, and serializes the
+results (top 5%, cases where the latent is better, complete metadata).
 """
 
 import os
@@ -26,7 +26,7 @@ np.random.seed(42)
 
 def busca_grade_completa(
     input_csvs=[str(DATASETS_RAW / 'dataset_massflow.csv')],
-    test_csv=None,  
+    test_csv=None,
     lista_time_ranges=[[(0, 18000, 0), (54000, 100000, 1)]],
     lista_grey_zones=[(18000, 54000)],
     lista_n_amostras=[5, 8, 10],
@@ -40,22 +40,22 @@ def busca_grade_completa(
     lista_train_sizes=[0.7],
     output_dir=None
 ):
-    """Executa a busca em grade sobre as listas de hiperparâmetros fornecidas.
+    """Run the grid search over the provided hyperparameter lists.
 
-    Para cada combinação válida (com restrições de janelamento e dimensões), processa
-    os CSVs de entrada, treina o autoencoder, avalia os classificadores nos dados
-    balanceados e no espaço latente, e acumula os resultados. Ao final, salva em
-    ``output_dir`` os top 5% (balanceado e latente), os casos em que o latente supera
-    o balanceado e os metadados completos. Retorna os caminhos das pastas de saída.
+    For each valid combination (with windowing and dimension constraints), processes
+    the input CSVs, trains the autoencoder, evaluates the classifiers on the balanced
+    data and on the latent space, and accumulates the results. At the end, saves to
+    ``output_dir`` the top 5% (balanced and latent), the cases where the latent beats
+    the balanced, and the complete metadata. Returns the paths of the output folders.
     """
     base = Path(output_dir) if output_dir else RESULTS_DIR / "resultados_personalizados"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     pasta_resultados = str(base.parent / f"{base.name}_{timestamp}")
-    
+
     pasta_top5_balanceado = os.path.join(pasta_resultados, "top_5percent_balanceado")
     pasta_latente_melhor = os.path.join(pasta_resultados, "latente_melhor")
     pasta_top5_latente = os.path.join(pasta_resultados, "top_5percent_latente")
-    
+
     os.makedirs(pasta_resultados, exist_ok=True)
     os.makedirs(pasta_top5_balanceado, exist_ok=True)
     os.makedirs(pasta_latente_melhor, exist_ok=True)
@@ -92,31 +92,31 @@ def busca_grade_completa(
     combinacoes = []
     for combo in itertools.product(*parametros_variados.values()):
         current = dict(zip(parametros_variados.keys(), combo))
-        
-        # Restrições 
+
+        # Constraints
         condicao1 = current['janelamento'] and current['amostras_repetidas'] >= current['n_amostras']
         condicao2 = current['hidden_dim'] <= current['latent_dim']
         condicao3 = current['n_amostras'] <= current['latent_dim']
-        
+
         if condicao1 or condicao2 or condicao3:
             continue
-            
+
         combinacoes.append(current)
 
     metadados['config']['total_combinacoes'] = len(combinacoes)
 
     for i, params in enumerate(combinacoes, 1):
         exec_id = f"exec_{i:04d}"
-        
-        print(f"\n🔧 Execução {i}/{len(combinacoes)} - ID: {exec_id}")
-        
-        # Processa cada arquivo de input
+
+        print(f"\n🔧 Run {i}/{len(combinacoes)} - ID: {exec_id}")
+
+        # Process each input file
         dfs_processed = []
-        for csv_path in input_csvs:  # input_csvs é uma lista de caminhos
-            # Carrega o CSV já rotulado
+        for csv_path in input_csvs:  # input_csvs is a list of paths
+            # Load the already-labeled CSV
             df = pd.read_csv(csv_path)
-            
-            # Reorganiza o dataset
+
+            # Reorganize the dataset
             df_reorg = reorganizar_dataset(
                 df_dados=df,
                 n_amostras=params['n_amostras'],
@@ -125,15 +125,15 @@ def busca_grade_completa(
                 salvar_csv=False
             )
             dfs_processed.append(df_reorg)
-        
-        
+
+
         df_combined = pd.concat(dfs_processed, ignore_index=True)
-        
-        
+
+
         df_test_balanceado = None
-        
+
         if test_csv:
-            # Se test_csv for uma lista de arquivos
+            # If test_csv is a list of files
             if isinstance(test_csv, list):
                 dfs_test = []
                 for test_path in test_csv:
@@ -152,7 +152,7 @@ def busca_grade_completa(
                     output_csv=None,
                     embaralhar=False
                 )
-            # Se test_csv for um único arquivo (string)
+            # If test_csv is a single file (string)
             else:
                 df_test = pd.read_csv(test_csv)
                 df_test_reorg = reorganizar_dataset(
@@ -167,14 +167,14 @@ def busca_grade_completa(
                     output_csv=None,
                     embaralhar=False
                 )
-        
-        # Balanceia o dataset principal
+
+        # Balance the main dataset
         df_balanceado = balancear_csv_por_undersampling(
             df_dados=df_combined,
             output_csv=None,
             embaralhar=False
         )
-        
+
         df_reconstruido, df_latente_treino, df_latente_teste, dim_lat, loss_history = processar_autoencoder(
             df_original=df_balanceado,
             params_autoencoder={
@@ -193,7 +193,7 @@ def busca_grade_completa(
         resultados_balanceado = avaliar_modelos(df_balanceado, df_test_balanceado)
         resultados_latente = avaliar_modelos(df_latente_treino, df_latente_teste)
 
-        melhor_classificador = max(resultados_balanceado.items(), 
+        melhor_classificador = max(resultados_balanceado.items(),
                                  key=lambda x: x[1]['Acuracia'])[0]
         melhor_acuracia = resultados_balanceado[melhor_classificador]['Acuracia']
 
@@ -239,29 +239,29 @@ def busca_grade_completa(
     resultados_top5_balanceado.sort(key=lambda x: x['acuracia'], reverse=True)
     num_top5 = max(1, int(len(resultados_top5_balanceado) * 0.05))
     top5_final = resultados_top5_balanceado[:num_top5]
-    
+
     resultados_top5_latente.sort(key=lambda x: x['acuracia'], reverse=True)
     num_top5_latente = max(1, int(len(resultados_top5_latente) * 0.05))
     top5_latente_final = resultados_top5_latente[:num_top5_latente]
-    
+
     with open(os.path.join(pasta_top5_balanceado, 'resultados_top5.json'), 'w', encoding='utf-8') as f:
         json.dump(top5_final, f, indent=2, ensure_ascii=False)
-    
+
     with open(os.path.join(pasta_top5_latente, 'resultados_top5_latente.json'), 'w', encoding='utf-8') as f:
         json.dump(top5_latente_final, f, indent=2, ensure_ascii=False)
-    
+
     with open(os.path.join(pasta_latente_melhor, 'resultados_latente_melhor.json'), 'w', encoding='utf-8') as f:
         json.dump(resultados_latente_melhor, f, indent=2, ensure_ascii=False)
-    
+
     with open(os.path.join(pasta_resultados, 'metadados_completos.json'), 'w', encoding='utf-8') as f:
         json.dump(metadados, f, indent=2, ensure_ascii=False)
-    
-    print(f"\n✅ Busca concluída! {len(combinacoes)} combinações processadas")
-    print(f"📁 Pasta de resultados: {os.path.abspath(pasta_resultados)}")
-    print(f"📊 Top 5% (balanceado) salvo em: {os.path.join(pasta_top5_balanceado, 'resultados_top5.json')}")
-    print(f"📊 Top 5% (latente) salvo em: {os.path.join(pasta_top5_latente, 'resultados_top5_latente.json')}")
-    print(f"📈 Casos com latente melhor salvo em: {os.path.join(pasta_latente_melhor, 'resultados_latente_melhor.json')}")
-    
+
+    print(f"\n✅ Search complete! {len(combinacoes)} combinations processed")
+    print(f"📁 Results folder: {os.path.abspath(pasta_resultados)}")
+    print(f"📊 Top 5% (balanced) saved to: {os.path.join(pasta_top5_balanceado, 'resultados_top5.json')}")
+    print(f"📊 Top 5% (latent) saved to: {os.path.join(pasta_top5_latente, 'resultados_top5_latente.json')}")
+    print(f"📈 Cases where the latent is better saved to: {os.path.join(pasta_latente_melhor, 'resultados_latente_melhor.json')}")
+
     return {
         'pasta_resultados': pasta_resultados,
         'pasta_top5_balanceado': pasta_top5_balanceado,

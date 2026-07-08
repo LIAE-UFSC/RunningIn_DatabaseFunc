@@ -1,4 +1,4 @@
-"""Visualização 2D (UMAP) do espaço latente, colorida pelo índice temporal."""
+"""2D (UMAP) visualization of the latent space, colored by the temporal index."""
 
 from math import ceil
 
@@ -19,26 +19,26 @@ def plot_umap_latente(
     random_state=42,
 ):
     """
-    Reduz o espaço latente para 2D via UMAP e plota colorido por índice sequencial.
+    Reduce the latent space to 2D via UMAP and plot it colored by sequential index.
 
-    A cor representa a posição da amostra na sequência (índice do DataFrame),
-    usado como proxy de tempo — NÃO classifica normal/anomalia.
-    Treino: círculos. Teste: triângulos. Colormap contínuo plasma.
+    The color represents the sample position in the sequence (DataFrame index),
+    used as a time proxy — it does NOT classify normal/anomaly.
+    Train: circles. Test: triangles. Continuous plasma colormap.
 
     Args:
-        df_latente_treino: DataFrame com colunas latent_* (saída de processar_autoencoder)
-        df_latente_teste:  DataFrame opcional de teste com a mesma estrutura
-        title:             Título do gráfico (opcional)
-        save_path:         Caminho para salvar a imagem (opcional; exibe se None)
-        n_neighbors:       Parâmetro UMAP n_neighbors
-        min_dist:          Parâmetro UMAP min_dist
-        random_state:      Semente para reprodutibilidade
+        df_latente_treino: DataFrame with latent_* columns (output of processar_autoencoder)
+        df_latente_teste:  optional test DataFrame with the same structure
+        title:             plot title (optional)
+        save_path:         path to save the image (optional; shows if None)
+        n_neighbors:       UMAP n_neighbors parameter
+        min_dist:          UMAP min_dist parameter
+        random_state:      seed for reproducibility
     """
     latent_cols = [c for c in df_latente_treino.columns if c.startswith("latent_")]
     if not latent_cols:
-        raise ValueError("Nenhuma coluna latent_* encontrada no DataFrame.")
+        raise ValueError("No latent_* column found in the DataFrame.")
 
-    # Usa apenas os dados de teste; índice sequencial como proxy de tempo
+    # Uses only the test data; sequential index as a time proxy
     df_plot = df_latente_teste[latent_cols].copy().reset_index(drop=True) if df_latente_teste is not None else df_latente_treino[latent_cols].copy().reset_index(drop=True)
     df_plot["_time_idx"] = np.arange(len(df_plot))
 
@@ -55,7 +55,7 @@ def plot_umap_latente(
     df_plot["umap_1"] = embedding[:, 0]
     df_plot["umap_2"] = embedding[:, 1]
 
-    # Normaliza índice para [0, 1] para o colormap
+    # Normalize the index to [0, 1] for the colormap
     time_norm = df_plot["_time_idx"] / (len(df_plot) - 1)
 
     fig, ax = plt.subplots(figsize=(10, 7))
@@ -74,18 +74,18 @@ def plot_umap_latente(
     )
 
     cbar = fig.colorbar(sc, ax=ax, pad=0.02)
-    cbar.set_label("Índice Temporal (normalizado)", fontsize=10)
+    cbar.set_label("Time index (normalized)", fontsize=10)
 
     ax.set_xlabel("UMAP 1", fontsize=11)
     ax.set_ylabel("UMAP 2", fontsize=11)
-    ax.set_title(title or "Espaço Latente — UMAP 2D", fontsize=13, pad=14)
+    ax.set_title(title or "Latent space — 2D UMAP", fontsize=13, pad=14)
     ax.grid(True, color="#dddddd", linewidth=0.6)
 
     plt.tight_layout()
 
     if save_path:
         plt.savefig(save_path, dpi=150)
-        print(f"UMAP salvo em: {save_path}")
+        print(f"UMAP saved to: {save_path}")
     else:
         plt.show()
 
@@ -101,22 +101,22 @@ def plot_umap_latente_por_unidade(
     random_state=42,
     n_cols=3,
 ):
-    """Plota, num grid, o UMAP 2D do espaço latente de cada unidade, colorido por tempo.
+    """Plot, in a grid, the 2D UMAP of each unit's latent space, colored by time.
 
-    Cada subplot é uma unidade; a cor é o índice sequencial (proxy de tempo), como
-    em ``plot_umap_latente``. O UMAP é ajustado por unidade — a leitura é qualitativa
-    (a forma/coerência da trajetória de amaciamento), não a posição absoluta entre
-    subplots.
+    Each subplot is a unit; the color is the sequential index (time proxy), as in
+    ``plot_umap_latente``. UMAP is fit per unit — the reading is qualitative
+    (the shape/coherence of the run-in trajectory), not the absolute position
+    across subplots.
 
     Args:
-        latentes_por_unidade: dict {unit_id: DataFrame com colunas ``latent_*``}.
-        title, save_path, n_neighbors, min_dist, random_state: como em ``plot_umap_latente``.
-        n_cols: número de colunas do grid.
+        latentes_por_unidade: dict {unit_id: DataFrame with ``latent_*`` columns}.
+        title, save_path, n_neighbors, min_dist, random_state: as in ``plot_umap_latente``.
+        n_cols: number of grid columns.
     """
     unidades = list(latentes_por_unidade.keys())
     n = len(unidades)
     if n == 0:
-        raise ValueError("Nenhuma unidade fornecida.")
+        raise ValueError("No unit provided.")
 
     n_cols = min(n_cols, n)
     n_rows = ceil(n / n_cols)
@@ -130,7 +130,7 @@ def plot_umap_latente_por_unidade(
         df = latentes_por_unidade[unit]
         latent_cols = [c for c in df.columns if c.startswith("latent_")]
         if not latent_cols:
-            raise ValueError(f"Unidade {unit}: nenhuma coluna latent_* encontrada.")
+            raise ValueError(f"Unit {unit}: no latent_* column found.")
 
         X = df[latent_cols].values.astype(np.float32)
         reducer = umap.UMAP(
@@ -146,7 +146,7 @@ def plot_umap_latente_por_unidade(
             embedding[:, 0], embedding[:, 1], c=tempo, cmap="plasma",
             s=40, alpha=0.9, vmin=0, vmax=1, linewidths=0,
         )
-        ax.set_title(f"Unidade {unit} (n={len(X)})", fontsize=11)
+        ax.set_title(f"Unit {unit} (n={len(X)})", fontsize=11)
         ax.set_xlabel("UMAP 1", fontsize=10)
         ax.set_ylabel("UMAP 2", fontsize=10)
         ax.grid(True, color="#dddddd", linewidth=0.6)
@@ -156,13 +156,13 @@ def plot_umap_latente_por_unidade(
 
     if sc is not None:
         cbar = fig.colorbar(sc, ax=axes.ravel().tolist(), pad=0.02)
-        cbar.set_label("Índice temporal (normalizado)", fontsize=10)
+        cbar.set_label("Time index (normalized)", fontsize=10)
 
-    fig.suptitle(title or "Espaço latente por unidade — UMAP 2D (cor = tempo)", fontsize=13)
+    fig.suptitle(title or "Latent space per unit — 2D UMAP (color = time)", fontsize=13)
 
     if save_path:
         plt.savefig(save_path, dpi=150, bbox_inches="tight")
-        print(f"UMAP por unidade salvo em: {save_path}")
+        print(f"Per-unit UMAP saved to: {save_path}")
     else:
         plt.show()
 
@@ -197,7 +197,7 @@ if __name__ == "__main__":
     plot_umap_latente(
         df_latente_treino=df_lat_treino,
         df_latente_teste=df_lat_teste,
-        title="Espaço Latente — hidden=64, latent=4, epochs=200",
+        title="Latent space — hidden=64, latent=4, epochs=200",
         save_path=PLOTS_DIR / "umap_latente.png",
         min_dist=0.01,
     )

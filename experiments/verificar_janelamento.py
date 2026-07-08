@@ -1,16 +1,16 @@
-"""Verificação de ausência de vazamento no janelamento e nos splits.
+"""Verification that windowing and splits are leakage-free.
 
-Confere os invariantes que garantem a avaliação honesta:
+Checks the invariants that guarantee an honest evaluation:
 
-- as janelas têm as colunas esperadas e ``n_amostras`` features;
-- cada ensaio (``source``) pertence a uma única unidade (nenhum ensaio espalhado);
-- há exatamente uma dobra por unidade, cada teste é uma única unidade e todas as
-  unidades são testadas uma vez;
-- em toda dobra, **nenhuma unidade e nenhum ensaio aparecem ao mesmo tempo em
-  treino e teste** (a garantia anti-vazamento do split por grupo).
+- windows have the expected columns and ``n_amostras`` features;
+- each trial (``source``) belongs to a single unit (no trial spread across units);
+- there is exactly one fold per unit, each test is a single unit and every unit is
+  tested once;
+- in every fold, **no unit and no trial appear at the same time in train and test**
+  (the anti-leakage guarantee of the per-group split).
 
-Roda como script (``python experiments/verificar_janelamento.py``); levanta
-AssertionError no primeiro problema e imprime um relatório por dobra.
+Runs as a script (``python experiments/verificar_janelamento.py``); raises
+AssertionError on the first problem and prints a per-fold report.
 """
 
 import sys
@@ -22,23 +22,23 @@ from experiments.janelamento import janelar, iter_split_por_unidade  # noqa: E40
 
 
 def verificar(df_janelado=None) -> list[dict]:
-    """Valida os invariantes do janelamento e dos splits; retorna o resumo por dobra."""
+    """Validate the windowing/split invariants; return the per-fold summary."""
     df = df_janelado if df_janelado is not None else janelar()
-    assert len(df) > 0, "Nenhuma janela gerada."
+    assert len(df) > 0, "No windows generated."
 
-    # Colunas e número de features
+    # Columns and number of features
     feature_cols = [c for c in df.columns if c.startswith("massFlow_")]
     n_esperado = HIPERPARAMETROS["n_amostras"]
     assert len(feature_cols) == n_esperado, (
-        f"Esperadas {n_esperado} features massFlow_*, encontradas {len(feature_cols)}"
+        f"Expected {n_esperado} massFlow_* features, found {len(feature_cols)}"
     )
     for col in ("anomaly", "unit_id", "source"):
-        assert col in df.columns, f"Coluna ausente: {col}"
+        assert col in df.columns, f"Missing column: {col}"
 
-    # Nenhum ensaio espalhado por mais de uma unidade
+    # No trial spread across more than one unit
     por_source = df.groupby("source")["unit_id"].nunique()
     espalhados = por_source[por_source > 1]
-    assert espalhados.empty, f"Ensaios em mais de uma unidade: {list(espalhados.index)}"
+    assert espalhados.empty, f"Trials in more than one unit: {list(espalhados.index)}"
 
     unidades = set(df["unit_id"].unique())
     resumo = []
@@ -48,12 +48,12 @@ def verificar(df_janelado=None) -> list[dict]:
         treino_units = set(df_treino["unit_id"].unique())
         teste_units = set(df_teste["unit_id"].unique())
 
-        assert teste_units == {unit_teste}, f"Teste deveria conter só {unit_teste}, contém {teste_units}"
+        assert teste_units == {unit_teste}, f"Test should contain only {unit_teste}, contains {teste_units}"
         assert not (treino_units & teste_units), (
-            f"Vazamento de unidade na dobra {unit_teste}: {treino_units & teste_units}"
+            f"Unit leakage in fold {unit_teste}: {treino_units & teste_units}"
         )
         sources_comuns = set(df_treino["source"]) & set(df_teste["source"])
-        assert not sources_comuns, f"Vazamento de ensaio na dobra {unit_teste}: {sources_comuns}"
+        assert not sources_comuns, f"Trial leakage in fold {unit_teste}: {sources_comuns}"
 
         testadas.append(unit_teste)
         resumo.append({
@@ -64,19 +64,19 @@ def verificar(df_janelado=None) -> list[dict]:
         })
 
     assert len(testadas) == len(unidades), (
-        f"Esperadas {len(unidades)} dobras, geradas {len(testadas)}"
+        f"Expected {len(unidades)} folds, generated {len(testadas)}"
     )
-    assert set(testadas) == unidades, "Nem todas as unidades foram testadas exatamente uma vez."
+    assert set(testadas) == unidades, "Not all units were tested exactly once."
 
     return resumo
 
 
 if __name__ == "__main__":
     resumo = verificar()
-    print("Verificação dos splits (sem vazamento):")
+    print("Split verification (no leakage):")
     for info in resumo:
         print(
-            f"  teste={info['teste']} | treino={info['treino']} | "
-            f"n_treino={info['n_treino']} n_teste={info['n_teste']}"
+            f"  test={info['teste']} | train={info['treino']} | "
+            f"n_train={info['n_treino']} n_test={info['n_teste']}"
         )
-    print(f"\nOK — {len(resumo)} dobras, sem unidade/ensaio compartilhado entre treino e teste.")
+    print(f"\nOK — {len(resumo)} folds, no unit/trial shared between train and test.")
