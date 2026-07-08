@@ -28,6 +28,9 @@ Thumbs.db
 *.h5
 *.hdf5
 
+# Proprietary datasets — kept local, NEVER published
+datasets/
+
 # Experiment results
 resultados/
 
