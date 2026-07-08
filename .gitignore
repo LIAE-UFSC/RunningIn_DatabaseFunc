@@ -35,5 +35,5 @@ resultados/
 *.local.md
 
 # Generated study outputs (keep the folder, ignore the assets)
-autoencoder_runin/outputs/experiments/*
-!autoencoder_runin/outputs/experiments/.gitkeep
+outputs/experiments/*
+!outputs/experiments/.gitkeep

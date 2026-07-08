@@ -1,184 +1,70 @@
-# RunningIn_DatabaseFunc
+# autoencoder_runin — Detecção de amaciamento de compressores
 
-## Description
-`pyRInDB` is a Python library for handling and processing HDF5 files from compressor tests with LabVIEW integration. It provides utilities for managing running-in databases, extracting data, and converting models. 
-The main functionalities provided are:
-* Converting LabVIEW waveform files to hdf5 dataset;
-* Extract data from hdf5 dataset to pandas dataframe and to dict.
+Pipeline para **detecção de amaciamento (run-in)** de compressores herméticos a
+partir de séries temporais de vazão mássica (`massFlow`), usando um **autoencoder**
+para aprender uma representação latente e **classificadores clássicos** (regressão
+logística, SVM-RBF, árvore de decisão) para separar *não amaciado (0)* × *amaciado (1)*.
 
-> **Projeto de pesquisa (ML):** este repositório também contém o estudo de **detecção de amaciamento com autoencoder**, em [`autoencoder_runin/`](autoencoder_runin/README.md). Dados de amaciamento são proprietários e não distribuídos.
+A avaliação usa **validação cruzada por unidade** (deixa-uma-unidade-de-fora): o modelo
+é sempre testado em um compressor que **não** participou do treino, medindo generalização.
 
-## Installation
+## Estrutura
 
-In order to build and install this library, run the following command:
+```
+.                     # raiz do repositório
+  paths.py            # caminhos centrais (datasets, outputs)
+  gridsearch.py       # busca exploratória de hiperparâmetros (uso original)
+  requirements.txt    # dependências fixadas
+  datasets/
+    raw/              # séries brutas por unidade/ensaio
+    processados/      # séries rotuladas (não amaciado × amaciado)
+    gerados/          # intermediários
+  src/
+    preprocessing/    # rotulagem por tempo, janelamento, undersampling
+    models/           # autoencoder
+    analysis/         # avaliação de classificadores, UMAP
+  experiments/        # estudo de avaliação (ver abaixo)
+  outputs/
+    plots/, heatmaps/ # ablações e curvas
+    experiments/      # tabelas e figuras do estudo
+```
+
+## Módulos do estudo (`experiments/`)
+
+| Módulo | Papel |
+|---|---|
+| `config.py` | unidades (A1–A5), hiperparâmetros, grey zone, seeds, caminhos |
+| `data.py` | carrega os dados por unidade (`unit_id`, `source`) |
+| `verificar_dados.py` | valida invariantes (toda unidade tem as duas classes) |
+| `janelamento.py` | janelamento por ensaio + split por unidade (sem vazamento) |
+| `verificar_janelamento.py` | valida ausência de vazamento treino/teste |
+| `runner.py` | validação cruzada por unidade sobre o latente do autoencoder |
+| `baselines.py` | baselines de comparação: features cruas e PCA |
+| `tabela.py` | execução multi-seed, agregação e exportação da tabela de resultados |
+| `figuras.py` | figuras UMAP por unidade e da grey zone |
+| `greyzone.py` | probabilidade de amaciamento ao longo do tempo (grey zone) |
+
+## Como rodar
+
+Requer as dependências de `requirements.txt` (ambiente com `torch`, `scikit-learn`,
+`umap-learn`, `pandas`, `matplotlib`). A partir da raiz do repositório:
 
 ```bash
-python -m pip install 'pyRInDB @ git+https://github.com/LIAE-UFSC/RunningIn_DatabaseFunc/'
+# verificações rápidas
+python experiments/verificar_dados.py
+python experiments/verificar_janelamento.py
+
+# reproduzir tabelas e figuras do estudo
+python experiments/reproduzir.py
 ```
 
-Using the LabVIEW waveform conversion functionalities also requires LabVIEW Runtime 2022. Visit [the official NI website](https://www.ni.com/en/support/downloads/software-products/download.labview-runtime.html#301740) for download options. The bit architecture should be the same as the python interpreter.
+Os hiperparâmetros ficam em `experiments/config.py` (`HIPERPARAMETROS`).
 
-If a different LabVIEW version is required, the LabVIEW project in the `build_dll` folder should be rebuild. [This guide](https://forums.ni.com/t5/Community-Documents/Creating-a-DLL-from-LabVIEW-code/ta-p/3514929) provides a tutorial on building DLLs in LabVIEW. The resulting dll should be saved as either `source\WvfRead.dll` or `source\WvfRead64.dll` depending on the LabVIEW and python bit architecture.
+## Dados
 
-## Usage
+> ⚠️ **Dados proprietários.** O conjunto de amaciamento pertence ao LIAE-UFSC e
+> **não é distribuído**. Não pode ser publicado nem incluído em qualquer versão
+> pública deste repositório.
 
-### Processing raw test data
-
-Raw test data is comprised of multiple tests of multiple compressor units. 
-
-A root test folder should contain one or more unit folders, named `Unidade XN` where X is the compressor model and N is the unit number. In hdf5 conversion, each compressor model will be saved in a different file.
-
-Each unit test folder should contain the following:
-* One or more test data folders, named `N_YYYY_MM_DD` or `A_YYYY_MM_DD`. YYYY_MM_DD is the test date, and N and A indicate if the test comes from a new compressor unit or from an already run-in one, respectivelly.
-* A `modelInfo.txt` file, which contains attributes to be added to the hdf5 database. Each attribute should be written in a newline, in the format `attributeName:attributeValue`.
-
-Each test folder should contain the following:
-* A csv file called `medicoesGerais.dat`, with rows being measurements and columns being variables.
-* Zero or more folders containing high-frequency measurements. The measurements should be stored as LabVIEW waveform files, and supported folders are:
-  * corrente: current measurements.
-  * vibracao: vibration measurements (2 or 3 channels).
-  * acusticas: acoustic emissions measurements.
-  * tensao: voltage measurements.
-
-### Extracting Data from HDF5 Database
-
-### Extracting Data from HDF5 Database
-
-The HDF5 database used in this project is structured to store data from compressor tests, with a hierarchical organization of groups and attributes. Below is an explanation of the groups and attributes within the HDF5 file:
-
-#### Groups
-
-1. **Root Group (`/ModelName`)**:
-    - The root group contains metadata about the entire dataset and serves as the entry point for accessing all other groups.
-    - **Attributes**:
-        - `model`: The compressor model.
-        - `fluid`: The refrigerant fluid.
-
-2. **Unit Groups (`/UnitName`)**:
-    - Each unit group represents a specific compressor unit. The name of the group corresponds to the unit's identifier (e.g., `A1`, `B2`).
-    - **Attributes**:
-        - `unit_id`: A unique identifier for the unit.
-        - `description`: A brief description of the unit.
-
-3. **Test Groups (`/UnitName/TestDate`)**:
-    - Each test group represents a specific test conducted on the unit. The name of the group corresponds to the test's date (e.g., `2023_01_01`, `2023_02_15`).
-    - **Attributes**:
-        - `startTime`: The start time of the test.
-        - `runningIn`: Indicates if it is the running-in, i.e. the first ever test of the compressor unit.
-
-#### Datasets
-
-1. **Low frequency measurements (`/UnitName/TestDate/measurements`)**:
-    - Contains raw measurement data from low frequency acquisitions collected during the test, including time. Normally these measurements are performed once per minute. The dataset has dimensions M-by-N, where M is the number of measurements and N is the number of variables.
-    - **Attributes**:
-        - `columnNames`: header of the dataset
-
-2. **High frequency dataset (`/UnitName/TestDate/var`)**:
-    - Contains raw measurements of high frequency acquisitions, which where acquired in batches (L consecutive samples per measurement). Each dataset relates to a different variable, such as `current`, `voltage`, `vibrationLateral`, etc. Each dataset has dimension K-by-L, where K is the number of measurements and L is the number of consecutive samples per measurement.
-    - **Attributes**:
-        - `dt`: Sampling period of the samples in each measurement.
-        - `startTime`: Time at which the first measurement was acquired.
-
-2. **High frequency indexes (`/UnitName/TestDate/index_+var`)**:
-    - Contains indexing relating each high-frequency measurement to the low frequency measurements, e.g. if the low frequency measurements were acquired once per minute, and the high-frequency batches of variable `var` are acquired once every 10 minutes, the index database `index_var` should look something like [0,10,20...].  The index dataset has dimension K, where k is the number of measurement batches.
-
-#### Accessing Data
-
-In order to facilitate access to data from the HDF5 database, you can use the `RunIn_File` class provided in the project. Here is an example of how to extract data:
-
-```python
-from pyRInDB import RunIn_File
-
-# Open the HDF5 file as a running-in database
-with RunIn_File("path/to/file.hdf5") as testFile:
-    # Select unit A1 from the database. Can also be accessed by indexing
-    unit = testFile["A1"]
-    
-    # Select the test conducted on 2023_01_01
-    test = unit["2023_01_01"]
-    
-    # Extract dataframe with vibration and discharge pressure data, for test measurements 0, 100, and 200
-    data = test.to_dataframe(vars=["vibrationRAWLateral", "presDischarge"], indexes=[0, 100, 200])
-
-print(data)
-```
-
-In this example:
-- The `RunIn_File` class is used to open the HDF5 file.
-- The unit "A1" is selected from the database.
-- The test conducted on `2023_01_01` is accessed.
-- The `to_dataframe` method is used to extract specific variables (`vibrationRAWLateral` and `presDischarge`) for the specified indexes (0, 100, 200).
-
-
-
-```python
-# Example code for printing the name of all tests in the HDF5 file
-from pyRInDB import RunIn_File
-
-# Open HDF5 file as a running-in database
-with RunIn_File(path) as testFile:
-    for unit in testFile:
-        for test in unit:
-            print(f"Unit: {unit} | Test: {test}")
-```
-
-#### Extracting data from the database
-
-```python
-# Example code for extracting data from the database
-from pyRInDB import RunIn_File
-
-# Open HDF5 file as a running-in database
-with RunIn_File("path/to/file.hdf5") as testFile:
-    unit = testFile["A1"]  # Selects unit A1 from the database. Can also be accessed by indexing
-    test = unit[0]  # Selects the first test of the unit. Can also be accessed by date ("YYYY_MM_DD")
-
-    # Extracts dataframe with vibration and discharge pressure data, for test measurements 0, 100 and 200. See documentation for full list of variables.
-    dados = test.to_dataframe(vars=["vibrationRAWLateral", "presDischarge"], indexes=[0, 100, 200])
-```
-
-### Generating datasets
-
-#### Generating a dataset using convertModel
-
-```python
-# Example code for generating a dataset using convertModel
-from pyRInDB import RunIn_File
-
-folders_in = ["path/to/unit1", "path/to/unit2"]
-file_out = "path/to/output/model.hdf5"
-model_name = "ModelA"
-
-# Convert the folders into a single HDF5 file
-run_in_file = RunIn_File.convertModel(folders_in, file_out, model_name)
-
-print(f"Model dataset created at: {file_out}")
-
-print(dados)
-```
-
-#### Generating a dataset using convertFolders
-
-```python
-# Example code for generating datasets using convertFolders
-from pyRInDB import RunIn_File
-
-folder_in = "path/to/input/folder"
-folder_out = "path/to/output/folder"
-file_prefix = "Model"
-
-# Convert the folders into multiple HDF5 files
-run_in_files = RunIn_File.convertFolders(folder_in, folder_out, file_prefix)
-
-for file in run_in_files:
-    print(f"Model dataset created at: {file}")
-```
-
-
-## Contributing
-
-Contribution to this repository is restricted to researchers from LIAE/LABMETRO - UFSC. Access should be requested via e-mail.
-
-## Contact
-
-LIAE/LABMETRO: liae@labmetro.ufsc.br
+Ver [DATA_CARD.md](DATA_CARD.md) para a descrição do conjunto (unidades, contagens
+por classe, aquisição e definição dos rótulos).

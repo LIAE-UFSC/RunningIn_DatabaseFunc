@@ -6,8 +6,8 @@ Produz, em ``outputs/experiments/``:
 - Figura 3: ablação já existente (copiada de outputs/plots e outputs/heatmaps);
 - Figura 4: probabilidade de amaciamento ao longo do tempo (grey zone) + sobreposição.
 
-Reusa ``tabela`` e ``figuras``; não altera ``src/``. Rode a partir de
-``autoencoder_runin/`` com o ambiente de ``requirements.txt``.
+Reusa ``tabela`` e ``figuras``; não altera ``src/``. Rode a partir da raiz do
+repositório com o ambiente de ``requirements.txt``.
 """
 
 import shutil
